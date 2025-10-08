@@ -1,4 +1,4 @@
-package com.yooyob.erp.model.entity;
+package com.example.account.model.entity;
 
 import com.yooyob.erp.model.enums.StatutApprobation;
 import lombok.AllArgsConstructor;

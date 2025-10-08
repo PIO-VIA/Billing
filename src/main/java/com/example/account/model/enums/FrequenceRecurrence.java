@@ -1,4 +1,4 @@
-package com.yooyob.erp.model.enums;
+package com.example.account.model.enums;
 
 import lombok.Getter;
 

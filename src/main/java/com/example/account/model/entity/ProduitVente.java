@@ -1,4 +1,4 @@
-package com.yooyob.erp.model.entity;
+package com.example.account.model.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
