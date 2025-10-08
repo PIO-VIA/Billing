@@ -1,6 +1,6 @@
 package com.example.account.model.entity;
 
-import com.yooyob.erp.model.enums.TypeClient;
+import com.example.account.model.enums.TypeClient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
