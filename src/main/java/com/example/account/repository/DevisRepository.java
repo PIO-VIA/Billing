@@ -26,7 +26,7 @@ public interface DevisRepository extends JpaRepository<Devis, UUID> {
     @Query("SELECT d FROM Devis d WHERE d.statut = ?1")
     List<Devis> findByStatut(StatutDevis statut);
 
-    @Query("SELECT d FROM Devis d WHERE d.dateValidite < ?1 AND (d.statut = com.yooyob.erp.model.enums.StatutDevis.ENVOYE OR d.statut = com.yooyob.erp.model.enums.StatutDevis.BROUILLON)")
+    @Query("SELECT d FROM Devis d WHERE d.dateValidite < ?1 AND (d.statut = ENVOYE OR d.statut = BROUILLON)")
     List<Devis> findExpiredDevis(LocalDate currentDate);
 
     @Query("SELECT d FROM Devis d WHERE d.dateCreation BETWEEN ?1 AND ?2")

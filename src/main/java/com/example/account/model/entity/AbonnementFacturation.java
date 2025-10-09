@@ -1,7 +1,9 @@
 package com.example.account.model.entity;
 
-import com.yooyob.erp.model.enums.FrequenceRecurrence;
-import com.yooyob.erp.model.enums.StatutAbonnement;
+import com.example.account
+.model.enums.FrequenceRecurrence;
+import com.example.account
+.model.enums.StatutAbonnement;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

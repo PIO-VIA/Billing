@@ -36,7 +36,7 @@ public interface FactureRepository extends JpaRepository<Facture, UUID> {
     @Query("SELECT f FROM Facture f WHERE f.dateEcheance BETWEEN ?1 AND ?2")
     List<Facture> findByDateEcheanceBetween(LocalDate startDate, LocalDate endDate);
 
-    @Query("SELECT f FROM Facture f WHERE f.dateEcheance < ?1 AND (f.etat = com.yooyob.erp.model.enums.StatutFacture.ENVOYE OR f.etat = com.yooyob.erp.model.enums.StatutFacture.PARTIELLEMENT_PAYE)")
+    @Query("SELECT f FROM Facture f WHERE f.dateEcheance < ?1 AND (f.etat = ENVOYE OR f.etat = PARTIELLEMENT_PAYE)")
     List<Facture> findOverdueFactures(LocalDate currentDate);
 
     @Query("SELECT f FROM Facture f WHERE f.montantTotal BETWEEN ?1 AND ?2")

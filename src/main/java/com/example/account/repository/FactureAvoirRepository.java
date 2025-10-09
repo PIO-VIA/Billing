@@ -34,7 +34,7 @@ public interface FactureAvoirRepository extends JpaRepository <FactureAvoir, UUI
 
     @Query("SELECT fa FROM FactureAvoir fa WHERE fa.dateCreation BETWEEN ?1 AND ?2")
     List<FactureAvoir> findByDateCreationBetween(LocalDate startDate, LocalDate endDate);
-    @Query("SELECT fa FROM FactureAvoir fa WHERE fa.statut = com.yooyob.erp.model.enums.StatutAvoir.VALIDE AND fa.montantApplique < fa.montantTotal")
+    @Query("SELECT fa FROM FactureAvoir fa WHERE fa.statut = VALIDE AND fa.montantApplique < fa.montantTotal")
     List<FactureAvoir> findAvoirsNonTotalementAppliques();
 
     @Query("SELECT fa FROM FactureAvoir fa WHERE fa.approuvePar IS NOT NULL")

@@ -1,7 +1,9 @@
 package com.example.account.model.entity;
 
-import com.yooyob.erp.model.enums.TypeWorkflow;
-import com.yooyob.erp.model.enums.StatutApprobation;
+import com.example.account
+.model.enums.TypeWorkflow;
+import com.example.account
+.model.enums.StatutApprobation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

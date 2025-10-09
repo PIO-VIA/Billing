@@ -1,7 +1,9 @@
 package com.example.account.model.entity;
 
-import com.yooyob.erp.model.enums.StatutAvoir;
-import com.yooyob.erp.model.enums.TypeAvoir;
+import com.example.account
+.model.enums.StatutAvoir;
+import com.example.account
+.model.enums.TypeAvoir;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
