@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Facture</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            display: table;
+            width: 100%;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #2c5aa0;
+            padding-bottom: 15px;
+        }
+
+        .header-left, .header-right {
+            display: table-cell;
+            vertical-align: top;
+            width: 50%;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .logo {
+            max-width: 150px;
+            max-height: 60px;
+        }
+
+        .company-info {
+            margin-top: 10px;
+        }
+
+        .company-info h1 {
+            font-size: 24px;
+            color: #2c5aa0;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .company-info p {
+            margin: 2px 0;
+            font-size: 11px;
+        }
+
+        .facture-title {
+            font-size: 28px;
+            color: #2c5aa0;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .facture-info {
+            font-size: 11px;
+            margin-top: 5px;
+        }
+
+        .client-info {
+            display: table;
+            width: 100%;
+            margin: 30px 0;
+        }
+
+        .client-left, .client-right {
+            display: table-cell;
+            vertical-align: top;
+            width: 50%;
+        }
+
+        .client-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-right: 20px;
+        }
+
+        .client-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #2c5aa0;
+            border-bottom: 1px solid #2c5aa0;
+            padding-bottom: 5px;
+        }
+
+        .client-box p {
+            margin: 3px 0;
+            font-size: 11px;
+        }
+
+        .facture-details {
+            background-color: #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+        }
+
+        .facture-details h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #2c5aa0;
+        }
+
+        .detail-row {
+            display: table;
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        .detail-label, .detail-value {
+            display: table-cell;
+            padding: 2px 0;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            width: 40%;
+        }
+
+        .detail-value {
+            text-align: right;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            font-size: 11px;
+        }
+
+        .items-table th {
+            background-color: #2c5aa0;
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .items-table th:last-child,
+        .items-table td:last-child {
+            text-align: right;
+        }
+
+        .items-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .items-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .tax-line {
+            background-color: #fff3cd !important;
+            font-style: italic;
+        }
+
+        .totals {
+            margin-top: 20px;
+            float: right;
+            width: 300px;
+        }
+
+        .totals table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .totals td {
+            padding: 8px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .totals .label {
+            font-weight: bold;
+            text-align: right;
+            width: 60%;
+        }
+
+        .totals .value {
+            text-align: right;
+            width: 40%;
+        }
+
+        .total-final {
+            background-color: #2c5aa0;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .payment-info {
+            clear: both;
+            margin-top: 50px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #2c5aa0;
+        }
+
+        .payment-info h3 {
+            margin: 0 0 10px 0;
+            color: #2c5aa0;
+            font-size: 14px;
+        }
+
+        .payment-info p {
+            margin: 3px 0;
+            font-size: 11px;
+        }
+
+        .notes {
+            margin-top: 20px;
+            font-size: 11px;
+        }
+
+        .notes h3 {
+            color: #2c5aa0;
+            font-size: 12px;
+            margin: 0 0 5px 0;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background-color: #2c5aa0;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-size: 10px;
+        }
+
+        .page-number:after {
+            content: "Page " counter(page);
+        }
+
+        .clearfix::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="header-left">
+        <img th:if="${logoPath}" th:src="${logoPath}" alt="Logo" class="logo" />
+        <div class="company-info">
+            <h1>YooYob ERP</h1>
+            <p><strong>BP 12345, Yaoundé</strong></p>
+            <p>Cameroun</p>
+            <p>Tél: +237 6 70 12 34 56</p>
+            <p>Email: contact@yooyob.com</p>
+            <p>RCCM: RC/YAO/2024/B/1234</p>
+            <p>NIU: M0123456789</p>
+        </div>
+    </div>
+    <div class="header-right">
+        <h2 class="facture-title">FACTURE</h2>
+        <div class="facture-info">
+            <p><strong>N° </strong><span th:text="${facture.numeroFacture}">FAC-001</span></p>
+            <p><strong>Date: </strong><span th:text="${#temporals.format(facture.dateFacturation, 'dd/MM/yyyy')}">01/01/2025</span></p>
+            <p><strong>Échéance: </strong><span th:text="${#temporals.format(facture.dateEcheance, 'dd/MM/yyyy')}">31/01/2025</span></p>
+        </div>
+    </div>
+</div>
+
+<div class="client-info">
+    <div class="client-left">
+        <div class="client-box">
+            <h3>Facturé à</h3>
+            <p><strong th:text="${client.username}">Société ABC SARL</strong></p>
+            <p th:text="${client.adresse}">Douala, Akwa</p>
+            <p th:if="${client.email}"><span th:text="${client.email}">abc.sarl@gmail.com</span></p>
+            <p th:if="${client.telephone}"><span th:text="${client.telephone}">+237 6 90 11 22 33</span></p>
+            <p th:if="${client.numeroTva}">NIU: <span th:text="${client.numeroTva}">M0987654321</span></p>
+        </div>
+    </div>
+    <div class="client-right">
+        <div class="facture-details">
+            <h3>Détails de la Facture</h3>
+            <div class="detail-row">
+                <div class="detail-label">Statut:</div>
+                <div class="detail-value" th:text="${facture.etat.libelle}">Envoyé</div>
+            </div>
+            <div class="detail-row" th:if="${facture.referenceCommande}">
+                <div class="detail-label">Réf. Commande:</div>
+                <div class="detail-value" th:text="${facture.referenceCommande}">CMD-001</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Devise:</div>
+                <div class="detail-value" th:text="${facture.devise ?: 'XAF'}">XAF</div>
+            </div>
+            <div class="detail-row" th:if="${facture.conditionsPaiement}">
+                <div class="detail-label">Conditions:</div>
+                <div class="detail-value" th:text="${facture.conditionsPaiement}">30 jours</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<table class="items-table">
+    <thead>
+    <tr>
+        <th style="width: 40%;">Description</th>
+        <th style="width: 10%;">Qté</th>
+        <th style="width: 15%;">Prix Unit.</th>
+        <th style="width: 15%;">Montant HT</th>
+        <th style="width: 20%;">Total</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="ligne : ${lignesFacture}" th:classappend="${ligne.isTaxLine} ? 'tax-line' : ''">
+        <td>
+            <strong th:text="${ligne.nomProduit ?: ligne.description}">Ordinateur portable Lenovo</strong>
+            <div th:if="${ligne.description and ligne.nomProduit != ligne.description}"
+                 style="font-size: 10px; color: #666; margin-top: 3px;"
+                 th:text="${ligne.description}">Core i5, 8Go RAM, 256Go SSD</div>
+        </td>
+        <td th:text="${ligne.quantite}">2</td>
+        <td th:text="${#numbers.formatDecimal(ligne.prixUnitaire, 0, 2)} + ' FCFA'">250 000 FCFA</td>
+        <td th:text="${#numbers.formatDecimal(ligne.credit, 0, 2)} + ' FCFA'">500 000 FCFA</td>
+        <td th:text="${#numbers.formatDecimal(ligne.montantTotal, 0, 2)} + ' FCFA'">500 000 FCFA</td>
+    </tr>
+    </tbody>
+</table>
+
+<div class="totals">
+    <table>
+        <tr>
+            <td class="label">Sous-total HT:</td>
+            <td class="value" th:text="${#numbers.formatDecimal(facture.montantHT, 0, 2)} + ' FCFA'">1 000 000 FCFA</td>
+        </tr>
+        <tr>
+            <td class="label">TVA (19,25%):</td>
+            <td class="value" th:text="${#numbers.formatDecimal(facture.montantTVA, 0, 2)} + ' FCFA'">192 500 FCFA</td>
+        </tr>
+        <tr class="total-final">
+            <td class="label">TOTAL TTC:</td>
+            <td class="value" th:text="${#numbers.formatDecimal(facture.montantTotal, 0, 2)} + ' FCFA'">1 192 500 FCFA</td>
+        </tr>
+    </table>
+</div>
+
+<div class="clearfix"></div>
+
+<div class="payment-info">
+    <h3>Informations de Paiement</h3>
+    <p><strong>Montant restant dû:</strong> <span th:text="${#numbers.formatDecimal(facture.montantRestant, 0, 2)} + ' FCFA'">1 192 500 FCFA</span></p>
+    <p><strong>Banque:</strong> Afriland First Bank Cameroun</p>
+    <p><strong>RIB:</strong> 10001 00020 12345678901 89</p>
+    <p><strong>Référence à mentionner:</strong> <span th:text="${facture.numeroFacture}">FAC-001</span></p>
+</div>
+
+<div class="notes" th:if="${facture.notes}">
+    <h3>Notes</h3>
+    <p th:text="${facture.notes}">Merci de votre confiance.</p>
+</div>
+
+<div class="notes">
+    <h3>Conditions Générales</h3>
+    <p>• Paiement à réception de facture, sauf conditions particulières convenues par écrit.</p>
+    <p>• En cas de retard de paiement, des pénalités de 2% par mois seront appliquées.</p>
+    <p>• Toute contestation doit être signalée dans un délai de 7 jours.</p>
+    <p>• Nos prix s'entendent hors taxes sauf mention contraire.</p>
+</div>
+
+<div class="footer">
+    <p>YooYob ERP - Solution de gestion d'entreprise | www.yooyob.com | contact@yooyob.com</p>
+    <span class="page-number"></span>
+</div>
+</body>
+</html>
