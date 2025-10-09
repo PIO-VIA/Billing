@@ -31,6 +31,8 @@ public class FactureService {
     private final ClientRepository clientRepository;
     private final FactureMapper factureMapper;
     private final FactureEventProducer factureEventProducer;
+    private final PdfGeneratorService pdfGeneratorService;
+    private final EmailService emailService;
 
     @Transactional
     public FactureResponse createFacture(FactureCreateRequest request) {
@@ -250,5 +252,94 @@ public class FactureService {
     @Transactional(readOnly = true)
     public Long countByEtat(StatutFacture etat) {
         return factureRepository.countByEtat(etat);
+    }
+
+    /**
+     * Génère le PDF d'une facture
+     */
+    @Transactional(readOnly = true)
+    public byte[] genererPdfFacture(UUID factureId) {
+        log.info("Génération du PDF pour la facture: {}", factureId);
+
+        Facture facture = factureRepository.findById(factureId)
+                .orElseThrow(() -> new IllegalArgumentException("Facture non trouvée: " + factureId));
+
+        Client client = clientRepository.findById(facture.getIdClient())
+                .orElseThrow(() -> new IllegalArgumentException("Client non trouvé: " + facture.getIdClient()));
+
+        return pdfGeneratorService.generateFacturePdf(facture, client);
+    }
+
+    /**
+     * Génère et sauvegarde le PDF d'une facture
+     */
+    @Transactional
+    public String genererEtSauvegarderPdfFacture(UUID factureId) {
+        log.info("Génération et sauvegarde du PDF pour la facture: {}", factureId);
+
+        Facture facture = factureRepository.findById(factureId)
+                .orElseThrow(() -> new IllegalArgumentException("Facture non trouvée: " + factureId));
+
+        Client client = clientRepository.findById(facture.getIdClient())
+                .orElseThrow(() -> new IllegalArgumentException("Client non trouvé: " + facture.getIdClient()));
+
+        String pdfPath = pdfGeneratorService.generateAndSaveFacturePdf(facture, client);
+
+        // Mettre à jour le chemin du PDF dans la facture
+        facture.setPdfPath(pdfPath);
+        factureRepository.save(facture);
+
+        return pdfPath;
+    }
+
+    /**
+     * Envoie la facture par email au client
+     */
+    @Transactional
+    public void envoyerFactureParEmail(UUID factureId) {
+        log.info("Envoi de la facture {} par email", factureId);
+
+        Facture facture = factureRepository.findById(factureId)
+                .orElseThrow(() -> new IllegalArgumentException("Facture non trouvée: " + factureId));
+
+        if (facture.getEmailClient() == null || facture.getEmailClient().isEmpty()) {
+            throw new IllegalArgumentException("Le client n'a pas d'adresse email");
+        }
+
+        Client client = clientRepository.findById(facture.getIdClient())
+                .orElseThrow(() -> new IllegalArgumentException("Client non trouvé: " + facture.getIdClient()));
+
+        // Générer le PDF
+        byte[] pdfBytes = pdfGeneratorService.generateFacturePdf(facture, client);
+
+        // Envoyer l'email avec le PDF en pièce jointe
+        emailService.sendFactureCreationEmail(facture, facture.getEmailClient(), pdfBytes);
+
+        // Mettre à jour le statut d'envoi
+        facture.setEnvoyeParEmail(true);
+        facture.setDateEnvoiEmail(java.time.LocalDateTime.now());
+        factureRepository.save(facture);
+
+        log.info("Facture {} envoyée par email à {}", facture.getNumeroFacture(), facture.getEmailClient());
+    }
+
+    /**
+     * Envoie un rappel de paiement pour une facture
+     */
+    @Transactional
+    public void envoyerRappelPaiement(UUID factureId) {
+        log.info("Envoi d'un rappel de paiement pour la facture: {}", factureId);
+
+        Facture facture = factureRepository.findById(factureId)
+                .orElseThrow(() -> new IllegalArgumentException("Facture non trouvée: " + factureId));
+
+        if (facture.getEmailClient() == null || facture.getEmailClient().isEmpty()) {
+            throw new IllegalArgumentException("Le client n'a pas d'adresse email");
+        }
+
+        // Envoyer l'email de rappel
+        emailService.sendRappelPaiementEmail(facture, facture.getEmailClient());
+
+        log.info("Rappel de paiement envoyé pour la facture {} à {}", facture.getNumeroFacture(), facture.getEmailClient());
     }
 }

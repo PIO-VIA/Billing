@@ -156,4 +156,41 @@ public class FactureController {
         Long count = factureService.countByEtat(etat);
         return ResponseEntity.ok(count);
     }
+
+    @GetMapping("/{factureId}/pdf")
+    @Operation(summary = "Télécharger le PDF d'une facture")
+    public ResponseEntity<byte[]> downloadFacturePdf(@PathVariable UUID factureId) {
+        log.info("Requête de téléchargement du PDF de la facture: {}", factureId);
+
+        byte[] pdfBytes = factureService.genererPdfFacture(factureId);
+
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/pdf")
+                .header("Content-Disposition", "attachment; filename=facture_" + factureId + ".pdf")
+                .body(pdfBytes);
+    }
+
+    @PostMapping("/{factureId}/envoyer-email")
+    @Operation(summary = "Envoyer la facture par email au client")
+    public ResponseEntity<Void> envoyerFactureParEmail(@PathVariable UUID factureId) {
+        log.info("Requête d'envoi de la facture {} par email", factureId);
+        factureService.envoyerFactureParEmail(factureId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{factureId}/rappel-paiement")
+    @Operation(summary = "Envoyer un rappel de paiement pour la facture")
+    public ResponseEntity<Void> envoyerRappelPaiement(@PathVariable UUID factureId) {
+        log.info("Requête d'envoi d'un rappel de paiement pour la facture: {}", factureId);
+        factureService.envoyerRappelPaiement(factureId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{factureId}/generer-pdf")
+    @Operation(summary = "Générer et sauvegarder le PDF de la facture")
+    public ResponseEntity<String> genererEtSauvegarderPdf(@PathVariable UUID factureId) {
+        log.info("Requête de génération et sauvegarde du PDF de la facture: {}", factureId);
+        String pdfPath = factureService.genererEtSauvegarderPdfFacture(factureId);
+        return ResponseEntity.ok(pdfPath);
+    }
 }
