@@ -233,11 +233,13 @@ public class FactureService {
         }
 
         BigDecimal montantHT = facture.getLignesFacture().stream()
-                .map(ligne -> ligne.getMontantHT() != null ? ligne.getMontantHT() : BigDecimal.ZERO)
+                .filter(ligne -> !Boolean.TRUE.equals(ligne.getIsTaxLine()))
+                .map(ligne -> ligne.getMontantTotal() != null ? ligne.getMontantTotal() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal montantTVA = facture.getLignesFacture().stream()
-                .map(ligne -> ligne.getMontantTVA() != null ? ligne.getMontantTVA() : BigDecimal.ZERO)
+                .filter(ligne -> Boolean.TRUE.equals(ligne.getIsTaxLine()))
+                .map(ligne -> ligne.getMontantTotal() != null ? ligne.getMontantTotal() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal montantTTC = montantHT.add(montantTVA);

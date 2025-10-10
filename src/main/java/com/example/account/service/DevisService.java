@@ -219,11 +219,13 @@ public class DevisService {
         }
 
         BigDecimal montantHT = devis.getLignesDevis().stream()
-                .map(ligne -> ligne.getMontantHT() != null ? ligne.getMontantHT() : BigDecimal.ZERO)
+                .filter(ligne -> !Boolean.TRUE.equals(ligne.getIsTaxLine()))
+                .map(ligne -> ligne.getMontantTotal() != null ? ligne.getMontantTotal() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal montantTVA = devis.getLignesDevis().stream()
-                .map(ligne -> ligne.getMontantTVA() != null ? ligne.getMontantTVA() : BigDecimal.ZERO)
+                .filter(ligne -> Boolean.TRUE.equals(ligne.getIsTaxLine()))
+                .map(ligne -> ligne.getMontantTotal() != null ? ligne.getMontantTotal() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal montantTTC = montantHT.add(montantTVA);

@@ -1,31 +1,37 @@
 package com.example.account
-.dto.response;
+.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProduitVenteResponse {
+public class ProduitCreateRequest {
 
-    private UUID idProduit;
+    @NotBlank(message = "Le nom du produit est obligatoire")
     private String nomProduit;
+
     private String typeProduit;
+
+    @NotNull(message = "Le prix de vente est obligatoire")
+    @PositiveOrZero(message = "Le prix de vente doit être positif ou nul")
     private BigDecimal prixVente;
+
     private BigDecimal cout;
     private String categorie;
     private String reference;
     private String codeBarre;
     private String photo;
-    private Boolean active;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+
+    @Builder.Default
+    private Boolean active = true;
 }
