@@ -56,32 +56,32 @@ public class Widget {
     @Column(name = "requete_sql")
     private String requeteSql;
 
-    @Column(name = "parametres_graphique")
-    private Map<String, Object> parametresGraphique;
+    @Column(name = "parametres_graphique", columnDefinition = "TEXT")
+    private String parametresGraphiqueJson;
 
-    @Column(name = "colonnes_affichees")
-    private List<String> colonnesAffichees;
+    @Column(name = "colonnes_affichees", columnDefinition = "TEXT")
+    private String colonnesAfficheesJson;
 
-    @Column(name = "filtres_widget")
-    private Map<String, Object> filtresWidget;
+    @Column(name = "filtres_widget", columnDefinition = "TEXT")
+    private String filtresWidgetJson;
 
-    @Column(name = "agregations")
-    private Map<String, String> agregations; // "SUM", "AVG", "COUNT", etc.
+    @Column(name = "agregations", columnDefinition = "TEXT")
+    private String agregationsJson; // "SUM", "AVG", "COUNT", etc.
 
-    @Column(name = "groupement")
-    private List<String> groupement;
+    @Column(name = "groupement", columnDefinition = "TEXT")
+    private String groupementJson;
 
-    @Column(name = "tri")
-    private Map<String, String> tri; // colonne -> "ASC"/"DESC"
+    @Column(name = "tri", columnDefinition = "TEXT")
+    private String triJson; // colonne -> "ASC"/"DESC"
 
     @Column(name = "limite_resultats")
     private Integer limiteResultats;
 
-    @Column(name = "couleurs_personnalisees")
-    private List<String> couleursPersonnalisees;
+    @Column(name = "couleurs_personnalisees", columnDefinition = "TEXT")
+    private String couleursPersonnaliseesJson;
 
-    @Column(name = "format_affichage")
-    private Map<String, String> formatAffichage;
+    @Column(name = "format_affichage", columnDefinition = "TEXT")
+    private String formatAffichageJson;
 
     @Column(name = "unite_mesure")
     private String uniteMesure;
@@ -89,11 +89,11 @@ public class Widget {
     @Column(name = "precision_decimale")
     private Integer precisionDecimale;
 
-    @Column(name = "seuils_alertes")
-    private Map<String, Object> seuilsAlertes;
+    @Column(name = "seuils_alertes", columnDefinition = "TEXT")
+    private String seuilsAlertesJson;
 
-    @Column(name = "actions_clic")
-    private Map<String, Object> actionsClic;
+    @Column(name = "actions_clic", columnDefinition = "TEXT")
+    private String actionsClicJson;
 
     @Column(name = "visible")
     @Builder.Default

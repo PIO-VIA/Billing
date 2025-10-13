@@ -101,17 +101,17 @@ public class PlanificationRelance {
     @Column(name = "objet_email")
     private String objetEmail;
 
-    @Column(name = "destinataires_email")
-    private List<String> destinatairesEmail;
+    @Column(name = "destinataires_email", columnDefinition = "TEXT")
+    private String destinatairesEmailJson;
 
-    @Column(name = "copie_carbone")
-    private List<String> copieCarbone;
+    @Column(name = "copie_carbone", columnDefinition = "TEXT")
+    private String copieCarboneJson;
 
-    @Column(name = "pieces_jointes")
-    private List<String> piecesJointes;
+    @Column(name = "pieces_jointes", columnDefinition = "TEXT")
+    private String piecesJointesJson;
 
-    @Column(name = "canal_envoi")
-    private List<String> canalEnvoi; // EMAIL, SMS, COURRIER
+    @Column(name = "canal_envoi", columnDefinition = "TEXT")
+    private String canalEnvoiJson; // EMAIL, SMS, COURRIER
 
     @Column(name = "reponse_recue")
     @Builder.Default
@@ -123,18 +123,18 @@ public class PlanificationRelance {
     @Column(name = "contenu_reponse")
     private String contenuReponse;
 
-    @Column(name = "erreurs_envoi")
-    private List<String> erreursEnvoi;
+    @Column(name = "erreurs_envoi", columnDefinition = "TEXT")
+    private String erreursEnvoiJson;
 
     @Column(name = "nombre_echecs")
     @Builder.Default
     private Integer nombreEchecs = 0;
 
-    @Column(name = "logs_execution")
-    private List<String> logsExecution;
+    @Column(name = "logs_execution", columnDefinition = "TEXT")
+    private String logsExecutionJson;
 
-    @Column(name = "metadata")
-    private Map<String, String> metadata;
+    @Column(name = "metadata", columnDefinition = "TEXT")
+    private String metadataJson;
 
     @Column(name = "frais_appliques")
     private BigDecimal fraisAppliques;
@@ -146,8 +146,8 @@ public class PlanificationRelance {
     @Column(name = "date_escalade")
     private LocalDateTime dateEscalade;
 
-    @Column(name = "escalade_vers")
-    private List<String> escaladeVers;
+    @Column(name = "escalade_vers", columnDefinition = "TEXT")
+    private String escaladeVersJson;
 
     @Column(name = "annulee_automatiquement")
     @Builder.Default
@@ -160,8 +160,8 @@ public class PlanificationRelance {
     @Builder.Default
     private Integer priorite = 1;
 
-    @Column(name = "tags")
-    private List<String> tags;
+    @Column(name = "tags", columnDefinition = "TEXT")
+    private String tagsJson;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

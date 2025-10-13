@@ -96,8 +96,8 @@ public class ConfigurationNumerotation {
     @Builder.Default
     private String formatJour = "dd"; // "dd", "d"
 
-    @Column(name = "variables_personnalisees")
-    private Map<String, String> variablesPersonnalisees;
+    @Column(name = "variables_personnalisees", columnDefinition = "TEXT")
+    private String variablesPersonnaliseesJson;
 
     @Column(name = "conditions_application")
     private String conditionsApplication; // expressions pour définir quand appliquer cette config

@@ -52,8 +52,8 @@ public class DemandeApprobation {
     @Column(name = "type_objet")
     private String typeObjet; // "FACTURE", "DEVIS", "AVOIR", etc.
 
-    @Column(name = "donnees_objet")
-    private Map<String, Object> donneesObjet;
+    @Column(name = "donnees_objet", columnDefinition = "TEXT")
+    private String donneesObjetJson;
 
     @Column(name = "montant_concerne")
     private BigDecimal montantConcerne;
@@ -72,11 +72,11 @@ public class DemandeApprobation {
     @Column(name = "etape_courante")
     private Integer etapeCourante;
 
-    @Column(name = "historique_approbations")
-    private List<HistoriqueApprobation> historiqueApprobations;
+    @Column(name = "historique_approbations", columnDefinition = "TEXT")
+    private String historiqueApprobationsJson;
 
-    @Column(name = "approbateurs_en_attente")
-    private List<UUID> approbateursEnAttente;
+    @Column(name = "approbateurs_en_attente", columnDefinition = "TEXT")
+    private String approbateursEnAttenteJson;
 
     @Column(name = "date_creation")
     private LocalDateTime dateCreation;
@@ -99,8 +99,8 @@ public class DemandeApprobation {
     @Column(name = "motif_rejet")
     private String motifRejet;
 
-    @Column(name = "notifications_envoyees")
-    private List<String> notificationsEnvoyees;
+    @Column(name = "notifications_envoyees", columnDefinition = "TEXT")
+    private String notificationsEnvoyeesJson;
 
     @Column(name = "escalades_effectuees")
     @Builder.Default
@@ -110,11 +110,11 @@ public class DemandeApprobation {
     @Builder.Default
     private Integer priorite = 1;
 
-    @Column(name = "tags")
-    private List<String> tags;
+    @Column(name = "tags", columnDefinition = "TEXT")
+    private String tagsJson;
 
-    @Column(name = "metadata")
-    private Map<String, String> metadata;
+    @Column(name = "metadata", columnDefinition = "TEXT")
+    private String metadataJson;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

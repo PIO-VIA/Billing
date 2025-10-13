@@ -80,8 +80,9 @@ public class AbonnementFacturation {
     @Column(name = "montant_recurrent")
     private BigDecimal montantRecurrent;
 
-    @Column(name = "lignes_template")
-    private List<LigneFacture> lignesTemplate;
+    // Stocker les IDs des lignes templates (peut être sérialisé en JSON dans votre service)
+    @Column(name = "lignes_template", columnDefinition = "TEXT")
+    private String lignesTemplateJson;
 
     @Column(name = "devise")
     private String devise;

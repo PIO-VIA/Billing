@@ -79,8 +79,9 @@ public class EcheancePaiement {
     @Column(name = "taux_penalite")
     private BigDecimal tauxPenalite;
 
-    @OneToMany(mappedBy = "echeancePaiement", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<EscomptePaiement> escomptesApplicables;
+    // Liste des IDs d'escomptes applicables à cette échéance
+    @Column(name = "escomptes_applicables")
+    private List<UUID> escomptesApplicables;
 
     @Column(name = "escompte_applique")
     private UUID escompteApplique;
