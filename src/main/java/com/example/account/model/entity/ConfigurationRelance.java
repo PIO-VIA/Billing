@@ -80,15 +80,15 @@ public class ConfigurationRelance {
     @Builder.Default
     private Boolean inclureFacturePdf = true;
 
-    @Column(name = "copie_interne")
-    private List<String> copieInterne;
+    @Column(name = "copie_interne", columnDefinition = "TEXT")
+    private String copieInterneJson;
 
     @Column(name = "heure_envoi")
     @Builder.Default
     private Integer heureEnvoi = 9; // 9h du matin
 
-    @Column(name = "jours_semaine_envoi")
-    private List<Integer> joursSemaineEnvoi; // 1-7 pour lundi-dimanche
+    @Column(name = "jours_semaine_envoi", columnDefinition = "TEXT")
+    private String joursSemaineEnvoiJson; // 1-7 pour lundi-dimanche
 
     @Column(name = "exclure_weekends")
     @Builder.Default
@@ -114,15 +114,15 @@ public class ConfigurationRelance {
     @Builder.Default
     private Integer ordrePriorite = 1;
 
-    @Column(name = "conditions_arret")
-    private List<String> conditionsArret; // "PAIEMENT_RECU", "AVOIR_EMIS", etc.
+    @Column(name = "conditions_arret", columnDefinition = "TEXT")
+    private String conditionsArretJson; // "PAIEMENT_RECU", "AVOIR_EMIS", etc.
 
     @Column(name = "escalade_automatique")
     @Builder.Default
     private Boolean escaladeAutomatique = false;
 
-    @Column(name = "escalade_vers")
-    private List<String> escaladeVers; // emails ou rôles
+    @Column(name = "escalade_vers", columnDefinition = "TEXT")
+    private String escaladeVersJson; // emails ou rôles
 
     @Column(name = "delai_escalade_jours")
     private Integer delaiEscaladeJours;

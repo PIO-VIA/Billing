@@ -31,11 +31,11 @@ public class EtapeApprobation {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "approbateurs_requis")
-    private List<UUID> approubateursRequis;
+    @Column(name = "approbateurs_requis", columnDefinition = "TEXT")
+    private String approubateursRequisJson;
 
-    @Column(name = "roles_approbateurs")
-    private List<String> rolesApprobateurs;
+    @Column(name = "roles_approbateurs", columnDefinition = "TEXT")
+    private String rolesApprobateursJson;
 
     @Column(name = "nombre_approbations_requises")
     @Builder.Default
@@ -55,8 +55,8 @@ public class EtapeApprobation {
     @Column(name = "delai_max_heures")
     private Integer delaiMaxHeures;
 
-    @Column(name = "escalade_vers")
-    private List<UUID> escaladeVers;
+    @Column(name = "escalade_vers", columnDefinition = "TEXT")
+    private String escaladeVersJson;
 
     @Column(name = "actif")
     @Builder.Default
