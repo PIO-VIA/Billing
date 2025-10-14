@@ -8,8 +8,6 @@ import com.example.account
 import com.example.account
 .dto.response.FactureResponse;
 import com.example.account
-.dto.response.FactureDetailsResponse;
-import com.example.account
 .model.entity.Facture;
 import com.example.account
 .model.entity.Client;
@@ -67,10 +65,7 @@ public interface FactureMapper extends BaseMapper<Facture, FactureCreateRequest,
 
     FactureResponse toResponse(Facture facture);
 
-    @Mapping(target = "client", ignore = true)
-    @Mapping(target = "paiements", ignore = true)
-    @Mapping(target = "totalPaiements", ignore = true)
-    FactureDetailsResponse toDetailsResponse(Facture facture);
+    
 
     List<FactureResponse> toResponseList(List<Facture> factures);
 
@@ -79,11 +74,5 @@ public interface FactureMapper extends BaseMapper<Facture, FactureCreateRequest,
         return "FAC-" + System.currentTimeMillis();
     }
 
-    // Mapping avec client pour FactureDetailsResponse
-    @Mapping(target = "client", source = "client")
-    @Mapping(target = "paiements", ignore = true)
-    @Mapping(target = "totalPaiements", ignore = true)
-    @Mapping(target = "createdAt", source = "facture.createdAt")
-    @Mapping(target = "updatedAt", source = "facture.updatedAt")
-    FactureDetailsResponse toDetailsResponseWithClient(Facture facture, Client client);
+   
 }
