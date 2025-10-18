@@ -1,16 +1,14 @@
 package com.example.account.model.entity;
 
-import com.example.account
-.model.enums.TypeWorkflow;
-import com.example.account
-.model.enums.StatutApprobation;
+import com.example.account.model.enums.TypeWorkflow;
+import com.example.account.model.enums.StatutApprobation;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import jakarta.persistence.*;
 
-import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,6 +28,7 @@ public class WorkflowApprobation {
     private UUID idWorkflow;
 
     @NotNull(message = "Le type de workflow est obligatoire")
+    @Enumerated(EnumType.STRING)
     @Column(name = "type_workflow")
     private TypeWorkflow typeWorkflow;
 
@@ -45,7 +44,8 @@ public class WorkflowApprobation {
     @Column(name = "montant_seuil_max")
     private BigDecimal montantSeuilMax;
 
-    @Column(name = "etapes_approbation")
+    // ✅ FIXED: Define relationship properly
+    @OneToMany(mappedBy = "idEtape", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EtapeApprobation> etapesApprobation;
 
     @Column(name = "conditions_declenchement")

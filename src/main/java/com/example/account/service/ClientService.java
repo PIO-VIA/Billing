@@ -10,6 +10,8 @@ import com.example.account.repository.ClientRepository;
 import com.example.account.service.producer.ClientEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,8 +22,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class ClientService {
-
+    
     private final ClientRepository clientRepository;
+  
     private final ClientMapper clientMapper;
     private final ClientEventProducer clientEventProducer;
 
