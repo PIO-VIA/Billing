@@ -58,16 +58,32 @@ public class AlerteTableau {
     @Column(name = "niveau_criticite")
     private String niveauCriticite; // "INFO", "WARNING", "ERROR", "CRITICAL"
 
-    @Column(name = "destinataires_notification")
+    // ✅ Element collections for simple value lists
+    @ElementCollection
+    @CollectionTable(
+        name = "alerte_destinataires",
+        joinColumns = @JoinColumn(name = "id_alerte")
+    )
+    @Column(name = "destinataire")
     private List<String> destinatairesNotification;
 
-    @Column(name = "canal_notification")
+    @ElementCollection
+    @CollectionTable(
+        name = "alerte_canaux",
+        joinColumns = @JoinColumn(name = "id_alerte")
+    )
+    @Column(name = "canal")
     private List<String> canalNotification; // "EMAIL", "SMS", "PUSH", "SLACK"
 
     @Column(name = "message_personnalise")
     private String messagePersonnalise;
 
-    @Column(name = "actions_automatiques")
+    @ElementCollection
+    @CollectionTable(
+        name = "alerte_actions",
+        joinColumns = @JoinColumn(name = "id_alerte")
+    )
+    @Column(name = "action")
     private List<String> actionsAutomatiques;
 
     @Column(name = "derniere_verification")

@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import jakarta.persistence.*;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
@@ -41,19 +40,24 @@ public class TableauBord {
     private String nomProprietaire;
 
     @Column(name = "type_tableau")
-    private String typeTableau; // "EXECUTIF", "COMMERCIAL", "FINANCIER", "OPERATIONNEL"
+    private String typeTableau;
 
-    @Column(name = "widgets")
+    // ✅ Relation with Widget entity (if Widget is @Entity)
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_tableau")
     private List<Widget> widgets;
 
+    // ✅ Store maps as JSON strings instead of plain Map
+    @Lob
     @Column(name = "layout_configuration")
-    private Map<String, Object> layoutConfiguration;
+    private String layoutConfigurationJson;
 
+    @Lob
     @Column(name = "filtres_globaux")
-    private Map<String, Object> filtresGlobaux;
+    private String filtresGlobauxJson;
 
     @Column(name = "periode_defaut")
-    private String periodeDefaut; // "MOIS_COURANT", "TRIMESTRE", "ANNEE", etc.
+    private String periodeDefaut;
 
     @Column(name = "auto_actualisation")
     @Builder.Default
@@ -67,10 +71,14 @@ public class TableauBord {
     @Builder.Default
     private Boolean partagePublic = false;
 
-    @Column(name = "utilisateurs_autorises")
+    @ElementCollection
+    @CollectionTable(name = "tableau_utilisateurs_autorises", joinColumns = @JoinColumn(name = "id_tableau"))
+    @Column(name = "utilisateur_id")
     private List<UUID> utilisateursAutorises;
 
-    @Column(name = "roles_autorises")
+    @ElementCollection
+    @CollectionTable(name = "tableau_roles_autorises", joinColumns = @JoinColumn(name = "id_tableau"))
+    @Column(name = "role")
     private List<String> rolesAutorises;
 
     @Column(name = "actif")
@@ -91,7 +99,9 @@ public class TableauBord {
     @Column(name = "icone")
     private String icone;
 
-    @Column(name = "tags")
+    @ElementCollection
+    @CollectionTable(name = "tableau_tags", joinColumns = @JoinColumn(name = "id_tableau"))
+    @Column(name = "tag")
     private List<String> tags;
 
     @Column(name = "derniere_consultation")
@@ -101,7 +111,9 @@ public class TableauBord {
     @Builder.Default
     private Long nombreConsultations = 0L;
 
-    @Column(name = "favoris_utilisateurs")
+    @ElementCollection
+    @CollectionTable(name = "tableau_favoris_utilisateurs", joinColumns = @JoinColumn(name = "id_tableau"))
+    @Column(name = "utilisateur_id")
     private List<UUID> favorisUtilisateurs;
 
     @Column(name = "export_automatique")
@@ -109,25 +121,30 @@ public class TableauBord {
     private Boolean exportAutomatique = false;
 
     @Column(name = "format_export")
-    private String formatExport; // "PDF", "EXCEL", "EMAIL"
+    private String formatExport;
 
-    @Column(name = "destinataires_export")
+    @ElementCollection
+    @CollectionTable(name = "tableau_destinataires_export", joinColumns = @JoinColumn(name = "id_tableau"))
+    @Column(name = "destinataire")
     private List<String> destinatairesExport;
 
     @Column(name = "frequence_export")
-    private String frequenceExport; // "QUOTIDIEN", "HEBDOMADAIRE", "MENSUEL"
+    private String frequenceExport;
 
     @Column(name = "derniere_actualisation")
     private LocalDateTime derniereActualisation;
 
+    @Lob
     @Column(name = "cache_donnees")
-    private Map<String, Object> cacheDonnees;
+    private String cacheDonneesJson;
 
     @Column(name = "duree_cache_minutes")
     @Builder.Default
     private Integer dureeCacheMinutes = 30;
 
-    @Column(name = "alertes_configurees")
+  
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_tableau")
     private List<AlerteTableau> alertesConfigurees;
 
     @Column(name = "created_at")
