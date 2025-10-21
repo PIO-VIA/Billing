@@ -1,6 +1,6 @@
-# Service de Comptabilité (Account Service)
+# Service de Facturation (Billing Service)
 
-Ce projet est un microservice de comptabilité développé avec Spring Boot. Il fournit une API RESTful pour gérer les entités comptables de base telles que les clients, les fournisseurs, les devis, les factures et les paiements.
+Ce projet est un microservice de facturation développé avec Spring Boot. Il fournit une API RESTful pour gérer les entités comptables de base telles que les clients, les fournisseurs, les devis, les factures et les paiements.
 
 ## Table des matières
 - [Fonctionnalités](#fonctionnalités)
