@@ -56,6 +56,9 @@ class ClientControllerTest {
 
         clientCreateRequest = new ClientCreateRequest();
         clientCreateRequest.setUsername("testuser");
+        clientCreateRequest.setCategorie("IT");
+        clientCreateRequest.setAdresse("123 Test Street");
+        clientCreateRequest.setTypeClient(TypeClient.ENTREPRISE);
         clientCreateRequest.setEmail("test@example.com");
 
         clientUpdateRequest = new ClientUpdateRequest();
@@ -70,7 +73,7 @@ class ClientControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(clientCreateRequest)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(clientId.toString()))
+                .andExpect(jsonPath("$.idClient").value(clientId.toString()))
                 .andExpect(jsonPath("$.username").value("testuser"));
     }
 
@@ -82,7 +85,7 @@ class ClientControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(clientUpdateRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(clientId.toString()));
+                .andExpect(jsonPath("$.idClient").value(clientId.toString()));
     }
 
     @Test
@@ -91,7 +94,7 @@ class ClientControllerTest {
 
         mockMvc.perform(get("/api/clients/{clientId}", clientId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(clientId.toString()));
+                .andExpect(jsonPath("$.idClient").value(clientId.toString()));
     }
 
     @Test
@@ -110,7 +113,7 @@ class ClientControllerTest {
 
         mockMvc.perform(get("/api/clients"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(clientId.toString()));
+                .andExpect(jsonPath("$[0].idClient").value(clientId.toString()));
     }
 
     @Test
@@ -120,7 +123,7 @@ class ClientControllerTest {
 
         mockMvc.perform(get("/api/clients/actifs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(clientId.toString()));
+                .andExpect(jsonPath("$[0].idClient").value(clientId.toString()));
     }
 
     @Test
@@ -130,7 +133,7 @@ class ClientControllerTest {
 
         mockMvc.perform(get("/api/clients/type/{typeClient}", TypeClient.PARTICULIER))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(clientId.toString()));
+                .andExpect(jsonPath("$[0].idClient").value(clientId.toString()));
     }
 
     @Test
@@ -148,7 +151,7 @@ class ClientControllerTest {
         mockMvc.perform(put("/api/clients/{clientId}/solde", clientId)
                         .param("montant", "100.0"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(clientId.toString()));
+                .andExpect(jsonPath("$.idClient").value(clientId.toString()));
     }
 
     @Test

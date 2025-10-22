@@ -1,13 +1,9 @@
 package com.example.account.mapper;
 
-import com.example.account
-.dto.request.BanqueCreateRequest;
-import com.example.account
-.dto.request.BanqueUpdateRequest;
-import com.example.account
-.dto.response.BanqueResponse;
-import com.example.account
-.model.entity.Banque;
+import com.example.account.dto.request.BanqueCreateRequest;
+import com.example.account.dto.request.BanqueUpdateRequest;
+import com.example.account.dto.response.BanqueResponse;
+import com.example.account.model.entity.Banque;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

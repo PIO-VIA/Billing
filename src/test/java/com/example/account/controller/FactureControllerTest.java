@@ -59,6 +59,12 @@ class FactureControllerTest {
         factureResponse.setIdClient(clientId);
 
         factureCreateRequest = new FactureCreateRequest();
+        factureCreateRequest.setNumeroFacture("FAC-2025-001");
+        factureCreateRequest.setDateFacturation(LocalDate.now());
+        factureCreateRequest.setDateEcheance(LocalDate.now().plusDays(30));
+        factureCreateRequest.setEtat(StatutFacture.BROUILLON);
+        factureCreateRequest.setMontantTotal(BigDecimal.valueOf(1000.00));
+        factureCreateRequest.setMontantRestant(BigDecimal.valueOf(1000.00));
         factureCreateRequest.setIdClient(clientId);
 
         factureUpdateRequest = new FactureUpdateRequest();
@@ -72,7 +78,7 @@ class FactureControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(factureCreateRequest)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(factureId.toString()));
+                .andExpect(jsonPath("$.idFacture").value(factureId.toString()));
     }
 
     @Test
@@ -83,7 +89,7 @@ class FactureControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(factureUpdateRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(factureId.toString()));
+                .andExpect(jsonPath("$.idFacture").value(factureId.toString()));
     }
 
     @Test
@@ -92,7 +98,7 @@ class FactureControllerTest {
 
         mockMvc.perform(get("/api/factures/{factureId}", factureId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(factureId.toString()));
+                .andExpect(jsonPath("$.idFacture").value(factureId.toString()));
     }
 
     @Test
@@ -111,7 +117,7 @@ class FactureControllerTest {
 
         mockMvc.perform(get("/api/factures"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(factureId.toString()));
+                .andExpect(jsonPath("$[0].idFacture").value(factureId.toString()));
     }
 
     @Test
@@ -121,7 +127,7 @@ class FactureControllerTest {
 
         mockMvc.perform(get("/api/factures/paginated"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(factureId.toString()));
+                .andExpect(jsonPath("$.content[0].idFacture").value(factureId.toString()));
     }
 
     @Test
@@ -141,7 +147,7 @@ class FactureControllerTest {
 
         mockMvc.perform(get("/api/factures/etat/{etat}", StatutFacture.BROUILLON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(factureId.toString()));
+                .andExpect(jsonPath("$[0].idFacture").value(factureId.toString()));
     }
 
     @Test
@@ -151,7 +157,7 @@ class FactureControllerTest {
 
         mockMvc.perform(get("/api/factures/retard"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(factureId.toString()));
+                .andExpect(jsonPath("$[0].idFacture").value(factureId.toString()));
     }
 
     @Test
@@ -161,7 +167,7 @@ class FactureControllerTest {
 
         mockMvc.perform(get("/api/factures/non-payees"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(factureId.toString()));
+                .andExpect(jsonPath("$[0].idFacture").value(factureId.toString()));
     }
 
     @Test
@@ -175,7 +181,7 @@ class FactureControllerTest {
                         .param("dateDebut", startDate.toString())
                         .param("dateFin", endDate.toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(factureId.toString()));
+                .andExpect(jsonPath("$[0].idFacture").value(factureId.toString()));
     }
 
     @Test
@@ -192,7 +198,7 @@ class FactureControllerTest {
 
         mockMvc.perform(put("/api/factures/{factureId}/marquer-paye", factureId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(factureId.toString()));
+                .andExpect(jsonPath("$.idFacture").value(factureId.toString()));
     }
 
     @Test
@@ -203,7 +209,7 @@ class FactureControllerTest {
         mockMvc.perform(put("/api/factures/{factureId}/paiement", factureId)
                         .param("montantPaye", montant.toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(factureId.toString()));
+                .andExpect(jsonPath("$.idFacture").value(factureId.toString()));
     }
 
     @Test

@@ -1,14 +1,9 @@
-package com.example.account
-.mapper;
+package com.example.account.mapper;
 
-import com.example.account
-.dto.request.FournisseurCreateRequest;
-import com.example.account
-.dto.request.FournisseurUpdateRequest;
-import com.example.account
-.dto.response.FournisseurResponse;
-import com.example.account
-.model.entity.Fournisseur;
+import com.example.account.dto.request.FournisseurCreateRequest;
+import com.example.account.dto.request.FournisseurUpdateRequest;
+import com.example.account.dto.response.FournisseurResponse;
+import com.example.account.model.entity.Fournisseur;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

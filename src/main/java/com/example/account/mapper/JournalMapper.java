@@ -1,14 +1,9 @@
-package com.example.account
-.mapper;
+package com.example.account.mapper;
 
-import com.example.account
-.dto.request.JournalCreateRequest;
-import com.example.account
-.dto.request.JournalUpdateRequest;
-import com.example.account
-.dto.response.JournalResponse;
-import com.example.account
-.model.entity.Journal;
+import com.example.account.dto.request.JournalCreateRequest;
+import com.example.account.dto.request.JournalUpdateRequest;
+import com.example.account.dto.response.JournalResponse;
+import com.example.account.model.entity.Journal;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

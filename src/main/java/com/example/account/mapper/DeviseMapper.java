@@ -1,14 +1,9 @@
-package com.example.account
-.mapper;
+package com.example.account.mapper;
 
-import com.example.account
-.dto.request.DeviseCreateRequest;
-import com.example.account
-.dto.request.DeviseUpdateRequest;
-import com.example.account
-.dto.response.DeviseResponse;
-import com.example.account
-.model.entity.Devise;
+import com.example.account.dto.request.DeviseCreateRequest;
+import com.example.account.dto.request.DeviseUpdateRequest;
+import com.example.account.dto.response.DeviseResponse;
+import com.example.account.model.entity.Devise;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

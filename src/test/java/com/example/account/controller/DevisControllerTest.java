@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.math.BigDecimal;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -56,8 +57,12 @@ class DevisControllerTest {
         devisResponse.setIdClient(clientId);
 
         devisCreateRequest = new DevisCreateRequest();
+        devisCreateRequest.setNumeroDevis("DEV-2025-001");
+        devisCreateRequest.setDateCreation(LocalDate.now());
+        devisCreateRequest.setDateValidite(LocalDate.now().plusDays(30));
+        devisCreateRequest.setStatut(StatutDevis.BROUILLON);
+        devisCreateRequest.setMontantTotal(BigDecimal.valueOf(1000.00));
         devisCreateRequest.setIdClient(clientId);
-        // Initialisez d'autres champs de devisCreateRequest si nécessaire
     }
 
     @Test
@@ -68,7 +73,7 @@ class DevisControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(devisCreateRequest)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(devisId.toString()))
+                .andExpect(jsonPath("$.idDevis").value(devisId.toString()))
                 .andExpect(jsonPath("$.numeroDevis").value("DEV-2025-001"));
     }
 
@@ -80,7 +85,7 @@ class DevisControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(devisCreateRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(devisId.toString()));
+                .andExpect(jsonPath("$.idDevis").value(devisId.toString()));
     }
 
     @Test
@@ -89,7 +94,7 @@ class DevisControllerTest {
 
         mockMvc.perform(get("/api/devis/{devisId}", devisId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(devisId.toString()));
+                .andExpect(jsonPath("$.idDevis").value(devisId.toString()));
     }
 
     @Test
@@ -108,7 +113,7 @@ class DevisControllerTest {
 
         mockMvc.perform(get("/api/devis"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(devisId.toString()));
+                .andExpect(jsonPath("$[0].idDevis").value(devisId.toString()));
     }
 
     @Test
@@ -118,7 +123,7 @@ class DevisControllerTest {
 
         mockMvc.perform(get("/api/devis/paginated"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(devisId.toString()));
+                .andExpect(jsonPath("$.content[0].idDevis").value(devisId.toString()));
     }
 
     @Test
@@ -138,7 +143,7 @@ class DevisControllerTest {
 
         mockMvc.perform(get("/api/devis/statut/{statut}", StatutDevis.ENVOYE))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(devisId.toString()));
+                .andExpect(jsonPath("$[0].idDevis").value(devisId.toString()));
     }
 
     @Test
@@ -148,7 +153,7 @@ class DevisControllerTest {
 
         mockMvc.perform(get("/api/devis/expires"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(devisId.toString()));
+                .andExpect(jsonPath("$[0].idDevis").value(devisId.toString()));
     }
 
     @Test
@@ -162,7 +167,7 @@ class DevisControllerTest {
                         .param("dateDebut", startDate.toString())
                         .param("dateFin", endDate.toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(devisId.toString()));
+                .andExpect(jsonPath("$[0].idDevis").value(devisId.toString()));
     }
 
     @Test
@@ -179,7 +184,7 @@ class DevisControllerTest {
 
         mockMvc.perform(put("/api/devis/{devisId}/accepter", devisId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(devisId.toString()));
+                .andExpect(jsonPath("$.idDevis").value(devisId.toString()));
     }
 
     @Test
@@ -190,6 +195,6 @@ class DevisControllerTest {
         mockMvc.perform(put("/api/devis/{devisId}/refuser", devisId)
                         .param("motifRefus", motif))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(devisId.toString()));
+                .andExpect(jsonPath("$.idDevis").value(devisId.toString()));
     }
 }

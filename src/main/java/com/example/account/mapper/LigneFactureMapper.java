@@ -1,12 +1,8 @@
-package com.example.account
-.mapper;
+package com.example.account.mapper;
 
-import com.example.account
-.dto.request.LigneFactureCreateRequest;
-import com.example.account
-.dto.response.LigneFactureResponse;
-import com.example.account
-.model.entity.LigneFacture;
+import com.example.account.dto.request.LigneFactureCreateRequest;
+import com.example.account.dto.response.LigneFactureResponse;
+import com.example.account.model.entity.LigneFacture;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.NullValuePropertyMappingStrategy;

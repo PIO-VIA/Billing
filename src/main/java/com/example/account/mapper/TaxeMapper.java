@@ -1,14 +1,9 @@
-package com.example.account
-.mapper;
+package com.example.account.mapper;
 
-import com.example.account
-.dto.request.TaxeCreateRequest;
-import com.example.account
-.dto.request.TaxeUpdateRequest;
-import com.example.account
-.dto.response.TaxeResponse;
-import com.example.account
-.model.entity.Taxes;
+import com.example.account.dto.request.TaxeCreateRequest;
+import com.example.account.dto.request.TaxeUpdateRequest;
+import com.example.account.dto.response.TaxeResponse;
+import com.example.account.model.entity.Taxes;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

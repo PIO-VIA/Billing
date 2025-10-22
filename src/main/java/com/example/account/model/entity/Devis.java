@@ -1,7 +1,6 @@
 package com.example.account.model.entity;
 
-import com.example.account
-.model.enums.StatutDevis;
+import com.example.account.model.enums.StatutDevis;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

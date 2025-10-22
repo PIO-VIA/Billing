@@ -1,8 +1,6 @@
-package com.example.account
-.dto.request;
+package com.example.account.dto.request;
 
-import com.example.account
-.model.enums.StatutFacture;
+import com.example.account.model.enums.StatutFacture;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -2,7 +2,7 @@ package com.example.account.model.entity;
 
 import com.example.account.model.enums.TypeClient;
 import lombok.AllArgsConstructor;
-import lombok.*;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import jakarta.persistence.*;

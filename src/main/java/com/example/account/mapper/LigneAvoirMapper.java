@@ -1,12 +1,8 @@
-package com.example.account
-.mapper;
+package com.example.account.mapper;
 
-import com.example.account
-.dto.request.LigneAvoirCreateRequest;
-import com.example.account
-.dto.response.LigneAvoirResponse;
-import com.example.account
-.model.entity.LigneAvoir;
+import com.example.account.dto.request.LigneAvoirCreateRequest;
+import com.example.account.dto.response.LigneAvoirResponse;
+import com.example.account.model.entity.LigneAvoir;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;

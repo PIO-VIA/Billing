@@ -1,14 +1,9 @@
-package com.example.account
-.mapper;
+package com.example.account.mapper;
 
-import com.example.account
-.dto.request.RemboursementCreateRequest;
-import com.example.account
-.dto.request.RemboursementUpdateRequest;
-import com.example.account
-.dto.response.RemboursementResponse;
-import com.example.account
-.model.entity.Remboursement;
+import com.example.account.dto.request.RemboursementCreateRequest;
+import com.example.account.dto.request.RemboursementUpdateRequest;
+import com.example.account.dto.response.RemboursementResponse;
+import com.example.account.model.entity.Remboursement;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

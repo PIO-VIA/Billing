@@ -1,16 +1,10 @@
-package com.example.account
-.mapper;
+package com.example.account.mapper;
 
-import com.example.account
-.dto.request.FactureCreateRequest;
-import com.example.account
-.dto.request.FactureUpdateRequest;
-import com.example.account
-.dto.response.FactureResponse;
-import com.example.account
-.model.entity.Facture;
-import com.example.account
-.model.entity.Client;
+import com.example.account.dto.request.FactureCreateRequest;
+import com.example.account.dto.request.FactureUpdateRequest;
+import com.example.account.dto.response.FactureResponse;
+import com.example.account.model.entity.Facture;
+import com.example.account.model.entity.Client;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

@@ -25,7 +25,6 @@ import java.util.UUID;
 @Slf4j
 @Tag(name = "Client", description = "API de gestion des clients")
 public class ClientController {
-    @Autowired
     private final ClientService clientService;
 
     @PostMapping

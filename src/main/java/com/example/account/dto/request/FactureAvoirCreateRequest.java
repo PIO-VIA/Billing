@@ -1,10 +1,7 @@
-package com.example.account
-.dto.request;
+package com.example.account.dto.request;
 
-import com.example.account
-.model.enums.StatutAvoir;
-import com.example.account
-.model.enums.TypeAvoir;
+import com.example.account.model.enums.StatutAvoir;
+import com.example.account.model.enums.TypeAvoir;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

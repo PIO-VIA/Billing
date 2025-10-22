@@ -1,12 +1,8 @@
-package com.example.account
-.mapper;
+package com.example.account.mapper;
 
-import com.example.account
-.dto.request.DevisCreateRequest;
-import com.example.account
-.dto.response.DevisResponse;
-import com.example.account
-.model.entity.Devis;
+import com.example.account.dto.request.DevisCreateRequest;
+import com.example.account.dto.response.DevisResponse;
+import com.example.account.model.entity.Devis;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

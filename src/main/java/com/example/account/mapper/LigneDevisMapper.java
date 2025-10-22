@@ -1,12 +1,8 @@
-package com.example.account
-.mapper;
+package com.example.account.mapper;
 
-import com.example.account
-.dto.request.LigneDevisCreateRequest;
-import com.example.account
-.dto.response.LigneDevisResponse;
-import com.example.account
-.model.entity.LigneDevis;
+import com.example.account.dto.request.LigneDevisCreateRequest;
+import com.example.account.dto.response.LigneDevisResponse;
+import com.example.account.model.entity.LigneDevis;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;

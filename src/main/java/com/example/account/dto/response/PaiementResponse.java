@@ -1,8 +1,6 @@
-package com.example.account
-.dto.response;
+package com.example.account.dto.response;
 
-import com.example.account
-.model.enums.TypePaiement;
+import com.example.account.model.enums.TypePaiement;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

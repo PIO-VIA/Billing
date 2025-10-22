@@ -1,14 +1,9 @@
-package com.example.account
-.mapper;
+package com.example.account.mapper;
 
-import com.example.account
-.dto.request.PaiementCreateRequest;
-import com.example.account
-.dto.request.PaiementUpdateRequest;
-import com.example.account
-.dto.response.PaiementResponse;
-import com.example.account
-.model.entity.Paiement;
+import com.example.account.dto.request.PaiementCreateRequest;
+import com.example.account.dto.request.PaiementUpdateRequest;
+import com.example.account.dto.response.PaiementResponse;
+import com.example.account.model.entity.Paiement;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

@@ -1,8 +1,6 @@
-package com.example.account
-.dto.request;
+package com.example.account.dto.request;
 
-import com.example.account
-.model.enums.TypeClient;
+import com.example.account.model.enums.TypeClient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

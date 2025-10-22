@@ -3,6 +3,7 @@ package com.example.account.controller;
 import com.example.account.dto.request.FournisseurCreateRequest;
 import com.example.account.dto.request.FournisseurUpdateRequest;
 import com.example.account.dto.response.FournisseurResponse;
+import com.example.account.model.enums.TypeClient;
 import com.example.account.service.FournisseurService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +53,9 @@ class FournisseurControllerTest {
 
         fournisseurCreateRequest = new FournisseurCreateRequest();
         fournisseurCreateRequest.setUsername("fournisseur_test");
+        fournisseurCreateRequest.setCategorie("IT");
+        fournisseurCreateRequest.setAdresse("123 Supplier Street");
+        fournisseurCreateRequest.setTypeFournisseur(TypeClient.ENTREPRISE);
         fournisseurCreateRequest.setEmail("fournisseur@example.com");
 
         fournisseurUpdateRequest = new FournisseurUpdateRequest();
@@ -66,7 +70,7 @@ class FournisseurControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(fournisseurCreateRequest)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(fournisseurId.toString()))
+                .andExpect(jsonPath("$.idFournisseur").value(fournisseurId.toString()))
                 .andExpect(jsonPath("$.username").value("fournisseur_test"));
     }
 
@@ -78,7 +82,7 @@ class FournisseurControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(fournisseurUpdateRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(fournisseurId.toString()));
+                .andExpect(jsonPath("$.idFournisseur").value(fournisseurId.toString()));
     }
 
     @Test
@@ -87,7 +91,7 @@ class FournisseurControllerTest {
 
         mockMvc.perform(get("/api/fournisseurs/{fournisseurId}", fournisseurId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(fournisseurId.toString()));
+                .andExpect(jsonPath("$.idFournisseur").value(fournisseurId.toString()));
     }
 
     @Test
@@ -106,7 +110,7 @@ class FournisseurControllerTest {
 
         mockMvc.perform(get("/api/fournisseurs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(fournisseurId.toString()));
+                .andExpect(jsonPath("$[0].idFournisseur").value(fournisseurId.toString()));
     }
 
     @Test
@@ -116,7 +120,7 @@ class FournisseurControllerTest {
 
         mockMvc.perform(get("/api/fournisseurs/actifs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(fournisseurId.toString()));
+                .andExpect(jsonPath("$[0].idFournisseur").value(fournisseurId.toString()));
     }
 
     @Test
@@ -126,7 +130,7 @@ class FournisseurControllerTest {
 
         mockMvc.perform(get("/api/fournisseurs/categorie/{categorie}", "IT"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(fournisseurId.toString()));
+                .andExpect(jsonPath("$[0].idFournisseur").value(fournisseurId.toString()));
     }
 
     @Test
@@ -144,7 +148,7 @@ class FournisseurControllerTest {
         mockMvc.perform(put("/api/fournisseurs/{fournisseurId}/solde", fournisseurId)
                         .param("montant", "250.0"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(fournisseurId.toString()));
+                .andExpect(jsonPath("$.idFournisseur").value(fournisseurId.toString()));
     }
 
     @Test
@@ -153,7 +157,7 @@ class FournisseurControllerTest {
 
         mockMvc.perform(put("/api/fournisseurs/{fournisseurId}/desactiver", fournisseurId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(fournisseurId.toString()));
+                .andExpect(jsonPath("$.idFournisseur").value(fournisseurId.toString()));
     }
 
     @Test
@@ -162,7 +166,7 @@ class FournisseurControllerTest {
 
         mockMvc.perform(put("/api/fournisseurs/{fournisseurId}/activer", fournisseurId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(fournisseurId.toString()));
+                .andExpect(jsonPath("$.idFournisseur").value(fournisseurId.toString()));
     }
 
     @Test

@@ -65,6 +65,9 @@ class PaiementControllerTest {
         paiementCreateRequest.setIdClient(clientId);
         paiementCreateRequest.setIdFacture(factureId);
         paiementCreateRequest.setMontant(new BigDecimal("150.00"));
+        paiementCreateRequest.setDate(LocalDate.now());
+        paiementCreateRequest.setJournal("BANQUE");
+        paiementCreateRequest.setModePaiement(TypePaiement.CARTE_BANCAIRE);
 
         paiementUpdateRequest = new PaiementUpdateRequest();
         paiementUpdateRequest.setMontant(new BigDecimal("200.00"));
@@ -78,7 +81,7 @@ class PaiementControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(paiementCreateRequest)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(paiementId.toString()));
+                .andExpect(jsonPath("$.idPaiement").value(paiementId.toString()));
     }
 
     @Test
@@ -89,7 +92,7 @@ class PaiementControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(paiementUpdateRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(paiementId.toString()));
+                .andExpect(jsonPath("$.idPaiement").value(paiementId.toString()));
     }
 
     @Test
@@ -98,7 +101,7 @@ class PaiementControllerTest {
 
         mockMvc.perform(get("/api/paiements/{paiementId}", paiementId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(paiementId.toString()));
+                .andExpect(jsonPath("$.idPaiement").value(paiementId.toString()));
     }
 
     @Test
@@ -108,7 +111,7 @@ class PaiementControllerTest {
 
         mockMvc.perform(get("/api/paiements"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(paiementId.toString()));
+                .andExpect(jsonPath("$[0].idPaiement").value(paiementId.toString()));
     }
 
     @Test
@@ -118,7 +121,7 @@ class PaiementControllerTest {
 
         mockMvc.perform(get("/api/paiements/paginated"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(paiementId.toString()));
+                .andExpect(jsonPath("$.content[0].idPaiement").value(paiementId.toString()));
     }
 
     @Test
@@ -148,7 +151,7 @@ class PaiementControllerTest {
 
         mockMvc.perform(get("/api/paiements/mode/{modePaiement}", TypePaiement.CARTE_BANCAIRE))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(paiementId.toString()));
+                .andExpect(jsonPath("$[0].idPaiement").value(paiementId.toString()));
     }
 
     @Test
@@ -162,7 +165,7 @@ class PaiementControllerTest {
                         .param("dateDebut", startDate.toString())
                         .param("dateFin", endDate.toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(paiementId.toString()));
+                .andExpect(jsonPath("$[0].idPaiement").value(paiementId.toString()));
     }
 
     @Test

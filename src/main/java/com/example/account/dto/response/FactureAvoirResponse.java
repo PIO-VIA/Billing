@@ -1,10 +1,7 @@
-package com.example.account
-.dto.response;
+package com.example.account.dto.response;
 
-import com.example.account
-.model.enums.StatutAvoir;
-import com.example.account
-.model.enums.TypeAvoir;
+import com.example.account.model.enums.StatutAvoir;
+import com.example.account.model.enums.TypeAvoir;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

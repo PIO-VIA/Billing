@@ -1,8 +1,6 @@
-package com.example.account
-.dto.request;
+package com.example.account.dto.request;
 
-import com.example.account
-.model.enums.StatutDevis;
+import com.example.account.model.enums.StatutDevis;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
