@@ -59,12 +59,9 @@ class FactureControllerTest {
         factureResponse.setIdClient(clientId);
 
         factureCreateRequest = new FactureCreateRequest();
-        factureCreateRequest.setNumeroFacture("FAC-2025-001");
         factureCreateRequest.setDateFacturation(LocalDate.now());
         factureCreateRequest.setDateEcheance(LocalDate.now().plusDays(30));
         factureCreateRequest.setEtat(StatutFacture.BROUILLON);
-        factureCreateRequest.setMontantTotal(BigDecimal.valueOf(1000.00));
-        factureCreateRequest.setMontantRestant(BigDecimal.valueOf(1000.00));
         factureCreateRequest.setIdClient(clientId);
 
         factureUpdateRequest = new FactureUpdateRequest();

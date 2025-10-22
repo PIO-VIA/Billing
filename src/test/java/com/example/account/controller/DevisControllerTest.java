@@ -57,11 +57,9 @@ class DevisControllerTest {
         devisResponse.setIdClient(clientId);
 
         devisCreateRequest = new DevisCreateRequest();
-        devisCreateRequest.setNumeroDevis("DEV-2025-001");
         devisCreateRequest.setDateCreation(LocalDate.now());
         devisCreateRequest.setDateValidite(LocalDate.now().plusDays(30));
         devisCreateRequest.setStatut(StatutDevis.BROUILLON);
-        devisCreateRequest.setMontantTotal(BigDecimal.valueOf(1000.00));
         devisCreateRequest.setIdClient(clientId);
     }
 
