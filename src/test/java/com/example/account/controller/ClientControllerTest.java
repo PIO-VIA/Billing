@@ -50,14 +50,13 @@ class ClientControllerTest {
     void setUp() {
         clientId = UUID.randomUUID();
         clientResponse = new ClientResponse();
-        clientResponse.setId(clientId);
+        clientResponse.setIdClient(clientId);
         clientResponse.setUsername("testuser");
         clientResponse.setEmail("test@example.com");
 
         clientCreateRequest = new ClientCreateRequest();
         clientCreateRequest.setUsername("testuser");
         clientCreateRequest.setEmail("test@example.com");
-        clientCreateRequest.setPassword("password");
 
         clientUpdateRequest = new ClientUpdateRequest();
         clientUpdateRequest.setEmail("newemail@example.com");

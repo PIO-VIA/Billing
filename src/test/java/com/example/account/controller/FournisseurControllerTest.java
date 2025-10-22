@@ -46,7 +46,7 @@ class FournisseurControllerTest {
         fournisseurId = UUID.randomUUID();
 
         fournisseurResponse = new FournisseurResponse();
-        fournisseurResponse.setId(fournisseurId);
+        fournisseurResponse.setIdFournisseur(fournisseurId);
         fournisseurResponse.setUsername("fournisseur_test");
         fournisseurResponse.setEmail("fournisseur@example.com");
 

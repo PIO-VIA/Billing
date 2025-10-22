@@ -54,7 +54,7 @@ class FactureControllerTest {
         clientId = UUID.randomUUID();
 
         factureResponse = new FactureResponse();
-        factureResponse.setId(factureId);
+        factureResponse.setIdFacture(factureId);
         factureResponse.setNumeroFacture("FAC-2025-001");
         factureResponse.setIdClient(clientId);
 
@@ -137,9 +137,9 @@ class FactureControllerTest {
     @Test
     void getFacturesByEtat_shouldReturnFactureList() throws Exception {
         List<FactureResponse> factures = Collections.singletonList(factureResponse);
-        when(factureService.getFacturesByEtat(StatutFacture.NON_PAYEE)).thenReturn(factures);
+        when(factureService.getFacturesByEtat(StatutFacture.BROUILLON)).thenReturn(factures);
 
-        mockMvc.perform(get("/api/factures/etat/{etat}", StatutFacture.NON_PAYEE))
+        mockMvc.perform(get("/api/factures/etat/{etat}", StatutFacture.BROUILLON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(factureId.toString()));
     }
@@ -208,9 +208,9 @@ class FactureControllerTest {
 
     @Test
     void countByEtat_shouldReturnCount() throws Exception {
-        when(factureService.countByEtat(StatutFacture.PAYEE)).thenReturn(10L);
+        when(factureService.countByEtat(StatutFacture.PAYE)).thenReturn(10L);
 
-        mockMvc.perform(get("/api/factures/count/etat/{etat}", StatutFacture.PAYEE))
+        mockMvc.perform(get("/api/factures/count/etat/{etat}", StatutFacture.PAYE))
                 .andExpect(status().isOk())
                 .andExpect(content().string("10"));
     }

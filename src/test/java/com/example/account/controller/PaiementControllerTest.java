@@ -56,7 +56,7 @@ class PaiementControllerTest {
         factureId = UUID.randomUUID();
 
         paiementResponse = new PaiementResponse();
-        paiementResponse.setId(paiementId);
+        paiementResponse.setIdPaiement(paiementId);
         paiementResponse.setIdClient(clientId);
         paiementResponse.setIdFacture(factureId);
         paiementResponse.setMontant(new BigDecimal("150.00"));

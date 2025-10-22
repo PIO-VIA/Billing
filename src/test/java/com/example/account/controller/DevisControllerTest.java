@@ -51,7 +51,7 @@ class DevisControllerTest {
         clientId = UUID.randomUUID();
 
         devisResponse = new DevisResponse();
-        devisResponse.setId(devisId);
+        devisResponse.setIdDevis(devisId);
         devisResponse.setNumeroDevis("DEV-2025-001");
         devisResponse.setIdClient(clientId);
 
@@ -134,9 +134,9 @@ class DevisControllerTest {
     @Test
     void getDevisByStatut_shouldReturnDevisList() throws Exception {
         List<DevisResponse> devisList = Collections.singletonList(devisResponse);
-        when(devisService.getDevisByStatut(StatutDevis.EN_ATTENTE)).thenReturn(devisList);
+        when(devisService.getDevisByStatut(StatutDevis.ENVOYE)).thenReturn(devisList);
 
-        mockMvc.perform(get("/api/devis/statut/{statut}", StatutDevis.EN_ATTENTE))
+        mockMvc.perform(get("/api/devis/statut/{statut}", StatutDevis.ENVOYE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(devisId.toString()));
     }
