@@ -16,8 +16,9 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "plan_tresorerie")
-@Index(name = "idx_tresorerie_periode", columnList = "annee, mois")
+@Table(name = "plan_tresorerie", indexes = {
+    @Index(name = "idx_tresorerie_periode", columnList = "annee, mois")
+})
 public class PlanTresorerie {
 
     @Id

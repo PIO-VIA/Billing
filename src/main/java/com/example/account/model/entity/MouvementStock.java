@@ -15,10 +15,11 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "mouvements_stock")
-@Index(name = "idx_mouvement_produit", columnList = "id_produit")
-@Index(name = "idx_mouvement_date", columnList = "date_mouvement")
-@Index(name = "idx_mouvement_type", columnList = "type_mouvement")
+@Table(name = "mouvements_stock", indexes = {
+    @Index(name = "idx_mouvement_produit", columnList = "id_produit"),
+    @Index(name = "idx_mouvement_date", columnList = "date_mouvement"),
+    @Index(name = "idx_mouvement_type", columnList = "type_mouvement")
+})
 public class MouvementStock {
 
     @Id
