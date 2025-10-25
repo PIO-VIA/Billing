@@ -43,7 +43,8 @@ public interface ProduitRepository extends JpaRepository<Produit, UUID> {
     @Query("SELECT COUNT(p) FROM Produit p WHERE p.typeProduit = ?1")
     Long countByTypeProduit(String typeProduit);
 
+    @Query("SELECT COUNT(p) FROM Produit p WHERE p.active = ?1")
+    Long countByActive(Boolean active);
+
     boolean existsByReference(String reference);
-
-
 }
