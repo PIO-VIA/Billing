@@ -1,5 +1,9 @@
 package com.example.account.service;
 
+import com.example.account.dto.request.ProduitCreateRequest;
+import com.example.account.dto.request.ProduitUpdateRequest;
+import com.example.account.dto.response.ProduitResponse;
+import com.example.account.mapper.ProduitMapper;
 import com.example.account.model.entity.Produit;
 import com.example.account.repository.ProduitRepository;
 import com.example.account.service.producer.ProduitEventProducer;
@@ -22,124 +26,124 @@ public class ProduitService {
 
     private final ProduitRepository produitRepository;
     private final ProduitEventProducer produitEventProducer;
+    private final ProduitMapper produitMapper;
 
     @Transactional
-    public Produit createProduit(Produit produit) {
-        log.info("Création d'un nouveau produit: {}", produit.getNomProduit());
+    public ProduitResponse createProduit(ProduitCreateRequest request) {
+        log.info("Création d'un nouveau produit: {}", request.getNomProduit());
 
         // Vérifications
-        if (produit.getReference() != null && produitRepository.existsByReference(produit.getReference())) {
+        if (request.getReference() != null && produitRepository.existsByReference(request.getReference())) {
             throw new IllegalArgumentException("Un produit avec cette référence existe déjà");
         }
 
-        // Définir les timestamps
-        produit.setIdProduit(UUID.randomUUID());
-        produit.setCreatedAt(LocalDateTime.now());
-        produit.setUpdatedAt(LocalDateTime.now());
-
         // Créer et sauvegarder le produit
+        Produit produit = produitMapper.toEntity(request);
         Produit savedProduit = produitRepository.save(produit);
+        ProduitResponse response = produitMapper.toResponse(savedProduit);
 
         // Publier l'événement
-        produitEventProducer.publishProduitCreated(savedProduit);
+        produitEventProducer.publishProduitCreated(response);
 
         log.info("Produit créé avec succès: {}", savedProduit.getIdProduit());
-        return savedProduit;
+        return response;
     }
 
     @Transactional
-    public Produit updateProduit(UUID produitId, Produit produitDetails) {
+    public ProduitResponse updateProduit(UUID produitId, ProduitUpdateRequest request) {
         log.info("Mise à jour du produit: {}", produitId);
 
         Produit produit = produitRepository.findById(produitId)
                 .orElseThrow(() -> new IllegalArgumentException("Produit non trouvé: " + produitId));
 
-        // Mise à jour des champs
-        if (produitDetails.getNomProduit() != null) produit.setNomProduit(produitDetails.getNomProduit());
-        if (produitDetails.getTypeProduit() != null) produit.setTypeProduit(produitDetails.getTypeProduit());
-        if (produitDetails.getPrixVente() != null) produit.setPrixVente(produitDetails.getPrixVente());
-        if (produitDetails.getCout() != null) produit.setCout(produitDetails.getCout());
-        if (produitDetails.getCategorie() != null) produit.setCategorie(produitDetails.getCategorie());
-        if (produitDetails.getReference() != null) produit.setReference(produitDetails.getReference());
-        if (produitDetails.getCodeBarre() != null) produit.setCodeBarre(produitDetails.getCodeBarre());
-        if (produitDetails.getPhoto() != null) produit.setPhoto(produitDetails.getPhoto());
-        if (produitDetails.getActive() != null) produit.setActive(produitDetails.getActive());
-
-        produit.setUpdatedAt(LocalDateTime.now());
-
+        // Mise à jour
+        produitMapper.updateEntityFromRequest(request, produit);
         Produit updatedProduit = produitRepository.save(produit);
+        ProduitResponse response = produitMapper.toResponse(updatedProduit);
 
         // Publier l'événement
-        produitEventProducer.publishProduitUpdated(updatedProduit);
+        produitEventProducer.publishProduitUpdated(response);
 
         log.info("Produit mis à jour avec succès: {}", produitId);
-        return updatedProduit;
+        return response;
     }
 
     @Transactional(readOnly = true)
-    public Produit getProduitById(UUID produitId) {
+    public ProduitResponse getProduitById(UUID produitId) {
         log.info("Récupération du produit: {}", produitId);
 
-        return produitRepository.findById(produitId)
+        Produit produit = produitRepository.findById(produitId)
                 .orElseThrow(() -> new IllegalArgumentException("Produit non trouvé: " + produitId));
+
+        return produitMapper.toResponse(produit);
     }
 
     @Transactional(readOnly = true)
-    public Produit getProduitByReference(String reference) {
+    public ProduitResponse getProduitByReference(String reference) {
         log.info("Récupération du produit par référence: {}", reference);
 
-        return produitRepository.findByReference(reference)
+        Produit produit = produitRepository.findByReference(reference)
                 .orElseThrow(() -> new IllegalArgumentException("Produit non trouvé avec référence: " + reference));
+
+        return produitMapper.toResponse(produit);
     }
 
     @Transactional(readOnly = true)
-    public Produit getProduitByCodeBarre(String codeBarre) {
+    public ProduitResponse getProduitByCodeBarre(String codeBarre) {
         log.info("Récupération du produit par code-barre: {}", codeBarre);
 
-        return produitRepository.findByCodeBarre(codeBarre)
+        Produit produit = produitRepository.findByCodeBarre(codeBarre)
                 .orElseThrow(() -> new IllegalArgumentException("Produit non trouvé avec code-barre: " + codeBarre));
+
+        return produitMapper.toResponse(produit);
     }
 
     @Transactional(readOnly = true)
-    public List<Produit> getAllProduits() {
+    public List<ProduitResponse> getAllProduits() {
         log.info("Récupération de tous les produits");
-        return produitRepository.findAll();
+        List<Produit> produits = produitRepository.findAll();
+        return produitMapper.toResponseList(produits);
     }
 
     @Transactional(readOnly = true)
-    public Page<Produit> getAllProduits(Pageable pageable) {
+    public Page<ProduitResponse> getAllProduits(Pageable pageable) {
         log.info("Récupération de tous les produits avec pagination");
-        return produitRepository.findAll(pageable);
+        return produitRepository.findAll(pageable).map(produitMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<Produit> getActiveProduits() {
+    public List<ProduitResponse> getActiveProduits() {
         log.info("Récupération des produits actifs");
-        return produitRepository.findAllActiveProducts();
+        List<Produit> produits = produitRepository.findAllActiveProducts();
+        return produitMapper.toResponseList(produits);
     }
 
     @Transactional(readOnly = true)
-    public List<Produit> getProduitsByCategorie(String categorie) {
+    public List<ProduitResponse> getProduitsByCategorie(String categorie) {
         log.info("Récupération des produits par catégorie: {}", categorie);
-        return produitRepository.findByCategorie(categorie);
+        List<Produit> produits = produitRepository.findByCategorie(categorie);
+        return produitMapper.toResponseList(produits);
     }
 
     @Transactional(readOnly = true)
-    public List<Produit> getProduitsByType(String typeProduit) {
+    public List<ProduitResponse> getProduitsByType(String typeProduit) {
         log.info("Récupération des produits par type: {}", typeProduit);
-        return produitRepository.findByTypeProduit(typeProduit);
+        List<Produit> produits = produitRepository.findByTypeProduit(typeProduit);
+        return produitMapper.toResponseList(produits);
     }
 
     @Transactional(readOnly = true)
-    public List<Produit> searchProduitsByNom(String nomProduit) {
+    public List<ProduitResponse> searchProduitsByNom(String nomProduit) {
         log.info("Recherche des produits par nom: {}", nomProduit);
-        return produitRepository.findByNomProduitContaining(nomProduit);
+        List<Produit> produits = produitRepository.findByNomProduitContaining(nomProduit);
+        return produitMapper.toResponseList(produits);
     }
 
     @Transactional(readOnly = true)
-    public List<Produit> getProduitsByPriceRange(BigDecimal minPrice, BigDecimal maxPrice) {
+    public List<ProduitResponse> getProduitsByPriceRange(BigDecimal minPrice, BigDecimal maxPrice) {
         log.info("Récupération des produits entre {} et {}", minPrice, maxPrice);
-        return produitRepository.findByPrixVenteBetween(minPrice, maxPrice);
+        List<Produit> produits = produitRepository.findByPrixVenteBetween(minPrice, maxPrice);
+        return produitMapper.toResponseList(produits);
     }
 
     @Transactional
@@ -159,7 +163,7 @@ public class ProduitService {
     }
 
     @Transactional
-    public Produit desactiverProduit(UUID produitId) {
+    public ProduitResponse desactiverProduit(UUID produitId) {
         log.info("Désactivation du produit: {}", produitId);
 
         Produit produit = produitRepository.findById(produitId)
@@ -168,11 +172,12 @@ public class ProduitService {
         produit.setActive(false);
         produit.setUpdatedAt(LocalDateTime.now());
 
-        return produitRepository.save(produit);
+        Produit savedProduit = produitRepository.save(produit);
+        return produitMapper.toResponse(savedProduit);
     }
 
     @Transactional
-    public Produit activerProduit(UUID produitId) {
+    public ProduitResponse activerProduit(UUID produitId) {
         log.info("Activation du produit: {}", produitId);
 
         Produit produit = produitRepository.findById(produitId)
@@ -181,7 +186,8 @@ public class ProduitService {
         produit.setActive(true);
         produit.setUpdatedAt(LocalDateTime.now());
 
-        return produitRepository.save(produit);
+        Produit savedProduit = produitRepository.save(produit);
+        return produitMapper.toResponse(savedProduit);
     }
 
     @Transactional(readOnly = true)
