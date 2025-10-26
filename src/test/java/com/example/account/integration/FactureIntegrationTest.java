@@ -68,14 +68,11 @@ class FactureIntegrationTest {
         // Créer un client de test pour chaque test
         testClient = Client.builder()
                 .username("client-test-" + System.currentTimeMillis())
-                .nom("Dupont")
-                .prenom("Jean")
+
                 .email("jean.dupont@test.com")
                 .telephone("0123456789")
                 .adresse("123 Rue de Test")
-                .ville("Paris")
-                .codePostal("75001")
-                .pays("France")
+
                 .actif(true)
                 .soldeCourant(0.0)
                 .build();

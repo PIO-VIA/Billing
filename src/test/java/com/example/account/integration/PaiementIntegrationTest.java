@@ -111,11 +111,9 @@ class PaiementIntegrationTest {
         PaiementCreateRequest request = PaiementCreateRequest.builder()
                 .idFacture(testFacture.getIdFacture())
                 .idClient(testClient.getIdClient())
-                .montantPaye(new BigDecimal("500.00"))
-                .datePaiement(LocalDate.now())
-                .typePaiement(TypePaiement.VIREMENT)
-                .referenceTransaction("VIREMENT-123456")
-                .notes("Paiement partiel")
+                .montant(new BigDecimal("500.00"))
+                .date(LocalDate.now())
+                .modePaiement(TypePaiement.VIREMENT)
                 .build();
 
         // When
@@ -126,9 +124,8 @@ class PaiementIntegrationTest {
                 // Then
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.idPaiement").exists())
-                .andExpect(jsonPath("$.montantPaye").value(500.00))
-                .andExpect(jsonPath("$.typePaiement").value("VIREMENT"))
-                .andExpect(jsonPath("$.referenceTransaction").value("VIREMENT-123456"))
+                .andExpect(jsonPath("$.montant").value(500.00))
+                .andExpect(jsonPath("$.modePaiement").value("VIREMENT"))
                 .andReturn();
 
         // Vérifier en base
@@ -138,8 +135,8 @@ class PaiementIntegrationTest {
         );
 
         Paiement paiementInDb = paiementRepository.findById(response.getIdPaiement()).orElseThrow();
-        assertThat(paiementInDb.getMontantPaye()).isEqualByComparingTo(new BigDecimal("500.00"));
-        assertThat(paiementInDb.getTypePaiement()).isEqualTo(TypePaiement.VIREMENT);
+        assertThat(paiementInDb.getMontant()).isEqualByComparingTo(new BigDecimal("500.00"));
+        assertThat(paiementInDb.getModePaiement()).isEqualTo(TypePaiement.VIREMENT);
         assertThat(paiementInDb.getIdFacture()).isEqualTo(testFacture.getIdFacture());
     }
 
@@ -155,10 +152,9 @@ class PaiementIntegrationTest {
         PaiementCreateRequest request = PaiementCreateRequest.builder()
                 .idFacture(testFacture.getIdFacture())
                 .idClient(testClient.getIdClient())
-                .montantPaye(new BigDecimal("1000.00"))
-                .datePaiement(LocalDate.now())
-                .typePaiement(TypePaiement.CARTE_BANCAIRE)
-                .referenceTransaction("CB-789012")
+                .montant(new BigDecimal("1000.00"))
+                .date(LocalDate.now())
+                .modePaiement(TypePaiement.CARTE_BANCAIRE)
                 .build();
 
         // When & Then
@@ -167,8 +163,8 @@ class PaiementIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.montantPaye").value(1000.00))
-                .andExpect(jsonPath("$.typePaiement").value("CARTE_BANCAIRE"));
+                .andExpect(jsonPath("$.montant").value(1000.00))
+                .andExpect(jsonPath("$.modePaiement").value("CARTE_BANCAIRE"));
     }
 
     /**
@@ -184,9 +180,10 @@ class PaiementIntegrationTest {
             paiementRepository.save(Paiement.builder()
                     .idFacture(testFacture.getIdFacture())
                     .idClient(testClient.getIdClient())
-                    .montantPaye(new BigDecimal("100.00"))
-                    .datePaiement(LocalDate.now())
-                    .typePaiement(TypePaiement.ESPECES)
+                    .montant(new BigDecimal("100.00"))
+                    .date(LocalDate.now())
+                    .modePaiement(TypePaiement.ESPECES)
+                    .journal("TEST")
                     .build());
         }
 
@@ -211,17 +208,19 @@ class PaiementIntegrationTest {
         paiementRepository.save(Paiement.builder()
                 .idFacture(testFacture.getIdFacture())
                 .idClient(testClient.getIdClient())
-                .montantPaye(new BigDecimal("250.00"))
-                .datePaiement(LocalDate.now())
-                .typePaiement(TypePaiement.CHEQUE)
+                .montant(new BigDecimal("250.00"))
+                .date(LocalDate.now())
+                .modePaiement(TypePaiement.CHEQUE)
+                .journal("TEST")
                 .build());
 
         paiementRepository.save(Paiement.builder()
                 .idFacture(testFacture.getIdFacture())
                 .idClient(testClient.getIdClient())
-                .montantPaye(new BigDecimal("750.00"))
-                .datePaiement(LocalDate.now())
-                .typePaiement(TypePaiement.VIREMENT)
+                .montant(new BigDecimal("750.00"))
+                .date(LocalDate.now())
+                .modePaiement(TypePaiement.VIREMENT)
+                .journal("TEST")
                 .build());
 
         // When & Then
@@ -245,10 +244,10 @@ class PaiementIntegrationTest {
         Paiement paiement = paiementRepository.save(Paiement.builder()
                 .idFacture(testFacture.getIdFacture())
                 .idClient(testClient.getIdClient())
-                .montantPaye(new BigDecimal("600.00"))
-                .datePaiement(LocalDate.now())
-                .typePaiement(TypePaiement.VIREMENT)
-                .referenceTransaction("REF-12345")
+                .montant(new BigDecimal("600.00"))
+                .date(LocalDate.now())
+                .modePaiement(TypePaiement.VIREMENT)
+                .journal("TEST")
                 .build());
 
         // When & Then
@@ -256,7 +255,7 @@ class PaiementIntegrationTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.idPaiement").value(paiement.getIdPaiement().toString()))
-                .andExpect(jsonPath("$.montantPaye").value(600.00))
+                .andExpect(jsonPath("$.montant").value(600.00))
                 .andExpect(jsonPath("$.referenceTransaction").value("REF-12345"));
     }
 
@@ -272,17 +271,17 @@ class PaiementIntegrationTest {
         paiementRepository.save(Paiement.builder()
                 .idFacture(testFacture.getIdFacture())
                 .idClient(testClient.getIdClient())
-                .montantPaye(new BigDecimal("100.00"))
-                .datePaiement(LocalDate.now())
-                .typePaiement(TypePaiement.ESPECES)
+                .montant(new BigDecimal("100.00"))
+                .date(LocalDate.now())
+                .modePaiement(TypePaiement.ESPECES)
                 .build());
 
         paiementRepository.save(Paiement.builder()
                 .idFacture(testFacture.getIdFacture())
                 .idClient(testClient.getIdClient())
-                .montantPaye(new BigDecimal("200.00"))
-                .datePaiement(LocalDate.now())
-                .typePaiement(TypePaiement.CARTE_BANCAIRE)
+                .montant(new BigDecimal("200.00"))
+                .date(LocalDate.now())
+                .modePaiement(TypePaiement.CARTE_BANCAIRE)
                 .build());
 
         // When & Then
@@ -290,7 +289,7 @@ class PaiementIntegrationTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].typePaiement").value("ESPECES"));
+                .andExpect(jsonPath("$[0].modePaiement").value("ESPECES"));
     }
 
     /**
@@ -305,9 +304,9 @@ class PaiementIntegrationTest {
         Paiement paiement = paiementRepository.save(Paiement.builder()
                 .idFacture(testFacture.getIdFacture())
                 .idClient(testClient.getIdClient())
-                .montantPaye(new BigDecimal("50.00"))
-                .datePaiement(LocalDate.now())
-                .typePaiement(TypePaiement.ESPECES)
+                .montant(new BigDecimal("50.00"))
+                .date(LocalDate.now())
+                .modePaiement(TypePaiement.ESPECES)
                 .build());
 
         UUID paiementId = paiement.getIdPaiement();
@@ -346,9 +345,9 @@ class PaiementIntegrationTest {
         PaiementCreateRequest paiement1 = PaiementCreateRequest.builder()
                 .idFacture(factureId)
                 .idClient(testClient.getIdClient())
-                .montantPaye(new BigDecimal("300.00"))
-                .datePaiement(LocalDate.now())
-                .typePaiement(TypePaiement.VIREMENT)
+                .montant(new BigDecimal("300.00"))
+                .date(LocalDate.now())
+                .modePaiement(TypePaiement.VIREMENT)
                 .build();
 
         mockMvc.perform(post("/api/paiements")
@@ -367,9 +366,9 @@ class PaiementIntegrationTest {
         PaiementCreateRequest paiement2 = PaiementCreateRequest.builder()
                 .idFacture(factureId)
                 .idClient(testClient.getIdClient())
-                .montantPaye(new BigDecimal("400.00"))
-                .datePaiement(LocalDate.now())
-                .typePaiement(TypePaiement.CARTE_BANCAIRE)
+                .montant(new BigDecimal("400.00"))
+                .date(LocalDate.now())
+                .modePaiement(TypePaiement.CARTE_BANCAIRE)
                 .build();
 
         mockMvc.perform(post("/api/paiements")
@@ -387,9 +386,9 @@ class PaiementIntegrationTest {
         PaiementCreateRequest paiement3 = PaiementCreateRequest.builder()
                 .idFacture(factureId)
                 .idClient(testClient.getIdClient())
-                .montantPaye(new BigDecimal("300.00"))
-                .datePaiement(LocalDate.now())
-                .typePaiement(TypePaiement.CHEQUE)
+                .montant(new BigDecimal("300.00"))
+                .date(LocalDate.now())
+                .modePaiement(TypePaiement.CHEQUE)
                 .build();
 
         mockMvc.perform(post("/api/paiements")
@@ -409,7 +408,7 @@ class PaiementIntegrationTest {
 
         // Vérifier le total payé
         BigDecimal totalPaye = paiements.stream()
-                .map(Paiement::getMontantPaye)
+                .map(Paiement::getMontant)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         assertThat(totalPaye).isEqualByComparingTo(new BigDecimal("1000.00"));
 

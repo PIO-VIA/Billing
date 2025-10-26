@@ -59,14 +59,11 @@ class ClientIntegrationTest {
         // Given
         ClientCreateRequest request = ClientCreateRequest.builder()
                 .username("jean.dupont")
-                .nom("Dupont")
-                .prenom("Jean")
+
                 .email("jean.dupont@example.com")
                 .telephone("0123456789")
                 .adresse("123 Rue de la Paix")
-                .ville("Paris")
-                .codePostal("75001")
-                .pays("France")
+
                 .typeClient(TypeClient.PARTICULIER)
                 .actif(true)
                 .build();
@@ -134,8 +131,7 @@ class ClientIntegrationTest {
         // Given
         Client client = clientRepository.save(Client.builder()
                 .username("martin.sophie")
-                .nom("Martin")
-                .prenom("Sophie")
+
                 .email("sophie.martin@example.com")
                 .actif(true)
                 .soldeCourant(1500.0)
@@ -290,7 +286,6 @@ class ClientIntegrationTest {
         clientRepository.save(Client.builder()
                 .username("unique.username")
                 .email("unique@test.com")
-                .nom("Test")
                 .actif(true)
                 .build());
 
