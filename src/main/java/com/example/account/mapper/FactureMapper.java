@@ -21,7 +21,7 @@ import java.util.List;
 )
 public interface FactureMapper extends BaseMapper<Facture, FactureCreateRequest, FactureUpdateRequest, FactureResponse> {
 
-    @Mapping(target = "idFacture", expression = "java(generateId())")
+   
     @Mapping(target = "numeroFacture", expression = "java(generateNumeroFacture())")
     @Mapping(target = "montantTotal", constant = "0")
     @Mapping(target = "montantRestant", constant = "0")

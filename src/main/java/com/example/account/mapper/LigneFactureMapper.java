@@ -16,7 +16,7 @@ import java.util.List;
 )
 public interface LigneFactureMapper {
 
-    @Mapping(target = "idLigne", expression = "java(java.util.UUID.randomUUID())")
+  
     @Mapping(target = "montantTotal", expression = "java(calculateMontantTotal(createRequest.getQuantite(), createRequest.getPrixUnitaire()))")
     LigneFacture toEntity(LigneFactureCreateRequest createRequest);
 

@@ -9,6 +9,9 @@ import com.example.account.repository.ProduitRepository;
 import com.example.account.service.producer.ProduitEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -50,6 +53,7 @@ public class ProduitService {
     }
 
     @Transactional
+    @CachePut(value = "produits", key = "#produitId")
     public ProduitResponse updateProduit(UUID produitId, ProduitUpdateRequest request) {
         log.info("Mise à jour du produit: {}", produitId);
 
@@ -69,6 +73,7 @@ public class ProduitService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "produits", key = "#produitId")
     public ProduitResponse getProduitById(UUID produitId) {
         log.info("Récupération du produit: {}", produitId);
 

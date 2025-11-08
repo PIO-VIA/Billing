@@ -12,6 +12,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +58,7 @@ public class ClientService {
     }
 
     @Transactional
+    @CachePut(value = "clients", key = "#clientId")
     public ClientResponse updateClient(UUID clientId, ClientUpdateRequest request) {
         log.info("Mise à jour du client: {}", clientId);
 
@@ -74,6 +78,7 @@ public class ClientService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "clients", key = "#clientId")
     public ClientResponse getClientById(UUID clientId) {
         log.info("Récupération du client: {}", clientId);
 
@@ -115,6 +120,7 @@ public class ClientService {
     }
 
     @Transactional
+    @CacheEvict(value = "clients", key = "#clientId")
     public void deleteClient(UUID clientId) {
         log.info("Suppression du client: {}", clientId);
 
@@ -131,6 +137,7 @@ public class ClientService {
     }
 
     @Transactional
+    @CachePut(value = "clients", key = "#clientId")
     public ClientResponse updateSolde(UUID clientId, Double montant) {
         log.info("Mise à jour du solde du client {}: {}", clientId, montant);
 

@@ -61,6 +61,23 @@ public interface FactureRepository extends JpaRepository<Facture, UUID> {
     @Query("SELECT COUNT(f) FROM Facture f WHERE f.dateFacturation BETWEEN ?1 AND ?2")
     Long countByDateFacturationBetween(LocalDate startDate, LocalDate endDate);
 
+    // Requêtes pour sommes
+    @Query("SELECT SUM(f.montantTotal) FROM Facture f WHERE f.dateFacturation BETWEEN ?1 AND ?2")
+    BigDecimal sumMontantByDateBetween(LocalDate startDate, LocalDate endDate);
+
+    @Query("SELECT SUM(f.montantTotal) FROM Facture f WHERE f.etat = ?1")
+    BigDecimal sumMontantByEtat(StatutFacture etat);
+
+    // Comptage par statut (String pour compatibilité)
+    @Query("SELECT COUNT(f) FROM Facture f WHERE CAST(f.etat AS string) = ?1")
+    Long countByStatut(String statut);
+
+    @Query("SELECT SUM(f.montantTotal) FROM Facture f WHERE CAST(f.etat AS string) = ?1")
+    BigDecimal sumMontantByStatut(String statut);
+
+    @Query("SELECT COUNT(f) FROM Facture f WHERE f.dateFacturation >= ?1 AND f.dateFacturation <= ?2")
+    Long countByDateBetween(LocalDate startDate, LocalDate endDate);
+
     // Requêtes avec pagination
     Slice<Facture> findByIdClient(UUID idClient, Pageable pageable);
 
