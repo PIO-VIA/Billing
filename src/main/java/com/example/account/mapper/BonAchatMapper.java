@@ -17,7 +17,7 @@ import java.util.List;
 )
 public interface BonAchatMapper extends BaseMapper<BonAchat, BonAchatCreateRequest, BonAchatUpdateRequest, BonAchatResponse> {
 
-    @Mapping(target = "idBonAchat", expression = "java(generateId())")
+   
     @Mapping(target = "statut", constant = "EN_ATTENTE")
     @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
     @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")

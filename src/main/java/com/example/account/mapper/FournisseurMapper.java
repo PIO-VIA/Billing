@@ -17,7 +17,7 @@ import java.util.List;
 )
 public interface FournisseurMapper extends BaseMapper<Fournisseur, FournisseurCreateRequest, FournisseurUpdateRequest, FournisseurResponse> {
 
-    @Mapping(target = "idFournisseur", expression = "java(generateId())")
+ 
     @Mapping(target = "soldeCourant", constant = "0.0")
     @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
     @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")

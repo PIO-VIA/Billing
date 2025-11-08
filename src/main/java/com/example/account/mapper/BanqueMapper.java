@@ -17,7 +17,7 @@ import java.util.List;
 )
 public interface BanqueMapper extends BaseMapper<Banque, BanqueCreateRequest, BanqueUpdateRequest, BanqueResponse> {
 
-    @Mapping(target = "idBanque", expression = "java(generateId())")
+  
     Banque toEntity(BanqueCreateRequest createRequest);
 
     @Mapping(target = "idBanque", ignore = true)

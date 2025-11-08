@@ -17,7 +17,6 @@ import java.util.List;
 )
 public interface JournalMapper extends BaseMapper<Journal, JournalCreateRequest, JournalUpdateRequest, JournalResponse> {
 
-    @Mapping(target = "idJournal", expression = "java(generateId())")
     @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
     @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
     Journal toEntity(JournalCreateRequest createRequest);
