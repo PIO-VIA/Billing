@@ -23,7 +23,7 @@ public interface JournalMapper extends BaseMapper<Journal, JournalCreateRequest,
 
     @Mapping(target = "idJournal", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(JournalUpdateRequest updateRequest, @MappingTarget Journal journal);
 
     JournalResponse toResponse(Journal journal);

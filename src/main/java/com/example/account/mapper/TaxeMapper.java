@@ -24,7 +24,7 @@ public interface TaxeMapper extends BaseMapper<Taxes, TaxeCreateRequest, TaxeUpd
 
     @Mapping(target = "idTaxe", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(TaxeUpdateRequest updateRequest, @MappingTarget Taxes taxe);
 
     TaxeResponse toResponse(Taxes taxe);
