@@ -62,7 +62,6 @@ public class DevisService {
             devis.setMontantTTC(BigDecimal.ZERO);
             devis.setMontantTotal(BigDecimal.ZERO);
         }
-
         Devis savedDevis = devisRepository.save(devis);
         DevisResponse response = devisMapper.toResponse(savedDevis);
 

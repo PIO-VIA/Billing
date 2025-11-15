@@ -17,15 +17,15 @@ import java.util.List;
 )
 public interface RemboursementMapper extends BaseMapper<Remboursement, RemboursementCreateRequest, RemboursementUpdateRequest, RemboursementResponse> {
 
-    @Mapping(target = "idRemboursement", expression = "java(generateId())")
+    @Mapping(target = "idRemboursement", ignore = true)
     @Mapping(target = "statut", constant = "EN_ATTENTE")
-    @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Remboursement toEntity(RemboursementCreateRequest createRequest);
 
     @Mapping(target = "idRemboursement", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(RemboursementUpdateRequest updateRequest, @MappingTarget Remboursement remboursement);
 
     RemboursementResponse toResponse(Remboursement remboursement);

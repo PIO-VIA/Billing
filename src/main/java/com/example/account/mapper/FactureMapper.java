@@ -21,7 +21,7 @@ import java.util.List;
 )
 public interface FactureMapper extends BaseMapper<Facture, FactureCreateRequest, FactureUpdateRequest, FactureResponse> {
 
-    @Mapping(target = "idFacture", expression = "java(generateId())")
+    @Mapping(target = "idFacture", ignore = true)
     @Mapping(target = "numeroFacture", expression = "java(generateNumeroFacture())")
     @Mapping(target = "montantTotal", constant = "0")
     @Mapping(target = "montantRestant", constant = "0")
@@ -35,8 +35,8 @@ public interface FactureMapper extends BaseMapper<Facture, FactureCreateRequest,
     @Mapping(target = "pdfPath", ignore = true)
     @Mapping(target = "envoyeParEmail", constant = "false")
     @Mapping(target = "dateEnvoiEmail", ignore = true)
-    @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Facture toEntity(FactureCreateRequest createRequest);
 
     @Mapping(target = "idFacture", ignore = true)
@@ -54,7 +54,7 @@ public interface FactureMapper extends BaseMapper<Facture, FactureCreateRequest,
     @Mapping(target = "envoyeParEmail", ignore = true)
     @Mapping(target = "dateEnvoiEmail", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(FactureUpdateRequest updateRequest, @MappingTarget Facture facture);
 
     FactureResponse toResponse(Facture facture);

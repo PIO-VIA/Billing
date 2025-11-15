@@ -17,14 +17,14 @@ import java.util.List;
 )
 public interface DeviseMapper extends BaseMapper<Devise, DeviseCreateRequest, DeviseUpdateRequest, DeviseResponse> {
 
-    @Mapping(target = "idDevise", expression = "java(generateId())")
-    @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "idDevise", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Devise toEntity(DeviseCreateRequest createRequest);
 
     @Mapping(target = "idDevise", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(DeviseUpdateRequest updateRequest, @MappingTarget Devise devise);
 
     DeviseResponse toResponse(Devise devise);

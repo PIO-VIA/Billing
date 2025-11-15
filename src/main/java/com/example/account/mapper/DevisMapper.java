@@ -34,6 +34,7 @@ public interface DevisMapper {
     @Mapping(target = "idFactureConvertie", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "version", ignore = true)
     Devis toEntity(DevisCreateRequest request);
 
     DevisResponse toResponse(Devis devis);

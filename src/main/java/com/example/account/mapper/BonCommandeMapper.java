@@ -17,10 +17,9 @@ import java.util.List;
 )
 public interface BonCommandeMapper extends BaseMapper<BonCommande, BonCommandeCreateRequest, BonCommandeUpdateRequest, BonCommandeResponse> {
 
-    @Mapping(target = "idBonCommande", expression = "java(generateId())")
     @Mapping(target = "statut", constant = "BROUILLON")
-    @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "validatedAt", ignore = true)
     @Mapping(target = "validatedBy", ignore = true)
     BonCommande toEntity(BonCommandeCreateRequest createRequest);
@@ -28,7 +27,7 @@ public interface BonCommandeMapper extends BaseMapper<BonCommande, BonCommandeCr
     @Mapping(target = "idBonCommande", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "validatedAt", ignore = true)
     @Mapping(target = "validatedBy", ignore = true)
     void updateEntityFromRequest(BonCommandeUpdateRequest updateRequest, @MappingTarget BonCommande bonCommande);

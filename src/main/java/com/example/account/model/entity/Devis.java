@@ -134,4 +134,10 @@ public class Devis {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Version
+    @Column(name = "version")
+    @Builder.Default
+    private Long version=0L;
+
 }

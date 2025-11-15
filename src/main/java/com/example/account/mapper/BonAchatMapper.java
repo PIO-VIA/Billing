@@ -17,10 +17,10 @@ import java.util.List;
 )
 public interface BonAchatMapper extends BaseMapper<BonAchat, BonAchatCreateRequest, BonAchatUpdateRequest, BonAchatResponse> {
 
-    @Mapping(target = "idBonAchat", expression = "java(generateId())")
+    @Mapping(target = "idBonAchat", ignore = true)
     @Mapping(target = "statut", constant = "EN_ATTENTE")
-    @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "validatedAt", ignore = true)
     @Mapping(target = "validatedBy", ignore = true)
     BonAchat toEntity(BonAchatCreateRequest createRequest);
@@ -28,7 +28,7 @@ public interface BonAchatMapper extends BaseMapper<BonAchat, BonAchatCreateReque
     @Mapping(target = "idBonAchat", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "validatedAt", ignore = true)
     @Mapping(target = "validatedBy", ignore = true)
     void updateEntityFromRequest(BonAchatUpdateRequest updateRequest, @MappingTarget BonAchat bonAchat);

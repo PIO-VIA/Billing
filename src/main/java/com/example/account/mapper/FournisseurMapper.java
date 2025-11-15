@@ -17,16 +17,16 @@ import java.util.List;
 )
 public interface FournisseurMapper extends BaseMapper<Fournisseur, FournisseurCreateRequest, FournisseurUpdateRequest, FournisseurResponse> {
 
-    @Mapping(target = "idFournisseur", expression = "java(generateId())")
+    @Mapping(target = "idFournisseur", ignore = true)
     @Mapping(target = "soldeCourant", constant = "0.0")
-    @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Fournisseur toEntity(FournisseurCreateRequest createRequest);
 
     @Mapping(target = "idFournisseur", ignore = true)
     @Mapping(target = "soldeCourant", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(FournisseurUpdateRequest updateRequest, @MappingTarget Fournisseur fournisseur);
 
     FournisseurResponse toResponse(Fournisseur fournisseur);

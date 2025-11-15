@@ -94,4 +94,20 @@ public class BonCommande {
 
     @Column(name = "validated_by")
     private String validatedBy;
+
+    @PrePersist
+    public void prePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+
+        if (this.statut == null) {
+            this.statut = "EN_ATTENTE";
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

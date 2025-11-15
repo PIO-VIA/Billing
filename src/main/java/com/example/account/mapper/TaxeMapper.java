@@ -17,14 +17,14 @@ import java.util.List;
 )
 public interface TaxeMapper extends BaseMapper<Taxes, TaxeCreateRequest, TaxeUpdateRequest, TaxeResponse> {
 
-    @Mapping(target = "idTaxe", expression = "java(generateId())")
-    @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "idTaxe", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Taxes toEntity(TaxeCreateRequest createRequest);
 
     @Mapping(target = "idTaxe", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(TaxeUpdateRequest updateRequest, @MappingTarget Taxes taxe);
 
     TaxeResponse toResponse(Taxes taxe);

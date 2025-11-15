@@ -17,14 +17,14 @@ import java.util.List;
 )
 public interface PaiementMapper extends BaseMapper<Paiement, PaiementCreateRequest, PaiementUpdateRequest, PaiementResponse> {
 
-    @Mapping(target = "idPaiement", expression = "java(generateId())")
-    @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "idPaiement", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Paiement toEntity(PaiementCreateRequest createRequest);
 
     @Mapping(target = "idPaiement", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(PaiementUpdateRequest updateRequest, @MappingTarget Paiement paiement);
 
     PaiementResponse toResponse(Paiement paiement);

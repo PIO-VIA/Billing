@@ -17,14 +17,14 @@ import java.util.List;
 )
 public interface ProduitMapper extends BaseMapper<Produit, ProduitCreateRequest, ProduitUpdateRequest, ProduitResponse> {
 
-    @Mapping(target = "idProduit", expression = "java(generateId())")
-    @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "idProduit", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Produit toEntity(ProduitCreateRequest createRequest);
 
     @Mapping(target = "idProduit", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(ProduitUpdateRequest updateRequest, @MappingTarget Produit produit);
 
     ProduitResponse toResponse(Produit produit);
