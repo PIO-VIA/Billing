@@ -20,14 +20,14 @@ public interface ClientMapper extends BaseMapper<Client, ClientCreateRequest, Cl
 
   
     @Mapping(target = "soldeCourant", constant = "0.0")
-    @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Client toEntity(ClientCreateRequest createRequest);
 
     @Mapping(target = "idClient", ignore = true)
     @Mapping(target = "soldeCourant", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(ClientUpdateRequest updateRequest, @MappingTarget Client client);
 
     ClientResponse toResponse(Client client);

@@ -1,11 +1,8 @@
 package com.example.account.model.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -59,16 +56,16 @@ public class BonAchat {
     @Column(name = "montant_tva")
     private BigDecimal montantTVA;
 
-    @Column(name = "devise")
     @Builder.Default
+    @Column(name = "devise")
     private String devise = "EUR";
 
-    @Column(name = "taux_change")
     @Builder.Default
+    @Column(name = "taux_change")
     private BigDecimal tauxChange = BigDecimal.ONE;
 
-    @Column(name = "statut")
     @Builder.Default
+    @Column(name = "statut")
     private String statut = "EN_ATTENTE";
 
     @Column(name = "numero_facture_fournisseur")
@@ -97,4 +94,20 @@ public class BonAchat {
 
     @Column(name = "validated_by")
     private String validatedBy;
+
+    @PrePersist
+    public void prePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+
+        if (this.statut == null) {
+            this.statut = "EN_ATTENTE";
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

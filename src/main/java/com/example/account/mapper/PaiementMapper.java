@@ -24,7 +24,7 @@ public interface PaiementMapper extends BaseMapper<Paiement, PaiementCreateReque
 
     @Mapping(target = "idPaiement", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(PaiementUpdateRequest updateRequest, @MappingTarget Paiement paiement);
 
     PaiementResponse toResponse(Paiement paiement);

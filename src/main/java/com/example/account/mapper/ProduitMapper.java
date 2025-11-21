@@ -24,7 +24,7 @@ public interface ProduitMapper extends BaseMapper<Produit, ProduitCreateRequest,
 
     @Mapping(target = "idProduit", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(ProduitUpdateRequest updateRequest, @MappingTarget Produit produit);
 
     ProduitResponse toResponse(Produit produit);
