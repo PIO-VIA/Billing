@@ -1,5 +1,6 @@
 package com.example.account.repository;
 
+import com.example.account.model.entity.Devis;
 import com.example.account.model.entity.LigneDevis;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +14,6 @@ import java.util.UUID;
 public interface LigneDevisRepository extends JpaRepository<LigneDevis, UUID> {
     Page<LigneDevis> findAll(Pageable pageable);
 
-    List<LigneDevis> findByIdDevis(UUID idDevis);
+    List<LigneDevis> findByDevis(Devis devis);
 
 }

@@ -67,8 +67,7 @@ public class Devis {
     @Column(name = "telephone_client")
     private String telephoneClient;
 
-    @OneToMany(mappedBy = "devis", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<LigneDevis> lignesDevis;
+
 
     @Column(name = "montant_ht")
     private BigDecimal montantHT;

@@ -1,8 +1,12 @@
 package com.example.account.controller;
 
 import com.example.account.dto.request.DevisCreateRequest;
+import com.example.account.dto.request.LigneDevisCreateRequest;
 import com.example.account.dto.response.DevisResponse;
+import com.example.account.dto.response.LigneDevisResponse;
+import com.example.account.model.entity.LigneDevis;
 import com.example.account.model.enums.StatutDevis;
+import com.example.account.repository.LigneDevisRepository;
 import com.example.account.service.DevisService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,6 +23,9 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 @RestController
 @RequestMapping("/api/devis")
@@ -37,6 +44,16 @@ public class DevisController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+
+    @PostMapping("/ligneDevis/{devisId}")
+    public ResponseEntity<LigneDevisResponse> addLigneDevis(@RequestBody LigneDevisCreateRequest request,@PathVariable UUID devisId) {
+        
+            log.info("adding a new ligne devis  for devis ",devisId);
+        
+         LigneDevisResponse response=   devisService.addLigneDevis(devisId, request);
+         return ResponseEntity.ok(response);
+    }
+    
     @PutMapping("/{devisId}")
     @Operation(summary = "Mettre à jour un devis")
     public ResponseEntity<DevisResponse> updateDevis(

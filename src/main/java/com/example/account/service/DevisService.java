@@ -1,13 +1,18 @@
 package com.example.account.service;
 
 import com.example.account.dto.request.DevisCreateRequest;
+import com.example.account.dto.request.LigneDevisCreateRequest;
 import com.example.account.dto.response.DevisResponse;
+import com.example.account.dto.response.LigneDevisResponse;
 import com.example.account.mapper.DevisMapper;
+import com.example.account.mapper.LigneDevisMapper;
 import com.example.account.model.entity.Client;
 import com.example.account.model.entity.Devis;
+import com.example.account.model.entity.LigneDevis;
 import com.example.account.model.enums.StatutDevis;
 import com.example.account.repository.ClientRepository;
 import com.example.account.repository.DevisRepository;
+import com.example.account.repository.LigneDevisRepository;
 import com.example.account.service.producer.DevisEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +36,8 @@ public class DevisService {
     private final ClientRepository clientRepository;
     private final DevisMapper devisMapper;
     private final DevisEventProducer devisEventProducer;
+    private final LigneDevisRepository ligneDevisRepository;
+    private final LigneDevisMapper ligneDevisMapper;
 
     @Transactional
     public DevisResponse createDevis(DevisCreateRequest request) {
@@ -42,7 +49,7 @@ public class DevisService {
 
         // Créer le devis
         Devis devis = devisMapper.toEntity(request);
-        devis.setIdDevis(UUID.randomUUID());
+     //   devis.setIdDevis(UUID.randomUUID());
         devis.setNumeroDevis(generateNumeroDevis());
         devis.setCreatedAt(LocalDateTime.now());
         devis.setUpdatedAt(LocalDateTime.now());
@@ -71,6 +78,27 @@ public class DevisService {
         log.info("Devis créé avec succès: {}", savedDevis.getNumeroDevis());
         return response;
     }
+    @Transactional
+    public LigneDevisResponse addLigneDevis(UUID devisId,LigneDevisCreateRequest request){
+        log.info("Adding a new ligne de devis");
+        Devis devis=devisRepository.findById(devisId)
+        .orElseThrow(() -> new IllegalArgumentException("Devis non trouvé: " + devisId));
+        LigneDevis ligneDevisreq=ligneDevisMapper.toEntity(request);
+        //add ligneDevis to devis
+        ligneDevisreq.setDevis(devis);
+      
+        
+        
+        LigneDevis ligneDevis=ligneDevisRepository.save(ligneDevisreq);
+        devis.setMontantHT(new BigDecimal(12));
+        //recalculate the montanttotal of the devis
+        calculateMontants(devis);
+        //save the new changes on the devis
+        devisRepository.save(devis);
+
+
+        return ligneDevisMapper.toResponse(ligneDevis);
+    }
 
     @Transactional
     public DevisResponse updateDevis(UUID devisId, DevisCreateRequest request) {
@@ -82,17 +110,15 @@ public class DevisService {
         devisMapper.updateEntityFromRequest(request, devis);
         devis.setUpdatedAt(LocalDateTime.now());
 
-        // Recalculer les montants si nécessaire
-        if (devis.getLignesDevis() != null && !devis.getLignesDevis().isEmpty()) {
-            calculateMontants(devis);
-        }
-
+        //calulat the montants
+        calculateMontants(devis);
+        
         Devis updatedDevis = devisRepository.save(devis);
         DevisResponse response = devisMapper.toResponse(updatedDevis);
 
         // Publier l'événement
         devisEventProducer.publishDevisUpdated(response);
-
+        
         log.info("Devis mis à jour avec succès: {}", devisId);
         return response;
     }
@@ -213,16 +239,18 @@ public class DevisService {
     }
 
     private void calculateMontants(Devis devis) {
-        if (devis.getLignesDevis() == null || devis.getLignesDevis().isEmpty()) {
+        //find all the ligne de devis for the devis
+        List<LigneDevis> ligneDs=ligneDevisRepository.findByDevis(devis);
+        if (ligneDs == null || ligneDs.isEmpty()) {
             return;
         }
 
-        BigDecimal montantHT = devis.getLignesDevis().stream()
+        BigDecimal montantHT = ligneDs.stream()
                 .filter(ligne -> !Boolean.TRUE.equals(ligne.getIsTaxLine()))
                 .map(ligne -> ligne.getMontantTotal() != null ? ligne.getMontantTotal() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal montantTVA = devis.getLignesDevis().stream()
+        log.info("Montant HT : ",montantHT);;
+        BigDecimal montantTVA = ligneDs.stream()
                 .filter(ligne -> Boolean.TRUE.equals(ligne.getIsTaxLine()))
                 .map(ligne -> ligne.getMontantTotal() != null ? ligne.getMontantTotal() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
