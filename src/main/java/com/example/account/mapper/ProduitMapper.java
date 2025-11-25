@@ -17,9 +17,9 @@ import java.util.List;
 )
 public interface ProduitMapper extends BaseMapper<Produit, ProduitCreateRequest, ProduitUpdateRequest, ProduitResponse> {
 
-    @Mapping(target = "idProduit", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
+   
+    @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
     Produit toEntity(ProduitCreateRequest createRequest);
 
     @Mapping(target = "idProduit", ignore = true)

@@ -17,7 +17,7 @@ import java.util.List;
 )
 public interface RemboursementMapper extends BaseMapper<Remboursement, RemboursementCreateRequest, RemboursementUpdateRequest, RemboursementResponse> {
 
-    @Mapping(target = "idRemboursement", ignore = true)
+  
     @Mapping(target = "statut", constant = "EN_ATTENTE")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)

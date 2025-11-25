@@ -17,6 +17,7 @@ import java.util.List;
 )
 public interface BonCommandeMapper extends BaseMapper<BonCommande, BonCommandeCreateRequest, BonCommandeUpdateRequest, BonCommandeResponse> {
 
+   
     @Mapping(target = "statut", constant = "BROUILLON")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)

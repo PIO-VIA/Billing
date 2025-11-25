@@ -23,9 +23,7 @@ public class LigneDevis {
     @Column(name = "id_ligne")
     private UUID idLigne;
 
-    @NotNull(message = "L'ID du devis est obligatoire")
-    @Column(name = "id_devis")
-    private UUID idDevis;
+    
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_devis", insertable = false, updatable = false)

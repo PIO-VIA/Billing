@@ -17,9 +17,9 @@ import java.util.List;
 )
 public interface DeviseMapper extends BaseMapper<Devise, DeviseCreateRequest, DeviseUpdateRequest, DeviseResponse> {
 
-    @Mapping(target = "idDevise", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
+   
+    @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
     Devise toEntity(DeviseCreateRequest createRequest);
 
     @Mapping(target = "idDevise", ignore = true)

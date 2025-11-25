@@ -18,7 +18,7 @@ import java.util.List;
 )
 public interface ClientMapper extends BaseMapper<Client, ClientCreateRequest, ClientUpdateRequest, ClientResponse> {
 
-    @Mapping(target = "idClient", ignore = true)
+  
     @Mapping(target = "soldeCourant", constant = "0.0")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)

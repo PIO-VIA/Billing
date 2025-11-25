@@ -17,9 +17,9 @@ import java.util.List;
 )
 public interface TaxeMapper extends BaseMapper<Taxes, TaxeCreateRequest, TaxeUpdateRequest, TaxeResponse> {
 
-    @Mapping(target = "idTaxe", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
+   
+    @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
     Taxes toEntity(TaxeCreateRequest createRequest);
 
     @Mapping(target = "idTaxe", ignore = true)

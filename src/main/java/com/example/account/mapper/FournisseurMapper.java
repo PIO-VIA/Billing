@@ -17,7 +17,7 @@ import java.util.List;
 )
 public interface FournisseurMapper extends BaseMapper<Fournisseur, FournisseurCreateRequest, FournisseurUpdateRequest, FournisseurResponse> {
 
-    @Mapping(target = "idFournisseur", ignore = true)
+ 
     @Mapping(target = "soldeCourant", constant = "0.0")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)

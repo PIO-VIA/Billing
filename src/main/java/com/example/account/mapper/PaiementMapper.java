@@ -17,9 +17,9 @@ import java.util.List;
 )
 public interface PaiementMapper extends BaseMapper<Paiement, PaiementCreateRequest, PaiementUpdateRequest, PaiementResponse> {
 
-    @Mapping(target = "idPaiement", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
+  
+    @Mapping(target = "createdAt", expression = "java(getCurrentTime())")
+    @Mapping(target = "updatedAt", expression = "java(getCurrentTime())")
     Paiement toEntity(PaiementCreateRequest createRequest);
 
     @Mapping(target = "idPaiement", ignore = true)
