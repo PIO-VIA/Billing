@@ -17,9 +17,10 @@ import java.util.UUID;
 @Builder
 @Entity
 @Table(name = "plan_tresorerie", indexes = {
-    @Index(name = "idx_tresorerie_periode", columnList = "annee, mois")
+    @Index(name = "idx_tresorerie_org", columnList = "organization_id"),
+    @Index(name = "idx_tresorerie_periode", columnList = "organization_id, annee, mois")
 })
-public class PlanTresorerie {
+public class PlanTresorerie extends OrganizationScoped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

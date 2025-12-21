@@ -16,11 +16,12 @@ import java.util.UUID;
 @Builder
 @Entity
 @Table(name = "mouvements_stock", indexes = {
-    @Index(name = "idx_mouvement_produit", columnList = "id_produit"),
-    @Index(name = "idx_mouvement_date", columnList = "date_mouvement"),
-    @Index(name = "idx_mouvement_type", columnList = "type_mouvement")
+    @Index(name = "idx_mouvement_org", columnList = "organization_id"),
+    @Index(name = "idx_mouvement_produit", columnList = "organization_id, id_produit"),
+    @Index(name = "idx_mouvement_date", columnList = "organization_id, date_mouvement"),
+    @Index(name = "idx_mouvement_type", columnList = "organization_id, type_mouvement")
 })
-public class MouvementStock {
+public class MouvementStock extends OrganizationScoped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
