@@ -16,8 +16,13 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "alerte_tableau")
-public class AlerteTableau {
+@Table(
+    name = "alerte_tableau",
+    indexes = {
+        @Index(name = "idx_alertetableau_org", columnList = "organization_id")
+    }
+)
+public class AlerteTableau extends OrganizationScoped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

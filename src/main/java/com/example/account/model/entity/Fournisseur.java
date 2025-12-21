@@ -15,8 +15,14 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "fournisseurs")
-public class Fournisseur {
+@Table(
+    name = "fournisseurs",
+    indexes = {
+        @Index(name = "idx_fournisseur_org", columnList = "organization_id"),
+        @Index(name = "idx_fournisseur_org_username", columnList = "organization_id, username")
+    }
+)
+public class Fournisseur extends OrganizationScoped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

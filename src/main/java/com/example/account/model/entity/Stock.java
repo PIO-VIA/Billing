@@ -15,10 +15,17 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "stock", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"id_produit", "emplacement"})
-})
-public class Stock {
+@Table(
+    name = "stock",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"organization_id", "id_produit", "emplacement"})
+    },
+    indexes = {
+        @Index(name = "idx_stock_org", columnList = "organization_id"),
+        @Index(name = "idx_stock_org_produit", columnList = "organization_id, id_produit")
+    }
+)
+public class Stock extends OrganizationScoped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

@@ -13,8 +13,14 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "bons_achat")
-public class BonAchat {
+@Table(
+    name = "bons_achat",
+    indexes = {
+        @Index(name = "idx_bonachat_org", columnList = "organization_id"),
+        @Index(name = "idx_bonachat_org_numerobon", columnList = "organization_id, numero_bon")
+    }
+)
+public class BonAchat extends OrganizationScoped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
