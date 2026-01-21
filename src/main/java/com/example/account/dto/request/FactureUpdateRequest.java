@@ -28,4 +28,14 @@ public class FactureUpdateRequest {
     private String conditionsPaiement;
     private String notes;
     private String referenceCommande;
+    
+    /**
+     * Global discount percentage (0-100).
+     */
+    private BigDecimal remiseGlobalePourcentage;
+    
+    /**
+     * Global discount amount.
+     */
+    private BigDecimal remiseGlobaleMontant;
 }

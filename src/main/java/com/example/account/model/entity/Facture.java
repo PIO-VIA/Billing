@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -117,9 +119,57 @@ public class Facture extends OrganizationScoped {
     @Column(name = "date_envoi_email")
     private LocalDateTime dateEnvoiEmail;
 
-    @Column(name = "created_at")
+    /**
+     * Global discount percentage applied to the entire invoice (0-100).
+     */
+    @Column(name = "remise_globale_pourcentage")
+    @Builder.Default
+    private BigDecimal remiseGlobalePourcentage = BigDecimal.ZERO;
+
+    /**
+     * Global discount amount applied to the entire invoice.
+     */
+    @Column(name = "remise_globale_montant")
+    @Builder.Default
+    private BigDecimal remiseGlobaleMontant = BigDecimal.ZERO;
+
+    /**
+     * User who created this invoice.
+     */
+    @Column(name = "created_by")
+    private UUID createdBy;
+
+    /**
+     * User who validated this invoice.
+     */
+    @Column(name = "validated_by")
+    private UUID validatedBy;
+
+    /**
+     * Timestamp when invoice was validated.
+     */
+    @Column(name = "validated_at")
+    private LocalDateTime validatedAt;
+
+    /**
+     * Timestamp when record was created.
+     */
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    /**
+     * Timestamp when record was last updated.
+     */
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    /**
+     * Version for optimistic locking.
+     */
+    @Version
+    @Column(name = "version")
+    @Builder.Default
+    private Long version = 0L;
 }

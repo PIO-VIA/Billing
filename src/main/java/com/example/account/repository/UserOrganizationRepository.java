@@ -102,4 +102,16 @@ public interface UserOrganizationRepository extends JpaRepository<UserOrganizati
            "WHERE uo.organization.id = :organizationId " +
            "AND uo.isActive = true AND uo.leftAt IS NULL")
     long countActiveByOrganizationId(@Param("organizationId") UUID organizationId);
+
+    /**
+     * Find all users with a specific role in an organization.
+     */
+    @Query("SELECT uo FROM UserOrganization uo " +
+           "LEFT JOIN FETCH uo.user " +
+           "WHERE uo.organization.id = :organizationId " +
+           "AND uo.role = :role")
+    List<UserOrganization> findByOrganizationIdAndRole(
+        @Param("organizationId") UUID organizationId,
+        @Param("role") OrganizationRole role
+    );
 }

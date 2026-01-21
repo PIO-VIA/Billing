@@ -1,12 +1,18 @@
 package com.example.account.context;
 
+import com.example.account.model.entity.UserOrganization;
+import com.example.account.model.enums.OrganizationRole;
+import com.example.account.model.enums.Permission;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
 
 /**
  * Thread-local storage for the current organization context.
- * This class manages the organization scope for each request thread.
+ * This class manages the organization scope for each request thread,
+ * including permissions and role information.
  *
  * Usage:
  * - OrganizationContext.setCurrentOrganizationId(orgId);
@@ -20,6 +26,9 @@ public class OrganizationContext {
 
     private static final ThreadLocal<UUID> CURRENT_ORGANIZATION_ID = new ThreadLocal<>();
     private static final ThreadLocal<UUID> CURRENT_USER_ID = new ThreadLocal<>();
+    private static final ThreadLocal<UserOrganization> CURRENT_USER_ORGANIZATION = new ThreadLocal<>();
+    private static final ThreadLocal<Set<Permission>> CURRENT_USER_PERMISSIONS = new ThreadLocal<>();
+    private static final ThreadLocal<OrganizationRole> CURRENT_USER_ROLE = new ThreadLocal<>();
 
     private OrganizationContext() {
         // Private constructor to prevent instantiation
@@ -91,6 +100,61 @@ public class OrganizationContext {
     }
 
     /**
+     * Sets the current UserOrganization for this thread.
+     * This includes the user's role and permissions in the organization.
+     */
+    public static void setCurrentUserOrganization(UserOrganization userOrganization) {
+        CURRENT_USER_ORGANIZATION.set(userOrganization);
+        if (userOrganization != null) {
+            CURRENT_USER_PERMISSIONS.set(userOrganization.getActivePermissions());
+            CURRENT_USER_ROLE.set(userOrganization.getRole());
+            log.debug("UserOrganization context set: userId={}, orgId={}, role={}",
+                    userOrganization.getUser().getId(),
+                    userOrganization.getOrganization().getId(),
+                    userOrganization.getRole());
+        }
+    }
+
+    /**
+     * Gets the current UserOrganization for this thread.
+     */
+    public static UserOrganization getCurrentUserOrganization() {
+        return CURRENT_USER_ORGANIZATION.get();
+    }
+
+    /**
+     * Gets the current user's permissions in the current organization.
+     * Returns an empty set if no permissions are set.
+     */
+    public static Set<Permission> getCurrentUserPermissions() {
+        Set<Permission> permissions = CURRENT_USER_PERMISSIONS.get();
+        return permissions != null ? permissions : Collections.emptySet();
+    }
+
+    /**
+     * Checks if the current user has a specific permission.
+     */
+    public static boolean hasPermission(Permission permission) {
+        Set<Permission> permissions = CURRENT_USER_PERMISSIONS.get();
+        return permissions != null && permissions.contains(permission);
+    }
+
+    /**
+     * Gets the current user's role in the current organization.
+     */
+    public static OrganizationRole getCurrentUserRole() {
+        return CURRENT_USER_ROLE.get();
+    }
+
+    /**
+     * Checks if the current user has a specific role or higher.
+     */
+    public static boolean hasRole(OrganizationRole role) {
+        OrganizationRole currentRole = CURRENT_USER_ROLE.get();
+        return currentRole != null && currentRole.hasAtLeastLevel(role);
+    }
+
+    /**
      * Clears the organization and user context for this thread.
      * MUST be called at the end of request processing to prevent memory leaks.
      */
@@ -100,6 +164,9 @@ public class OrganizationContext {
 
         CURRENT_ORGANIZATION_ID.remove();
         CURRENT_USER_ID.remove();
+        CURRENT_USER_ORGANIZATION.remove();
+        CURRENT_USER_PERMISSIONS.remove();
+        CURRENT_USER_ROLE.remove();
 
         log.debug("Organization context cleared: orgId={}, userId={}", orgId, userId);
     }
