@@ -43,6 +43,52 @@ public class FactureResponse {
     private String pdfPath;
     private Boolean envoyeParEmail;
     private LocalDateTime dateEnvoiEmail;
+    
+    /**
+     * Organization ID - for multi-tenancy context.
+     */
+    private UUID organizationId;
+    
+    /**
+     * Global discount percentage (0-100).
+     */
+    private BigDecimal remiseGlobalePourcentage;
+    
+    /**
+     * Global discount amount.
+     */
+    private BigDecimal remiseGlobaleMontant;
+    
+    /**
+     * User who created this invoice.
+     */
+    private UUID createdBy;
+    
+    /**
+     * Username of the user who created this invoice.
+     */
+    private String createdByUsername;
+    
+    /**
+     * User who validated this invoice.
+     */
+    private UUID validatedBy;
+    
+    /**
+     * Username of the user who validated this invoice.
+     */
+    private String validatedByUsername;
+    
+    /**
+     * Timestamp when invoice was validated.
+     */
+    private LocalDateTime validatedAt;
+    
+    /**
+     * Optimistic locking version.
+     */
+    private Long version;
+    
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

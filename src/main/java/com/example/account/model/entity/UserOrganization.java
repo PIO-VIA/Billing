@@ -1,6 +1,8 @@
 package com.example.account.model.entity;
 
 import com.example.account.model.enums.OrganizationRole;
+import com.example.account.model.enums.Permission;
+import com.example.account.model.enums.SaleSize;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,7 +10,11 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Association entity linking Users to Organizations with role-based access.
@@ -82,11 +88,107 @@ public class UserOrganization {
     private LocalDateTime leftAt;
 
     /**
+     * Fine-grained permissions assigned to this user in this organization.
+     * Enables granular control over what actions the user can perform.
+     */
+    @OneToMany(mappedBy = "userOrganization", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<UserOrganizationPermission> permissions = new HashSet<>();
+
+    /**
+     * Permitted sale sizes for sellers.
+     * Stored as comma-separated values (e.g., "DETAIL,GROS").
+     * Only relevant for users with SELLER role.
+     */
+    @Column(name = "permitted_sale_sizes", length = 500)
+    private String permittedSaleSizes;
+
+    /**
+     * Agency/branch where this seller operates.
+     * Only relevant for SELLER role.
+     */
+    @Column(name = "agency", length = 100)
+    private String agency;
+
+    /**
+     * Sale point/cash register identifier.
+     * Only relevant for SELLER role.
+     */
+    @Column(name = "sale_point", length = 100)
+    private String salePoint;
+
+    /**
      * Helper method to check if membership is active.
      */
     @Transient
     public boolean isActiveMembership() {
         return isActive && leftAt == null;
+    }
+
+    /**
+     * Helper method to add a permission to this user-organization relationship.
+     */
+    public void addPermission(UserOrganizationPermission permission) {
+        permissions.add(permission);
+        permission.setUserOrganization(this);
+    }
+
+    /**
+     * Helper method to remove a permission from this user-organization relationship.
+     */
+    public void removePermission(UserOrganizationPermission permission) {
+        permissions.remove(permission);
+        permission.setUserOrganization(null);
+    }
+
+    /**
+     * Check if user has a specific permission in this organization.
+     * @param permission The permission to check
+     * @return true if user has the permission and it's active (not expired)
+     */
+    @Transient
+    public boolean hasPermission(Permission permission) {
+        return permissions.stream()
+                .anyMatch(p -> p.getPermission() == permission && p.isActive());
+    }
+
+    /**
+     * Get all active permissions for this user in this organization.
+     * @return Set of active permissions
+     */
+    @Transient
+    public Set<Permission> getActivePermissions() {
+        return permissions.stream()
+                .filter(UserOrganizationPermission::isActive)
+                .map(UserOrganizationPermission::getPermission)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Set permitted sale sizes from a list of SaleSize enums.
+     * @param saleSizes List of sale sizes
+     */
+    public void setPermittedSaleSizesList(List<SaleSize> saleSizes) {
+        if (saleSizes == null || saleSizes.isEmpty()) {
+            this.permittedSaleSizes = null;
+        } else {
+            this.permittedSaleSizes = saleSizes.stream()
+                    .map(Enum::name)
+                    .collect(Collectors.joining(","));
+        }
+    }
+
+    /**
+     * Get permitted sale sizes as a list of SaleSize enums.
+     * @return List of permitted sale sizes
+     */
+    @Transient
+    public List<SaleSize> getPermittedSaleSizesList() {
+        if (permittedSaleSizes == null || permittedSaleSizes.isEmpty()) {
+            return List.of();
+        }
+        return List.of(permittedSaleSizes.split(",")).stream()
+                .map(SaleSize::valueOf)
+                .collect(Collectors.toList());
     }
 
     @Override

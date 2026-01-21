@@ -46,4 +46,19 @@ public class FactureCreateRequest {
     private String notes;
 
     private String referenceCommande;
+    
+    /**
+     * Global discount percentage (0-100).
+     */
+    private BigDecimal remiseGlobalePourcentage;
+    
+    /**
+     * Global discount amount.
+     */
+    private BigDecimal remiseGlobaleMontant;
+    
+    /**
+     * Organization ID (usually injected from security context, but can be explicit).
+     */
+    private UUID organizationId;
 }

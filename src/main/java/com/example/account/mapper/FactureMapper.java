@@ -35,6 +35,10 @@ public interface FactureMapper extends BaseMapper<Facture, FactureCreateRequest,
     @Mapping(target = "pdfPath", ignore = true)
     @Mapping(target = "envoyeParEmail", constant = "false")
     @Mapping(target = "dateEnvoiEmail", ignore = true)
+    @Mapping(target = "createdBy", ignore = true) // Set by service layer
+    @Mapping(target = "validatedBy", ignore = true)
+    @Mapping(target = "validatedAt", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Facture toEntity(FactureCreateRequest createRequest);
@@ -53,13 +57,19 @@ public interface FactureMapper extends BaseMapper<Facture, FactureCreateRequest,
     @Mapping(target = "pdfPath", ignore = true)
     @Mapping(target = "envoyeParEmail", ignore = true)
     @Mapping(target = "dateEnvoiEmail", ignore = true)
+    @Mapping(target = "organizationId", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "validatedBy", ignore = true)
+    @Mapping(target = "validatedAt", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(FactureUpdateRequest updateRequest, @MappingTarget Facture facture);
 
-    FactureResponse toResponse(Facture facture);
 
-    
+    @Mapping(target = "createdByUsername", ignore = true) // Set by service layer if needed
+    @Mapping(target = "validatedByUsername", ignore = true) // Set by service layer if needed
+    FactureResponse toResponse(Facture facture);
 
     List<FactureResponse> toResponseList(List<Facture> factures);
 
