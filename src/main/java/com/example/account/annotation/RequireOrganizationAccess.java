@@ -1,6 +1,6 @@
 package com.example.account.annotation;
 
-import com.example.account.model.enums.OrganizationRole;
+import com.example.account.modules.core.model.enums.OrganizationRole;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
