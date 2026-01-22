@@ -18,7 +18,8 @@ import com.example.account.modules.facturation.model.enums.StatutDevis;
 import com.example.account.modules.facturation.repository.DevisRepository;
 import com.example.account.modules.facturation.repository.LigneDevisRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,8 +33,9 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class FactureService {
+
+    private static final Logger log = LoggerFactory.getLogger(FactureService.class);
 
     private final ClientRepository clientRepository;
     private final FactureRepository factureRepository;
