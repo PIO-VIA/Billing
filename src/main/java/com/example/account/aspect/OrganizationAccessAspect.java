@@ -1,10 +1,10 @@
 package com.example.account.aspect;
 
 import com.example.account.annotation.RequireOrganizationAccess;
-import com.example.account.context.OrganizationContext;
-import com.example.account.model.entity.UserOrganization;
-import com.example.account.model.enums.OrganizationRole;
-import com.example.account.repository.UserOrganizationRepository;
+import com.example.account.modules.core.context.OrganizationContext;
+import com.example.account.modules.core.model.entity.UserOrganization;
+import com.example.account.modules.core.model.enums.OrganizationRole;
+import com.example.account.modules.core.repository.UserOrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
