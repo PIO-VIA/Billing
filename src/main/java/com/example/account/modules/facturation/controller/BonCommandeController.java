@@ -1,10 +1,13 @@
 package com.example.account.modules.facturation.controller;
 
+import com.example.account.modules.facturation.dto.request.BonCommandeCreateRequest;
 import com.example.account.modules.facturation.dto.response.BonCommandeResponse;
 import com.example.account.modules.facturation.service.BonCommandeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +22,12 @@ public class BonCommandeController {
 
     private final BonCommandeService bonCommandeService;
 
+    @PostMapping
+    @Operation(summary = "Créer un bon de commande")
+    public ResponseEntity<BonCommandeResponse> createBonCommande(@Valid @RequestBody BonCommandeCreateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(bonCommandeService.createBonCommande(request));
+    }
+
     @GetMapping
     @Operation(summary = "Get all bons de commande")
     public ResponseEntity<List<BonCommandeResponse>> getAllBonCommandes() {
@@ -29,6 +38,20 @@ public class BonCommandeController {
     @Operation(summary = "Get bon commande by ID")
     public ResponseEntity<BonCommandeResponse> getBonCommandeById(@PathVariable UUID id) {
         return ResponseEntity.ok(bonCommandeService.getBonCommandeById(id));
+    }
+
+    @GetMapping("/fournisseur/{id}")
+    @Operation(summary = "Lister les bons de commande par fournisseur")
+    public ResponseEntity<List<BonCommandeResponse>> getBonCommandesByFournisseur(@PathVariable UUID id) {
+        return ResponseEntity.ok(bonCommandeService.getBonCommandesByFournisseur(id));
+    }
+
+    @PatchMapping("/{id}/status")
+    @Operation(summary = "Changer l'état d'un bon de commande")
+    public ResponseEntity<BonCommandeResponse> updateStatut(
+            @PathVariable UUID id,
+            @RequestParam String statut) {
+        return ResponseEntity.ok(bonCommandeService.updateStatut(id, statut));
     }
 
     @DeleteMapping("/{id}")
