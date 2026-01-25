@@ -1,0 +1,40 @@
+package com.example.account.modules.facturation.mapper;
+
+import com.example.account.modules.facturation.dto.request.BonCommandeCreateRequest;
+import com.example.account.modules.facturation.dto.request.BonCommandeUpdateRequest;
+import com.example.account.modules.facturation.dto.response.BonCommandeResponse;
+import com.example.account.modules.facturation.model.entity.BonCommande;
+import com.example.account.modules.core.mapper.BaseMapper;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
+
+import java.util.List;
+
+@Mapper(
+        componentModel = "spring",
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+)
+public interface BonCommandeMapper extends BaseMapper<BonCommande, BonCommandeCreateRequest, BonCommandeUpdateRequest, BonCommandeResponse> {
+
+   
+    @Mapping(target = "statut", constant = "BROUILLON")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "validatedAt", ignore = true)
+    @Mapping(target = "validatedBy", ignore = true)
+    BonCommande toEntity(BonCommandeCreateRequest createRequest);
+
+    @Mapping(target = "idBonCommande", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "validatedAt", ignore = true)
+    @Mapping(target = "validatedBy", ignore = true)
+    void updateEntityFromRequest(BonCommandeUpdateRequest updateRequest, @MappingTarget BonCommande bonCommande);
+
+    BonCommandeResponse toResponse(BonCommande bonCommande);
+
+    List<BonCommandeResponse> toResponseList(List<BonCommande> bonCommandes);
+}

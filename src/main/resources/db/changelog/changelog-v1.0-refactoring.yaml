@@ -1,0 +1,185 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1-add-permission-system
+      author: refactoring-agent
+      comments: Add permission system tables and columns
+      changes:
+        # Add permission columns to user_organizations table
+        - addColumn:
+            tableName: user_organizations
+            columns:
+              - column:
+                  name: permitted_sale_sizes
+                  type: varchar(500)
+                  remarks: Comma-separated list of permitted sale sizes for sellers
+              - column:
+                  name: agency
+                  type: varchar(100)
+                  remarks: Agency/branch for sellers
+              - column:
+                  name: sale_point
+                  type: varchar(100)
+                  remarks: Sale point/cash register for sellers
+
+        # Create user_organization_permissions table
+        - createTable:
+            tableName: user_organization_permissions
+            remarks: Junction table for fine-grained permissions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_user_org_perm_user_org
+                    references: user_organizations(id)
+                    deleteCascade: true
+              - column:
+                  name: permission
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: granted_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: granted_by
+                  type: uuid
+                  remarks: User who granted this permission
+              - column:
+                  name: expires_at
+                  type: timestamp
+                  remarks: Optional expiration date for temporary permissions
+
+        # Add unique constraint on user_organization + permission
+        - addUniqueConstraint:
+            tableName: user_organization_permissions
+            columnNames: user_organization_id, permission
+            constraintName: uk_user_org_permission
+
+        # Add indexes for performance
+        - createIndex:
+            tableName: user_organization_permissions
+            indexName: idx_user_org_perm_user_org
+            columns:
+              - column:
+                  name: user_organization_id
+
+        - createIndex:
+            tableName: user_organization_permissions
+            indexName: idx_user_org_perm_permission
+            columns:
+              - column:
+                  name: permission
+
+  - changeSet:
+      id: 2-enhance-factures-table
+      author: refactoring-agent
+      comments: Add audit fields and global discounts to factures table
+      changes:
+        # Add audit columns
+        - addColumn:
+            tableName: factures
+            columns:
+              - column:
+                  name: remise_globale_pourcentage
+                  type: decimal(5,2)
+                  defaultValueNumeric: 0
+                  remarks: Global discount percentage (0-100)
+              - column:
+                  name: remise_globale_montant
+                  type: decimal(15,2)
+                  defaultValueNumeric: 0
+                  remarks: Global discount amount
+              - column:
+                  name: created_by
+                  type: uuid
+                  remarks: User who created this invoice
+              - column:
+                  name: validated_by
+                  type: uuid
+                  remarks: User who validated this invoice
+              - column:
+                  name: validated_at
+                  type: timestamp
+                  remarks: Timestamp when invoice was validated
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  remarks: Optimistic locking version
+
+        # Make created_at and updated_at non-nullable if they aren't already
+        - addNotNullConstraint:
+            tableName: factures
+            columnName: created_at
+            defaultNullValue: CURRENT_TIMESTAMP
+
+        - addNotNullConstraint:
+            tableName: factures
+            columnName: updated_at
+            defaultNullValue: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: 3-enhance-devis-table
+      author: refactoring-agent
+      comments: Add audit fields to devis table
+      changes:
+        - addColumn:
+            tableName: devis
+            columns:
+              - column:
+                  name: created_by
+                  type: uuid
+                  remarks: User who created this quote
+              - column:
+                  name: validated_by
+                  type: uuid
+                  remarks: User who validated this quote
+
+  - changeSet:
+      id: 4-enhance-bons-commande-table
+      author: refactoring-agent
+      comments: Ensure bons_commande has proper audit fields
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: bons_commande
+                columnName: numero_bon
+      changes:
+        - addColumn:
+            tableName: bons_commande
+            columns:
+              - column:
+                  name: numero_bon
+                  type: varchar(100)
+                  remarks: Alternative reference number
+
+  - changeSet:
+      id: 5-enhance-bons-achat-table
+      author: refactoring-agent
+      comments: Ensure bons_achat has proper audit fields
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: bons_achat
+                columnName: numero_bon
+      changes:
+        - addColumn:
+            tableName: bons_achat
+            columns:
+              - column:
+                  name: numero_bon_alt
+                  type: varchar(100)
+                  remarks: Alternative reference number
