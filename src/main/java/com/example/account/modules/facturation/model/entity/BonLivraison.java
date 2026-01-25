@@ -1,14 +1,21 @@
 package com.example.account.modules.facturation.model.entity;
 
 import com.example.account.modules.core.model.entity.OrganizationScoped;
+import com.example.account.modules.facturation.model.enums.StatutBonLivraison;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -34,19 +41,39 @@ public class BonLivraison extends OrganizationScoped {
     @Column(name = "numero_bon_livraison", unique = true)
     private String numeroBonLivraison;
 
-    @NotNull(message = "La date de livraison est obligatoire")
-    @Column(name = "date_livraison")
-    private LocalDate dateLivraison;
-
-    @Column(name = "heure_livraison")
-    private String heureLivraison;
-
     @NotNull(message = "Le client est obligatoire")
     @Column(name = "id_client")
     private UUID idClient;
 
     @Column(name = "nom_client")
     private String nomClient;
+
+    // Receiver Information
+    @Column(name = "nom_destinataire")
+    private String nomDestinataire;
+
+    @Column(name = "adresse_destinataire")
+    private String adresseDestinataire;
+
+    @Column(name = "contact_destinataire")
+    private String contactDestinataire;
+
+    // Agency / Pickup Address
+    @Column(name = "nom_agence")
+    private String nomAgence;
+
+    @Column(name = "adresse_agence")
+    private String adresseAgence;
+
+    @Column(name = "contact_agence")
+    private String contactAgence;
+
+    @NotNull(message = "La date de livraison est obligatoire")
+    @Column(name = "date_livraison")
+    private LocalDate dateLivraison;
+
+    @Column(name = "date_echeance")
+    private LocalDate dateEcheance;
 
     @Column(name = "id_facture")
     private UUID idFacture;
@@ -60,23 +87,20 @@ public class BonLivraison extends OrganizationScoped {
     @Column(name = "numero_commande")
     private String numeroCommande;
 
-    @Column(name = "adresse_livraison", length = 500)
-    private String adresseLivraison;
+    @Column(name = "statut")
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private StatutBonLivraison statut = StatutBonLivraison.EN_PREPARATION;
 
-    @Column(name = "ville_livraison")
-    private String villeLivraison;
+    @OneToMany(mappedBy = "bonLivraison", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<LigneBonLivraison> lignes = new ArrayList<>();
 
-    @Column(name = "code_postal_livraison")
-    private String codePostalLivraison;
+    @Column(name = "montant_total")
+    private BigDecimal montantTotal;
 
-    @Column(name = "pays_livraison")
-    private String paysLivraison;
-
-    @Column(name = "contact_livraison")
-    private String contactLivraison;
-
-    @Column(name = "telephone_livraison")
-    private String telephoneLivraison;
+    @Column(name = "conditions_generales", length = 1000)
+    private String conditionsGenerales;
 
     @Column(name = "transporteur")
     private String transporteur;
@@ -84,38 +108,15 @@ public class BonLivraison extends OrganizationScoped {
     @Column(name = "numero_suivi")
     private String numeroSuivi;
 
-    @Column(name = "mode_livraison")
-    private String modeLivraison;
-
-    @Column(name = "statut")
-    @Builder.Default
-    private String statut = "EN_PREPARATION";
-
-    @Column(name = "nombre_colis")
-    private Integer nombreColis;
-
-    @Column(name = "poids_total")
-    private String poidsTotal;
-
-    @Column(name = "signature_client")
-    private String signatureClient;
-
-    @Column(name = "date_signature")
-    private LocalDateTime dateSignature;
-
-    @Column(name = "notes", length = 1000)
-    private String notes;
-
-    @Column(name = "instructions_speciales", length = 500)
-    private String instructionsSpeciales;
-
     @Column(name = "created_by")
     private String createdBy;
 
-    @Column(name = "created_at")
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @Column(name = "livraison_effectuee")
@@ -125,3 +126,4 @@ public class BonLivraison extends OrganizationScoped {
     @Column(name = "date_livraison_effective")
     private LocalDateTime dateLivraisonEffective;
 }
+
