@@ -4,17 +4,14 @@ import com.example.account.modules.facturation.dto.request.FactureCreateRequest;
 import com.example.account.modules.facturation.dto.request.FactureUpdateRequest;
 import com.example.account.modules.facturation.dto.response.FactureResponse;
 import com.example.account.modules.facturation.mapper.FactureMapper;
-import com.example.account.modules.facturation.model.entity.LigneFacture;
-import com.example.account.modules.facturation.repository.LigneFactureRepository;
-import com.example.account.modules.tiers.model.entity.Client;
+
+
 import com.example.account.modules.facturation.model.entity.Facture;
 import com.example.account.modules.facturation.model.enums.StatutFacture;
 import com.example.account.modules.tiers.repository.ClientRepository;
 import com.example.account.modules.facturation.repository.FactureRepository;
 import com.example.account.modules.facturation.service.producer.FactureEventProducer;
-import com.example.account.modules.facturation.model.entity.Devis;
-import com.example.account.modules.facturation.model.entity.LigneDevis;
-import com.example.account.modules.facturation.model.enums.StatutDevis;
+
 import com.example.account.modules.facturation.repository.DevisRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -27,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -37,14 +34,14 @@ public class FactureService {
 
     private static final Logger log = LoggerFactory.getLogger(FactureService.class);
 
-    private final ClientRepository clientRepository;
+    
     private final FactureRepository factureRepository;
-    private final LigneFactureRepository ligneFactureRepository;
+    
     private final FactureMapper factureMapper;
     private final FactureEventProducer factureEventProducer;
     private final PdfGeneratorService pdfGeneratorService;
     private final EmailService emailService;
-    private final DevisRepository devisRepository;
+    
     
 
 
@@ -52,36 +49,27 @@ public class FactureService {
     public FactureResponse createFacture(FactureCreateRequest request) {
         log.info("Création d'une nouvelle facture pour le client: {}", request.getIdClient());
 
-        // Vérifier que le client existe
-        Client client = clientRepository.findById(request.getIdClient())
-                .orElseThrow(() -> new IllegalArgumentException("Client non trouvé: " + request.getIdClient()));
+      
 
         // Créer la facture
         Facture facture = factureMapper.toEntity(request);
 
-        // Copier les informations du client
-        facture.setNomClient(client.getUsername());
-        facture.setAdresseClient(client.getAdresse());
-        facture.setEmailClient(client.getEmail());
-        facture.setTelephoneClient(client.getTelephone());
+        
 
-        // Calculer les montants si des lignes de facture sont fournies
-        if (request.getLignesFacture() != null && !request.getLignesFacture().isEmpty()) {
-            calculateMontants(facture);
-        }
+        
 
         Facture savedFacture = factureRepository.save(facture);
         FactureResponse response = factureMapper.toResponse(savedFacture);
 
         // Publier l'événement
-        factureEventProducer.publishFactureCreated(response);
+       // factureEventProducer.publishFactureCreated(response);
 
         log.info("Facture créée avec succès: {}", savedFacture.getNumeroFacture());
         return response;
     }
 
     @Transactional
-    public FactureResponse updateFacture(UUID factureId, FactureUpdateRequest request) {
+    public FactureResponse updateFacture(UUID factureId, FactureCreateRequest request) {
         log.info("Mise à jour de la facture: {}", factureId);
 
         Facture facture = factureRepository.findById(factureId)
@@ -89,16 +77,13 @@ public class FactureService {
 
         factureMapper.updateEntityFromRequest(request, facture);
 
-        // Recalculer les montants si nécessaire
-        if (facture.getLignesFacture() != null && !facture.getLignesFacture().isEmpty()) {
-            calculateMontants(facture);
-        }
+        
 
         Facture updatedFacture = factureRepository.save(facture);
         FactureResponse response = factureMapper.toResponse(updatedFacture);
 
         // Publier l'événement
-        factureEventProducer.publishFactureUpdated(response);
+      //  factureEventProducer.publishFactureUpdated(response);
 
         log.info("Facture mise à jour avec succès: {}", factureId);
         return response;
@@ -244,29 +229,7 @@ public class FactureService {
  
 
 
-    private void calculateMontants(Facture facture) {
-        if (facture.getLignesFacture() == null || facture.getLignesFacture().isEmpty()) {
-            return;
-        }
-
-        BigDecimal montantHT = facture.getLignesFacture().stream()
-                .filter(ligne -> !Boolean.TRUE.equals(ligne.getIsTaxLine()))
-                .map(ligne -> ligne.getMontantTotal() != null ? ligne.getMontantTotal() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal montantTVA = facture.getLignesFacture().stream()
-                .filter(ligne -> Boolean.TRUE.equals(ligne.getIsTaxLine()))
-                .map(ligne -> ligne.getMontantTotal() != null ? ligne.getMontantTotal() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal montantTTC = montantHT.add(montantTVA);
-
-        facture.setMontantHT(montantHT);
-        facture.setMontantTVA(montantTVA);
-        facture.setMontantTTC(montantTTC);
-        facture.setMontantTotal(montantTTC);
-        facture.setMontantRestant(montantTTC);
-    }
+    
 
     @Transactional(readOnly = true)
     public Long countByEtat(StatutFacture etat) {
@@ -276,71 +239,7 @@ public class FactureService {
     /**
      * Génère le PDF d'une facture
      */
-    @Transactional(readOnly = true)
-    public byte[] genererPdfFacture(UUID factureId) {
-        log.info("Génération du PDF pour la facture: {}", factureId);
-
-        Facture facture = factureRepository.findById(factureId)
-                .orElseThrow(() -> new IllegalArgumentException("Facture non trouvée: " + factureId));
-
-        Client client = clientRepository.findById(facture.getIdClient())
-                .orElseThrow(() -> new IllegalArgumentException("Client non trouvé: " + facture.getIdClient()));
-
-        return pdfGeneratorService.generateFacturePdf(facture, client);
-    }
-
-    /**
-     * Génère et sauvegarde le PDF d'une facture
-     */
-    @Transactional
-    public String genererEtSauvegarderPdfFacture(UUID factureId) {
-        log.info("Génération et sauvegarde du PDF pour la facture: {}", factureId);
-
-        Facture facture = factureRepository.findById(factureId)
-                .orElseThrow(() -> new IllegalArgumentException("Facture non trouvée: " + factureId));
-
-        Client client = clientRepository.findById(facture.getIdClient())
-                .orElseThrow(() -> new IllegalArgumentException("Client non trouvé: " + facture.getIdClient()));
-
-        String pdfPath = pdfGeneratorService.generateAndSaveFacturePdf(facture, client);
-
-        // Mettre à jour le chemin du PDF dans la facture
-        facture.setPdfPath(pdfPath);
-        factureRepository.save(facture);
-
-        return pdfPath;
-    }
-
-    /**
-     * Envoie la facture par email au client
-     */
-    @Transactional
-    public void envoyerFactureParEmail(UUID factureId) {
-        log.info("Envoi de la facture {} par email", factureId);
-
-        Facture facture = factureRepository.findById(factureId)
-                .orElseThrow(() -> new IllegalArgumentException("Facture non trouvée: " + factureId));
-
-        if (facture.getEmailClient() == null || facture.getEmailClient().isEmpty()) {
-            throw new IllegalArgumentException("Le client n'a pas d'adresse email");
-        }
-
-        Client client = clientRepository.findById(facture.getIdClient())
-                .orElseThrow(() -> new IllegalArgumentException("Client non trouvé: " + facture.getIdClient()));
-
-        // Générer le PDF
-        byte[] pdfBytes = pdfGeneratorService.generateFacturePdf(facture, client);
-
-        // Envoyer l'email avec le PDF en pièce jointe
-        emailService.sendFactureCreationEmail(facture, facture.getEmailClient(), pdfBytes);
-
-        // Mettre à jour le statut d'envoi
-        facture.setEnvoyeParEmail(true);
-        facture.setDateEnvoiEmail(java.time.LocalDateTime.now());
-        factureRepository.save(facture);
-
-        log.info("Facture {} envoyée par email à {}", facture.getNumeroFacture(), facture.getEmailClient());
-    }
+   
 
     /**
      * Envoie un rappel de paiement pour une facture

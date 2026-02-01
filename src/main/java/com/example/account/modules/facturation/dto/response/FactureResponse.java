@@ -1,14 +1,13 @@
 package com.example.account.modules.facturation.dto.response;
 
-
 import com.example.account.modules.facturation.model.enums.StatutFacture;
+import com.example.account.modules.facturation.model.enums.TypePaiementFacture;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -19,77 +18,66 @@ import java.util.UUID;
 @Builder
 public class FactureResponse {
 
-    private UUID idFacture;
+    private String idFacture; // Changed to String to match 'FACT-2026-001'
     private String numeroFacture;
-    private LocalDate dateFacturation;
-    private LocalDate dateEcheance;
+    
+    // Using LocalDateTime for ISO consistency with the frontend strings
+    private LocalDateTime dateFacturation;
+    private LocalDateTime dateEcheance;
+    private LocalDateTime dateSysteme;
+    
     private String type;
-    private StatutFacture etat;
-    private BigDecimal montantTotal;
-    private BigDecimal montantRestant;
-    private UUID idClient;
+    private StatutFacture etat; // Map to the UpdatedFactureResponse.etat enum
+    
+    private String idClient; // Changed to String to match 'c001'
     private String nomClient;
     private String adresseClient;
     private String emailClient;
     private String telephoneClient;
-    private List<LigneFactureResponse> lignesFacture;
+    
+    // Financial fields (aligned with mock logic)
     private BigDecimal montantHT;
     private BigDecimal montantTVA;
     private BigDecimal montantTTC;
+    private BigDecimal montantTotal;
+    private BigDecimal montantRestant;
+    private BigDecimal finalAmount;
+    
+    private Boolean applyVat;
     private String devise;
     private BigDecimal tauxChange;
+    
+    private TypePaiementFacture modeReglement;
     private String conditionsPaiement;
-    private String notes;
+    private Integer nbreEcheance;
+    
+    private String nosRef;
+    private String vosRef;
     private String referenceCommande;
+    private String idDevisOrigine; // Reference to source quote
+
+    // JSON-based line items
+    private List<LigneFactureResponse> lignesFacture;
+
+    private String notes;
     private String pdfPath;
     private Boolean envoyeParEmail;
     private LocalDateTime dateEnvoiEmail;
     
-    /**
-     * Organization ID - for multi-tenancy context.
-     */
+    private UUID referalClientId;
     private UUID organizationId;
     
-    /**
-     * Global discount percentage (0-100).
-     */
     private BigDecimal remiseGlobalePourcentage;
-    
-    /**
-     * Global discount amount.
-     */
     private BigDecimal remiseGlobaleMontant;
     
-    /**
-     * User who created this invoice.
-     */
+    // User context & Audit fields
     private UUID createdBy;
-    
-    /**
-     * Username of the user who created this invoice.
-     */
     private String createdByUsername;
-    
-    /**
-     * User who validated this invoice.
-     */
     private UUID validatedBy;
-    
-    /**
-     * Username of the user who validated this invoice.
-     */
     private String validatedByUsername;
-    
-    /**
-     * Timestamp when invoice was validated.
-     */
     private LocalDateTime validatedAt;
     
-    /**
-     * Optimistic locking version.
-     */
     private Long version;
-    
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
