@@ -6,16 +6,15 @@ import com.example.account.modules.facturation.dto.response.LigneFactureResponse
 import com.example.account.modules.facturation.dto.response.NoteCreditResponse;
 import com.example.account.modules.facturation.model.entity.LigneNoteCredit;
 import com.example.account.modules.facturation.model.entity.NoteCredit;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.*;
 
 import java.util.List;
 
 @Mapper(
         componentModel = "spring",
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
+        builder = @Builder(disableBuilder = true)
 )
 public interface NoteCreditMapper extends BaseMapper<NoteCredit, NoteCreditRequest, NoteCreditRequest, NoteCreditResponse> {
 
@@ -42,8 +41,10 @@ public interface NoteCreditMapper extends BaseMapper<NoteCredit, NoteCreditReque
     List<NoteCreditResponse> toResponseList(List<NoteCredit> entities);
 
     // Mapping for lines
-    @Mapping(target = "idLigne", source = "idLigne")
-    @Mapping(target = "idFacture", ignore = true) // Not a facture
+    // LigneNoteCredit has proper fields now, no need to remap non-existent fields
+    @Mapping(target = "prixUnitaire", source = "prixUnitaire")
+    @Mapping(target = "montantTotal", source = "montantTotal")
+    @Mapping(target = "idProduit", source = "idProduit")
     LigneFactureResponse toLigneResponse(LigneNoteCredit ligne);
 
     List<LigneFactureResponse> toLigneResponseList(List<LigneNoteCredit> lignes);
