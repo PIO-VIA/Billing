@@ -3,24 +3,19 @@ package com.example.account.modules.facturation.mapper;
 import com.example.account.modules.facturation.dto.request.BondeReceptionCreateRequest;
 import com.example.account.modules.facturation.dto.response.BondeReceptionResponse;
 import com.example.account.modules.facturation.model.entity.BondeReception;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.ReportingPolicy;
+import org.mapstruct.*;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(
+    componentModel = "spring", 
+    unmappedTargetPolicy = ReportingPolicy.IGNORE,
+    builder = @Builder(disableBuilder = true)
+)
 public interface BondeReceptionMapper {
 
-    /**
-     * Convert Entity to DTO
-     */
     BondeReceptionResponse toDto(BondeReception entity);
 
-    /**
-     * Convert DTO to Entity
-     */
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "organizationId", ignore = true)

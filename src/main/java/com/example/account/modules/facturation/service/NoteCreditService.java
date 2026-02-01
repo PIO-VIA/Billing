@@ -44,7 +44,7 @@ public class NoteCreditService {
     public NoteCreditResponse updateNoteCredit(UUID id, NoteCreditRequest request) {
         log.info("Mise à jour de la note de crédit: {}", id);
         
-        NoteCredit entity = noteCreditRepository.findByIdAndOrganizationId(id, OrganizationContext.getCurrentOrganizationId())
+        NoteCredit entity = noteCreditRepository.findByIdNoteCreditAndOrganizationId(id, OrganizationContext.getCurrentOrganizationId())
                 .orElseThrow(() -> new IllegalArgumentException("Note de crédit non trouvée"));
         
         noteCreditMapper.updateEntityFromRequest(request, entity);
@@ -59,7 +59,7 @@ public class NoteCreditService {
 
     @Transactional(readOnly = true)
     public NoteCreditResponse getNoteCreditById(UUID id) {
-        return noteCreditRepository.findByIdAndOrganizationId(id, OrganizationContext.getCurrentOrganizationId())
+        return noteCreditRepository.findByIdNoteCreditAndOrganizationId(id, OrganizationContext.getCurrentOrganizationId())
                 .map(noteCreditMapper::toResponse)
                 .orElseThrow(() -> new IllegalArgumentException("Note de crédit non trouvée"));
     }
@@ -73,7 +73,7 @@ public class NoteCreditService {
 
     @Transactional
     public void deleteNoteCredit(UUID id) {
-        NoteCredit entity = noteCreditRepository.findByIdAndOrganizationId(id, OrganizationContext.getCurrentOrganizationId())
+        NoteCredit entity = noteCreditRepository.findByIdNoteCreditAndOrganizationId(id, OrganizationContext.getCurrentOrganizationId())
                 .orElseThrow(() -> new IllegalArgumentException("Note de crédit non trouvée"));
         noteCreditRepository.delete(entity);
     }
