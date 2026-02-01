@@ -45,7 +45,7 @@ public class FactureController {
     @Operation(summary = "Mettre à jour une facture")
     public ResponseEntity<FactureResponse> updateFacture(
             @PathVariable UUID factureId,
-            @Valid @RequestBody FactureUpdateRequest request) {
+            @Valid @RequestBody FactureCreateRequest request) {
         log.info("Requête de mise à jour de la facture: {}", factureId);
         FactureResponse response = factureService.updateFacture(factureId, request);
         return ResponseEntity.ok(response);
@@ -159,6 +159,8 @@ public class FactureController {
         return ResponseEntity.ok(count);
     }
 
+   /*
+   
     @GetMapping("/{factureId}/pdf")
     @Operation(summary = "Télécharger le PDF d'une facture")
     public ResponseEntity<byte[]> downloadFacturePdf(@PathVariable UUID factureId) {
@@ -195,4 +197,5 @@ public class FactureController {
         String pdfPath = factureService.genererEtSauvegarderPdfFacture(factureId);
         return ResponseEntity.ok(pdfPath);
     }
+   */
 }

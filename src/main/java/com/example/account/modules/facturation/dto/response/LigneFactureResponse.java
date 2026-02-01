@@ -13,8 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LigneFactureResponse {
-    private UUID idLigne;
-    private UUID idFacture;
+    
     private Integer quantite;
     private String description;
     private BigDecimal debit;
