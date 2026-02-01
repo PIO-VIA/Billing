@@ -12,21 +12,22 @@ import java.util.UUID;
 
 
 @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public  class LineBonReception {
-        private UUID productId;
-        private String description;
-        private String uom; // Unit of Measure
+@NoArgsConstructor
+@AllArgsConstructor
+public class LineBonReception {
+    private UUID productId;
+    private String description;
+    private String uom; // Unit of Measure
 
-        private Double orderedQuantity;
-        private Double receivedQuantity;
-        private Double acceptedQuantity;
-        private Double rejectedQuantity;
-        private Double shortQuantity;
-        private Double damagedQuantity;
-        private Double excessQuantity;
+    private Double orderedQuantity;
+    private Double receivedQuantity;
+    private Double acceptedQuantity;
+    private Double rejectedQuantity;
+    private Double shortQuantity;
+    private Double damagedQuantity;
+    private Double excessQuantity;
 
-        private Double rate;
-        private Double lineAmount;
-    }
+    private Double rate;
+    private Double discount;
+    private Double lineAmount;
+}

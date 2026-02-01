@@ -1,6 +1,5 @@
 package com.example.account.modules.facturation.dto.response;
 
-
 import com.example.account.modules.facturation.model.entity.Lines.LineBonReception;
 import com.example.account.modules.facturation.model.enums.StatusBonReception;
 import lombok.*;
