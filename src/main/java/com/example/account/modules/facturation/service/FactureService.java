@@ -41,7 +41,7 @@ public class FactureService {
     private final FactureEventProducer factureEventProducer;
     private final PdfGeneratorService pdfGeneratorService;
     private final EmailService emailService;
-    
+    private final DevisRepository devisRepository;
     
 
 
