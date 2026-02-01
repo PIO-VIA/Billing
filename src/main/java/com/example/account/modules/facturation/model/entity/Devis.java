@@ -2,14 +2,15 @@ package com.example.account.modules.facturation.model.entity;
 
 import com.example.account.modules.core.model.entity.OrganizationScoped;
 import com.example.account.modules.facturation.model.enums.StatutDevis;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.example.account.modules.facturation.model.enums.TypePaiementDevis;
+
+import lombok.*;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -39,112 +40,88 @@ public class Devis extends OrganizationScoped {
     private String numeroDevis;
 
     @NotNull(message = "La date de création est obligatoire")
-    @Column(name = "date_creation")
-    private LocalDate dateCreation;
+    private LocalDateTime dateCreation;
 
     @NotNull(message = "La date de validité est obligatoire")
-    @Column(name = "date_validite")
-    private LocalDate dateValidite;
+    private LocalDateTime dateValidite;
 
-    @Column(name = "type")
     private String type;
 
     @NotNull(message = "Le statut est obligatoire")
     @Enumerated(EnumType.STRING)
-    @Column(name = "statut")
     private StatutDevis statut;
 
+    // --- THE JSON FIELD ---
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "lignes_devis", columnDefinition = "jsonb")
+    private List<LigneDevis> lignesDevis; 
+
     @NotNull(message = "Le montant total est obligatoire")
-    @PositiveOrZero(message = "Le montant total doit être positif ou nul")
-    @Column(name = "montant_total")
     private BigDecimal montantTotal;
 
     @NotNull(message = "L'ID client est obligatoire")
-    @Column(name = "id_client")
-    private UUID idClient;
+    private String idClient;
 
-    @Column(name = "nom_client")
     private String nomClient;
-
-    @Column(name = "adresse_client")
     private String adresseClient;
-
-    @Column(name = "email_client")
     private String emailClient;
-
-    @Column(name = "telephone_client")
     private String telephoneClient;
 
-
-
-    @Column(name = "montant_ht")
     private BigDecimal montantHT;
-
-    @Column(name = "montant_tva")
     private BigDecimal montantTVA;
-
-    @Column(name = "montant_ttc")
     private BigDecimal montantTTC;
-
-    @Column(name = "devise")
     private String devise;
 
-    @Column(name = "taux_change")
     @Builder.Default
     private BigDecimal tauxChange = BigDecimal.ONE;
 
-    @Column(name = "conditions_paiement")
     private String conditionsPaiement;
 
-    @Column(name = "notes")
+    @Column(length = 1000)
     private String notes;
 
-    @Column(name = "reference_externe")
     private String referenceExterne;
-
-    @Column(name = "pdf_path")
     private String pdfPath;
 
-    @Column(name = "envoye_par_email")
     @Builder.Default
     private Boolean envoyeParEmail = false;
 
-    @Column(name = "date_envoi_email")
     private LocalDateTime dateEnvoiEmail;
-
-    @Column(name = "date_acceptation")
     private LocalDateTime dateAcceptation;
-
-    @Column(name = "date_refus")
     private LocalDateTime dateRefus;
-
-    @Column(name = "motif_refus")
     private String motifRefus;
 
-    @Column(name = "id_facture_convertie")
     private UUID idFactureConvertie;
 
-    @Column(name = "remise_globale_pourcentage")
     @Builder.Default
     private BigDecimal remiseGlobalePourcentage = BigDecimal.ZERO;
 
-    @Column(name = "remise_globale_montant")
     @Builder.Default
     private BigDecimal remiseGlobaleMontant = BigDecimal.ZERO;
 
-    @Column(name = "validite_offre_jours")
     @Builder.Default
     private Integer validiteOffreJours = 30;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    // --- NEW FIELDS ---
+    @Builder.Default
+    private Boolean applyVat = true;
 
-    @Column(name = "updated_at")
+    private LocalDateTime dateSysteme;
+
+    @Enumerated(EnumType.STRING)
+    private TypePaiementDevis modeReglement;
+
+    private String nosRef;
+    private String vosRef;
+    private Integer nbreEcheance;
+    private String referalClientId;
+    private BigDecimal finalAmount;
+
+    // --- AUDIT ---
+    private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     @Version
-    @Column(name = "version")
     @Builder.Default
-    private Long version=0L;
-
+    private Long version = 0L;
 }

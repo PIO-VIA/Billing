@@ -39,14 +39,7 @@ public class FactureController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PostMapping("/convert/{devisId}")
-    @Operation(summary = "Créer une facture à partir d'un devis")
-    public ResponseEntity<FactureResponse> createFactureFromDevis(@PathVariable UUID devisId) {
-        log.info("Requête de création de facture à partir du devis: {}", devisId);
-        FactureResponse response = factureService.createFactureFromDevis(devisId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
+  
 
     @PutMapping("/{factureId}")
     @Operation(summary = "Mettre à jour une facture")
