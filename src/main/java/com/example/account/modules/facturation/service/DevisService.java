@@ -5,14 +5,14 @@ import com.example.account.modules.facturation.dto.request.LigneDevisCreateReque
 import com.example.account.modules.facturation.dto.response.DevisResponse;
 import com.example.account.modules.facturation.dto.response.LigneDevisResponse;
 import com.example.account.modules.facturation.mapper.DevisMapper;
-import com.example.account.modules.facturation.mapper.LigneDevisMapper;
+
 import com.example.account.modules.tiers.model.entity.Client;
 import com.example.account.modules.facturation.model.entity.Devis;
 import com.example.account.modules.facturation.model.entity.LigneDevis;
 import com.example.account.modules.facturation.model.enums.StatutDevis;
 import com.example.account.modules.tiers.repository.ClientRepository;
 import com.example.account.modules.facturation.repository.DevisRepository;
-import com.example.account.modules.facturation.repository.LigneDevisRepository;
+
 import com.example.account.modules.facturation.service.producer.DevisEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,42 +33,26 @@ import java.util.UUID;
 public class DevisService {
 
     private final DevisRepository devisRepository;
-    private final ClientRepository clientRepository;
+    
     private final DevisMapper devisMapper;
     private final DevisEventProducer devisEventProducer;
-    private final LigneDevisRepository ligneDevisRepository;
-    private final LigneDevisMapper ligneDevisMapper;
+
+    
 
     @Transactional
     public DevisResponse createDevis(DevisCreateRequest request) {
         log.info("Création d'un nouveau devis pour le client: {}", request.getIdClient());
 
-        // Vérifier que le client existe
-        Client client = clientRepository.findById(request.getIdClient())
-                .orElseThrow(() -> new IllegalArgumentException("Client non trouvé: " + request.getIdClient()));
-
+        
         // Créer le devis
         Devis devis = devisMapper.toEntity(request);
-     //   devis.setIdDevis(UUID.randomUUID());
-        devis.setNumeroDevis(generateNumeroDevis());
+     
         devis.setCreatedAt(LocalDateTime.now());
         devis.setUpdatedAt(LocalDateTime.now());
 
-        // Copier les informations du client
-        devis.setNomClient(client.getUsername());
-        devis.setAdresseClient(client.getAdresse());
-        devis.setEmailClient(client.getEmail());
-        devis.setTelephoneClient(client.getTelephone());
+       
 
-        // Calculer les montants si des lignes de devis sont fournies
-        if (request.getLignesDevis() != null && !request.getLignesDevis().isEmpty()) {
-            calculateMontants(devis);
-        } else {
-            devis.setMontantHT(BigDecimal.ZERO);
-            devis.setMontantTVA(BigDecimal.ZERO);
-            devis.setMontantTTC(BigDecimal.ZERO);
-            devis.setMontantTotal(BigDecimal.ZERO);
-        }
+        
         Devis savedDevis = devisRepository.save(devis);
         DevisResponse response = devisMapper.toResponse(savedDevis);
 
@@ -78,27 +62,7 @@ public class DevisService {
         log.info("Devis créé avec succès: {}", savedDevis.getNumeroDevis());
         return response;
     }
-    @Transactional
-    public LigneDevisResponse addLigneDevis(UUID devisId,LigneDevisCreateRequest request){
-        log.info("Adding a new ligne de devis");
-        Devis devis=devisRepository.findById(devisId)
-        .orElseThrow(() -> new IllegalArgumentException("Devis non trouvé: " + devisId));
-        LigneDevis ligneDevisreq=ligneDevisMapper.toEntity(request);
-        //add ligneDevis to devis
-        ligneDevisreq.setDevis(devis);
-      
-        
-        
-        LigneDevis ligneDevis=ligneDevisRepository.save(ligneDevisreq);
-        devis.setMontantHT(new BigDecimal(12));
-        //recalculate the montanttotal of the devis
-        calculateMontants(devis);
-        //save the new changes on the devis
-        devisRepository.save(devis);
-
-
-        return ligneDevisMapper.toResponse(ligneDevis);
-    }
+  
 
     @Transactional
     public DevisResponse updateDevis(UUID devisId, DevisCreateRequest request) {
@@ -111,7 +75,7 @@ public class DevisService {
         devis.setUpdatedAt(LocalDateTime.now());
 
         //calulat the montants
-        calculateMontants(devis);
+        
         
         Devis updatedDevis = devisRepository.save(devis);
         DevisResponse response = devisMapper.toResponse(updatedDevis);
@@ -238,37 +202,7 @@ public class DevisService {
         return devisMapper.toResponse(updatedDevis);
     }
 
-    private void calculateMontants(Devis devis) {
-        //find all the ligne de devis for the devis
-        List<LigneDevis> ligneDs=ligneDevisRepository.findByDevis(devis);
-        if (ligneDs == null || ligneDs.isEmpty()) {
-            return;
-        }
+    
 
-        BigDecimal montantHT = ligneDs.stream()
-                .filter(ligne -> !Boolean.TRUE.equals(ligne.getIsTaxLine()))
-                .map(ligne -> ligne.getMontantTotal() != null ? ligne.getMontantTotal() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        log.info("Montant HT : ",montantHT);;
-        BigDecimal montantTVA = ligneDs.stream()
-                .filter(ligne -> Boolean.TRUE.equals(ligne.getIsTaxLine()))
-                .map(ligne -> ligne.getMontantTotal() != null ? ligne.getMontantTotal() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal montantTTC = montantHT.add(montantTVA);
-
-        // Appliquer la remise globale si elle existe
-        if (devis.getRemiseGlobaleMontant() != null && devis.getRemiseGlobaleMontant().compareTo(BigDecimal.ZERO) > 0) {
-            montantTTC = montantTTC.subtract(devis.getRemiseGlobaleMontant());
-        }
-
-        devis.setMontantHT(montantHT);
-        devis.setMontantTVA(montantTVA);
-        devis.setMontantTTC(montantTTC);
-        devis.setMontantTotal(montantTTC);
-    }
-
-    private String generateNumeroDevis() {
-        return "DEV-" + System.currentTimeMillis();
-    }
+    
 }

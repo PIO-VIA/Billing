@@ -1,12 +1,11 @@
 package com.example.account.modules.facturation.controller;
 
 import com.example.account.modules.facturation.dto.request.DevisCreateRequest;
-import com.example.account.modules.facturation.dto.request.LigneDevisCreateRequest;
+
 import com.example.account.modules.facturation.dto.response.DevisResponse;
-import com.example.account.modules.facturation.dto.response.LigneDevisResponse;
-import com.example.account.modules.facturation.model.entity.LigneDevis;
+
 import com.example.account.modules.facturation.model.enums.StatutDevis;
-import com.example.account.modules.facturation.repository.LigneDevisRepository;
+
 import com.example.account.modules.facturation.service.DevisService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,14 +44,7 @@ public class DevisController {
     }
 
 
-    @PostMapping("/ligneDevis/{devisId}")
-    public ResponseEntity<LigneDevisResponse> addLigneDevis(@RequestBody LigneDevisCreateRequest request,@PathVariable UUID devisId) {
-        
-            log.info("adding a new ligne devis  for devis ",devisId);
-        
-         LigneDevisResponse response=   devisService.addLigneDevis(devisId, request);
-         return ResponseEntity.ok(response);
-    }
+   
     
     @PutMapping("/{devisId}")
     @Operation(summary = "Mettre à jour un devis")

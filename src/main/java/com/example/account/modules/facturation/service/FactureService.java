@@ -16,7 +16,7 @@ import com.example.account.modules.facturation.model.entity.Devis;
 import com.example.account.modules.facturation.model.entity.LigneDevis;
 import com.example.account.modules.facturation.model.enums.StatutDevis;
 import com.example.account.modules.facturation.repository.DevisRepository;
-import com.example.account.modules.facturation.repository.LigneDevisRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public class FactureService {
     private final PdfGeneratorService pdfGeneratorService;
     private final EmailService emailService;
     private final DevisRepository devisRepository;
-    private final LigneDevisRepository ligneDevisRepository;
+    
 
 
     @Transactional
@@ -241,81 +241,7 @@ public class FactureService {
         return response;
     }
 
-    @Transactional
-    public FactureResponse createFactureFromDevis(UUID devisId) {
-        log.info("Création d'une facture à partir du devis: {}", devisId);
-
-        Devis devis = devisRepository.findById(devisId)
-                .orElseThrow(() -> new IllegalArgumentException("Devis non trouvé: " + devisId));
-
-        if (devis.getStatut() == StatutDevis.CONVERTI_EN_FACTURE) {
-            throw new IllegalStateException("Ce devis a déjà été facturé");
-        }
-
-        // Créer la facture à partir du devis
-        Facture facture = new Facture();
-        facture.setIdClient(devis.getIdClient());
-        facture.setNomClient(devis.getNomClient());
-        facture.setAdresseClient(devis.getAdresseClient());
-        facture.setEmailClient(devis.getEmailClient());
-        facture.setTelephoneClient(devis.getTelephoneClient());
-        facture.setConditionsPaiement(devis.getConditionsPaiement());
-        facture.setDevise(devis.getDevise());
-        facture.setTauxChange(devis.getTauxChange());
-        
-        // Initialiser les champs spécifiques à la facture
-        facture.setNumeroFacture("FACT-" + System.currentTimeMillis()); // Génération temporaire
-        facture.setDateFacturation(LocalDate.now());
-        facture.setDateEcheance(LocalDate.now().plusDays(30)); // Par défaut 30 jours
-        facture.setEtat(StatutFacture.BROUILLON);
-        facture.setOrganization(devis.getOrganization());
-        
-        // Sauvegarder la facture pour avoir un ID
-        Facture savedFacture = factureRepository.save(facture);
-
-        // Copier les lignes
-        List<LigneDevis> lignesDevis = ligneDevisRepository.findByDevis(devis);
-        if (lignesDevis != null && !lignesDevis.isEmpty()) {
-            int ordre = 1;
-            for (LigneDevis ld : lignesDevis) {
-                LigneFacture lf = new LigneFacture();
-                lf.setIdFacture(savedFacture.getIdFacture());
-                lf.setOrganization(devis.getOrganization());
-                lf.setQuantite(ld.getQuantite());
-                lf.setDescription(ld.getDescription());
-                lf.setDebit(ld.getDebit());
-                lf.setCredit(ld.getCredit());
-                lf.setIsTaxLine(ld.getIsTaxLine());
-                lf.setIdProduit(ld.getIdProduit());
-                lf.setNomProduit(ld.getNomProduit());
-                lf.setPrixUnitaire(ld.getPrixUnitaire());
-                lf.setMontantTotal(ld.getMontantTotal());
-                lf.setOrdre(ordre++);
-                lf.setCreatedAt(LocalDateTime.now());
-                lf.setUpdatedAt(LocalDateTime.now());
-                ligneFactureRepository.save(lf);
-            }
-        }
-        
-        // Mettre à jour les montants (copie du devis pour l'instant)
-        savedFacture.setMontantHT(devis.getMontantHT());
-        savedFacture.setMontantTVA(devis.getMontantTVA());
-        savedFacture.setMontantTTC(devis.getMontantTTC());
-        savedFacture.setMontantTotal(devis.getMontantTotal());
-        savedFacture.setMontantRestant(devis.getMontantTotal());
-
-        savedFacture = factureRepository.save(savedFacture);
-
-        // Mettre à jour le devis
-        devis.setStatut(StatutDevis.CONVERTI_EN_FACTURE);
-        devis.setIdFactureConvertie(savedFacture.getIdFacture());
-        devisRepository.save(devis);
-
-        FactureResponse response = factureMapper.toResponse(savedFacture);
-        factureEventProducer.publishFactureCreated(response);
-        
-        return response;
-    }
+ 
 
 
     private void calculateMontants(Facture facture) {

@@ -35,17 +35,14 @@ public abstract class OrganizationScoped {
      * Organization entity - tenant discriminator relationship.
      * All queries will be automatically filtered by the underlying column.
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organization_id", nullable = false, updatable = false)
-    private Organization organization;
+  
+    private UUID organizationId;
 
     /**
      * Helper method to get the organization ID.
      * Useful for logic that only needs the ID.
      */
-    public UUID getOrganizationId() {
-        return organization != null ? organization.getId() : null;
-    }
+    
 
     /**
      * Index for performance optimization.

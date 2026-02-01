@@ -1,6 +1,6 @@
 package com.example.account.modules.facturation.dto.response;
 
-import com.example.account.modules.facturation.dto.response.LigneFactureResponse;
+
 import com.example.account.modules.facturation.model.enums.StatutFacture;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
