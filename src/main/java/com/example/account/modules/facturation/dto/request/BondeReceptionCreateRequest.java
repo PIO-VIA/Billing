@@ -13,8 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BondeReceptionCreateRequest{
-
+public class BondeReceptionCreateRequest {
 
     private String grnNumber;
     private UUID supplierId;
@@ -32,6 +31,4 @@ public class BondeReceptionCreateRequest{
     private UUID inspectedBy;
     private UUID approvedBy;
     private String remarks;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 } 
