@@ -1,13 +1,12 @@
 package com.example.account.modules.facturation.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.example.account.modules.facturation.model.entity.Lines.LineBonCommande;
+import com.example.account.modules.facturation.model.enums.StatusBonCommande;
+import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -18,24 +17,58 @@ public class BonCommandeResponse {
 
     private UUID idBonCommande;
     private String numeroCommande;
-    private LocalDate dateCommande;
-    private LocalDate dateLivraisonPrevue;
-    private UUID idFournisseur;
-    private String nomFournisseur;
-    private BigDecimal montantTotal;
+
+    // --- Client & Billing ---
+    private UUID idClient;
+    private String nomClient;
+    private String adresseClient;
+    private String emailClient;
+    private String telephoneClient;
+
+    // --- Recipient & Shipping ---
+    private String recipientName;
+    private String recipientPhone;
+    private String recipientAddress;
+    private String recipientCity;
+
+    // --- References ---
+    private UUID idDevisOrigine;
+    private String numeroDevisOrigine;
+    private String referenceExterne;
+    private String nosRef;
+    private String vosRef;
+
+    // --- Dates ---
+    private LocalDateTime dateCommande;
+    private LocalDateTime dateSysteme;
+    private LocalDateTime dateLivraisonPrevue;
+
+    // --- Items ---
+    private List<LineBonCommande> lines;
+
+    // --- Financials ---
     private BigDecimal montantHT;
     private BigDecimal montantTVA;
+    private BigDecimal montantTTC;
     private String devise;
     private BigDecimal tauxChange;
-    private String statut;
-    private String referenceExterne;
+    private Boolean applyVat;
+
+    // --- Logistics & Status ---
+    private String transportMethod;
+    private UUID idAgency;
+    private String modeReglement;
     private String conditionsPaiement;
     private Integer delaiLivraison;
     private String adresseLivraison;
+    private StatusBonCommande statut;
+
+    // --- Metadata & Audit ---
     private String notes;
-    private String createdBy;
+    private UUID createdBy;
+    private UUID validatedBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime validatedAt;
-    private String validatedBy;
+    private UUID organizationId;
 }

@@ -1,15 +1,13 @@
 package com.example.account.modules.facturation.dto.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.example.account.modules.facturation.model.entity.Lines.LineBonCommande;
+import com.example.account.modules.facturation.model.enums.StatusBonCommande;
+import jakarta.validation.constraints.*;
+import lombok.*;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -21,41 +19,67 @@ public class BonCommandeCreateRequest {
     @NotBlank(message = "Le numéro de commande est obligatoire")
     private String numeroCommande;
 
+    // --- Client / Billing Info ---
+    @NotNull(message = "L'ID client est obligatoire")
+    private UUID idClient;
+    private String nomClient;
+    private String adresseClient;
+    private String emailClient;
+    private String telephoneClient;
+
+    // --- Recipient / Shipping Info ---
+    private String recipientName;
+    private String recipientPhone;
+    private String recipientAddress;
+    private String recipientCity;
+
+    // --- References ---
+    private UUID idDevisOrigine;
+    private String numeroDevisOrigine;
+    private String referenceExterne;
+    private String nosRef;
+    private String vosRef;
+
+    // --- Dates ---
     @NotNull(message = "La date de commande est obligatoire")
-    private LocalDate dateCommande;
+    private LocalDateTime dateCommande;
+    private LocalDateTime dateSysteme;
+    private LocalDateTime dateLivraisonPrevue;
 
-    private LocalDate dateLivraisonPrevue;
+    // --- Lines (Items) ---
+    @NotEmpty(message = "La commande doit contenir au moins une ligne")
+    private List<LineBonCommande> lines;
 
-    @NotNull(message = "Le fournisseur est obligatoire")
-    private UUID idFournisseur;
-
-    private String nomFournisseur;
-
-    @NotNull(message = "Le montant total est obligatoire")
-    @PositiveOrZero(message = "Le montant total doit être positif ou nul")
-    private BigDecimal montantTotal;
-
-    @PositiveOrZero(message = "Le montant HT doit être positif ou nul")
+    // --- Financial Summary ---
+    @NotNull(message = "Le montant TTC est obligatoire")
+    @PositiveOrZero
+    private BigDecimal montantTTC;
+    
+    @PositiveOrZero
     private BigDecimal montantHT;
-
-    @PositiveOrZero(message = "Le montant TVA doit être positif ou nul")
+    
+    @PositiveOrZero
     private BigDecimal montantTVA;
-
+    
     @Builder.Default
-    private String devise = "EUR";
-
+    private String devise = "XAF";
+    
     @Builder.Default
     private BigDecimal tauxChange = BigDecimal.ONE;
+    
+    private Boolean applyVat;
 
-    private String referenceExterne;
-
+    // --- Logistics & Payment ---
+    private String transportMethod;
+    private UUID idAgency;
+    private String modeReglement;
     private String conditionsPaiement;
-
     private Integer delaiLivraison;
-
     private String adresseLivraison;
 
+    // --- Status & Audit ---
+    private StatusBonCommande statut;
     private String notes;
-
-    private String createdBy;
+    private UUID createdBy;
+    private UUID organizationId;
 }

@@ -1,40 +1,45 @@
 package com.example.account.modules.facturation.mapper;
 
 import com.example.account.modules.facturation.dto.request.BonCommandeCreateRequest;
-import com.example.account.modules.facturation.dto.request.BonCommandeUpdateRequest;
+
 import com.example.account.modules.facturation.dto.response.BonCommandeResponse;
 import com.example.account.modules.facturation.model.entity.BonCommande;
-import com.example.account.modules.core.mapper.BaseMapper;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.*;
 
 import java.util.List;
 
 @Mapper(
-        componentModel = "spring",
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+    componentModel = "spring",
+    nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
-public interface BonCommandeMapper extends BaseMapper<BonCommande, BonCommandeCreateRequest, BonCommandeUpdateRequest, BonCommandeResponse> {
+public interface BonCommandeMapper {
 
-   
-    @Mapping(target = "statut", constant = "BROUILLON")
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "validatedAt", ignore = true)
-    @Mapping(target = "validatedBy", ignore = true)
-    BonCommande toEntity(BonCommandeCreateRequest createRequest);
-
+    /**
+     * Convertit la requête de création en Entité.
+     * Les champs manquants (id, createdAt, etc.) sont gérés par JPA (@GeneratedValue, @PrePersist).
+     */
     @Mapping(target = "idBonCommande", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "validatedAt", ignore = true)
-    @Mapping(target = "validatedBy", ignore = true)
-    void updateEntityFromRequest(BonCommandeUpdateRequest updateRequest, @MappingTarget BonCommande bonCommande);
+    
+    BonCommande toEntity(BonCommandeCreateRequest request);
 
-    BonCommandeResponse toResponse(BonCommande bonCommande);
+    /**
+     * Met à jour une entité existante à partir d'une requête.
+     * Utile pour les méthodes PUT.
+     */
+    @Mapping(target = "idBonCommande", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "organizationId", ignore = true)
+    void updateEntityFromRequest(BonCommandeCreateRequest request, @MappingTarget BonCommande entity);
 
-    List<BonCommandeResponse> toResponseList(List<BonCommande> bonCommandes);
+    /**
+     * Convertit l'Entité en Réponse DTO pour l'API.
+     */
+    BonCommandeResponse toResponse(BonCommande entity);
+
+    /**
+     * Convertit une liste d'entités en liste de réponses.
+     */
+    List<BonCommandeResponse> toResponseList(List<BonCommande> entities);
 }
