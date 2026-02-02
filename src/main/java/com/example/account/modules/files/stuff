@@ -103,4 +103,105 @@ public <T extends OrganizationScoped> T setOrganization(T entity) {
         }
 
         return currentOrgId.equals(entity.getOrganizationId());
+    } @Transactional(readOnly = true)
+    public List<BonCommandeResponse> getBonCommandesByFournisseur(UUID idFournisseur) {
+        log.info("Récupération des bons de commande du fournisseur: {}", idFournisseur);
+        List<BonCommande> bonCommandes = bonCommandeRepository.findByIdFournisseur(idFournisseur);
+        return bonCommandeMapper.toResponseList(bonCommandes);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BonCommandeResponse> getBonCommandesByStatut(String statut) {
+        log.info("Récupération des bons de commande par statut: {}", statut);
+        List<BonCommande> bonCommandes = bonCommandeRepository.findByStatut(statut);
+        return bonCommandeMapper.toResponseList(bonCommandes);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BonCommandeResponse> getBonCommandesByDevise(String devise) {
+        log.info("Récupération des bons de commande par devise: {}", devise);
+        List<BonCommande> bonCommandes = bonCommandeRepository.findByDevise(devise);
+        return bonCommandeMapper.toResponseList(bonCommandes);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BonCommandeResponse> getBonCommandesByDateCommandeBetween(LocalDate startDate, LocalDate endDate) {
+        log.info("Récupération des bons de commande entre {} et {}", startDate, endDate);
+        List<BonCommande> bonCommandes = bonCommandeRepository.findByDateCommandeBetween(startDate, endDate);
+        return bonCommandeMapper.toResponseList(bonCommandes);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BonCommandeResponse> getBonCommandesByDateLivraisonBetween(LocalDate startDate, LocalDate endDate) {
+        log.info("Récupération des bons de commande avec livraison entre {} et {}", startDate, endDate);
+        List<BonCommande> bonCommandes = bonCommandeRepository.findByDateLivraisonPrevueBetween(startDate, endDate);
+        return bonCommandeMapper.toResponseList(bonCommandes);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BonCommandeResponse> getBonCommandesByMontantBetween(BigDecimal minAmount, BigDecimal maxAmount) {
+        log.info("Récupération des bons de commande entre {} et {}", minAmount, maxAmount);
+        List<BonCommande> bonCommandes = bonCommandeRepository.findByMontantTotalBetween(minAmount, maxAmount);
+        return bonCommandeMapper.toResponseList(bonCommandes);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BonCommandeResponse> getBonCommandesByFournisseurAndStatut(UUID idFournisseur, String statut) {
+        log.info("Récupération des bons de commande du fournisseur {} avec statut {}", idFournisseur, statut);
+        List<BonCommande> bonCommandes = bonCommandeRepository.findByFournisseurAndStatut(idFournisseur, statut);
+        return bonCommandeMapper.toResponseList(bonCommandes);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BonCommandeResponse> searchBonCommandesByNumero(String numeroCommande) {
+        log.info("Recherche des bons de commande par numéro: {}", numeroCommande);
+        List<BonCommande> bonCommandes = bonCommandeRepository.findByNumeroCommandeContaining(numeroCommande);
+        return bonCommandeMapper.toResponseList(bonCommandes);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BonCommandeResponse> searchBonCommandesByFournisseur(String nomFournisseur) {
+        log.info("Recherche des bons de commande par fournisseur: {}", nomFournisseur);
+        List<BonCommande> bonCommandes = bonCommandeRepository.findByNomFournisseurContaining(nomFournisseur);
+        return bonCommandeMapper.toResponseList(bonCommandes);
+    }
+
+    @Transactional
+    public void deleteBonCommande(UUID bonCommandeId) {
+        log.info("Suppression du bon de commande: {}", bonCommandeId);
+
+        if (!bonCommandeRepository.existsById(bonCommandeId)) {
+            throw new IllegalArgumentException("Bon de commande non trouvé: " + bonCommandeId);
+        }
+
+        bonCommandeRepository.deleteById(bonCommandeId);
+
+        // Publier l'événement
+        bonCommandeEventProducer.publishBonCommandeDeleted(bonCommandeId);
+
+        log.info("Bon de commande supprimé avec succès: {}", bonCommandeId);
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal getTotalMontantByFournisseur(UUID idFournisseur) {
+        log.info("Calcul du montant total des commandes pour le fournisseur: {}", idFournisseur);
+        BigDecimal total = bonCommandeRepository.sumMontantByFournisseur(idFournisseur);
+        return total != null ? total : BigDecimal.ZERO;
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal getTotalMontantByStatut(String statut) {
+        log.info("Calcul du montant total des commandes par statut: {}", statut);
+        BigDecimal total = bonCommandeRepository.sumMontantByStatut(statut);
+        return total != null ? total : BigDecimal.ZERO;
+    }
+
+    @Transactional(readOnly = true)
+    public Long countByStatut(String statut) {
+        return bonCommandeRepository.countByStatut(statut);
+    }
+
+    @Transactional(readOnly = true)
+    public Long countByFournisseur(UUID idFournisseur) {
+        return bonCommandeRepository.countByFournisseur(idFournisseur);
     }
