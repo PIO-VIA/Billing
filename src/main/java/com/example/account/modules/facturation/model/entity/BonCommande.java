@@ -1,120 +1,99 @@
 package com.example.account.modules.facturation.model.entity;
 
 import com.example.account.modules.core.model.entity.OrganizationScoped;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.example.account.modules.facturation.model.entity.Lines.LineBonCommande;
+import com.example.account.modules.facturation.model.enums.StatusBonCommande; // Adaptez selon votre enum
+
+
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(
-    name = "bons_commande",
-    indexes = {
-        @Index(name = "idx_boncommande_org", columnList = "organization_id"),
-        @Index(name = "idx_boncommande_org_numerobon", columnList = "organization_id, numero_bon")
-    }
-)
+@Table(name = "bons_commande")
 public class BonCommande extends OrganizationScoped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id_bon_commande")
     private UUID idBonCommande;
 
-    @NotBlank(message = "Le numéro de commande est obligatoire")
     @Column(name = "numero_commande", unique = true)
     private String numeroCommande;
 
-    @NotNull(message = "La date de commande est obligatoire")
-    @Column(name = "date_commande")
-    private LocalDate dateCommande;
+    // --- Client Info (Billing) ---
+    private UUID idClient;
+    private String nomClient;
+    private String adresseClient;
+    private String emailClient;
+    private String telephoneClient;
 
-    @Column(name = "date_livraison_prevue")
-    private LocalDate dateLivraisonPrevue;
+    // --- Recipient Info (Shipping) ---
+    private String recipientName;
+    private String recipientPhone;
+    private String recipientAddress;
+    private String recipientCity;
 
-    @NotNull(message = "Le fournisseur est obligatoire")
-    @Column(name = "id_fournisseur")
-    private UUID idFournisseur;
+    // --- Source Reference ---
+    private UUID idDevisOrigine;
+    private String numeroDevisOrigine;
+    private String nosRef;
+    private String vosRef;
 
-    @Column(name = "nom_fournisseur")
-    private String nomFournisseur;
+    // --- Dates ---
+    private LocalDateTime dateCommande;
+    private LocalDateTime dateSysteme;
+    private LocalDateTime dateLivraisonPrevue;
 
-    @NotNull(message = "Le montant total est obligatoire")
-    @PositiveOrZero(message = "Le montant total doit être positif ou nul")
-    @Column(name = "montant_total")
-    private BigDecimal montantTotal;
+    // --- Lines (JSON) ---
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "lines", columnDefinition = "jsonb")
+    private List<LineBonCommande> lines;
 
-    @Column(name = "montant_ht")
+    // --- Financials ---
     private BigDecimal montantHT;
-
-    @Column(name = "montant_tva")
     private BigDecimal montantTVA;
+    private BigDecimal montantTTC;
+    private String devise;
+    private Boolean applyVat;
 
-    @Column(name = "devise")
-    @Builder.Default
-    private String devise = "EUR";
+    // --- Logistics ---
+    private String transportMethod; // Ou Enum
+    private UUID idAgency;
+    private String modeReglement;
 
-    @Column(name = "taux_change")
-    @Builder.Default
-    private BigDecimal tauxChange = BigDecimal.ONE;
+    // --- Status ---
+    @Enumerated(value = EnumType.STRING)
+    private StatusBonCommande statut; // Ou Enum SalesOrderStatus
 
-    @Column(name = "statut")
-    @Builder.Default
-    private String statut = "BROUILLON";
-
-    @Column(name = "reference_externe")
-    private String referenceExterne;
-
-    @Column(name = "conditions_paiement")
-    private String conditionsPaiement;
-
-    @Column(name = "delai_livraison")
-    private Integer delaiLivraison;
-
-    @Column(name = "adresse_livraison", length = 500)
-    private String adresseLivraison;
-
-    @Column(name = "notes", length = 1000)
+    // --- Metadata & Audit ---
+    @Column(length = 1000)
     private String notes;
+    private UUID createdBy;
+    private UUID validatedBy;
 
-    @Column(name = "created_by")
-    private String createdBy;
-
-    @Column(name = "created_at")
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @Column(name = "validated_at")
     private LocalDateTime validatedAt;
 
-    @Column(name = "validated_by")
-    private String validatedBy;
-
     @PrePersist
-    public void prePersist() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-
-        if (this.statut == null) {
-            this.statut = "EN_ATTENTE";
-        }
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
-    public void preUpdate() {
+    protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
 }

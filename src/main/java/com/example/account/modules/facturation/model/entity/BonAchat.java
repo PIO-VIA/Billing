@@ -4,16 +4,14 @@ import com.example.account.modules.core.model.entity.OrganizationScoped;
 import com.example.account.modules.facturation.model.enums.StatutBonAchat;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,12 +19,13 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(
     name = "bons_achat",
     indexes = {
         @Index(name = "idx_bonachat_org", columnList = "organization_id"),
-        @Index(name = "idx_bonachat_org_numero", columnList = "organization_id, numero_bon_achat")
+        @Index(name = "idx_bonachat_numero", columnList = "numero_bon_achat")
     }
 )
 public class BonAchat extends OrganizationScoped {
@@ -36,66 +35,93 @@ public class BonAchat extends OrganizationScoped {
     @Column(name = "id_bon_achat")
     private UUID idBonAchat;
 
-    @NotBlank(message = "Le numéro de bon d'achat est obligatoire")
+    @NotBlank
     @Column(name = "numero_bon_achat", unique = true)
     private String numeroBonAchat;
 
-    @NotNull(message = "L'ID fournisseur est obligatoire")
-    @Column(name = "id_fournisseur")
-    private UUID idFournisseur;
+    // --- Informations Fournisseur ---
+    @Column(name = "supplier_id")
+    private UUID supplierId;
+    
+    @Column(name = "supplier_name")
+    private String supplierName;
 
-    @Column(name = "nom_fournisseur")
-    private String nomFournisseur;
+    @Column(name = "supplier_code")
+    private String supplierCode;
 
-    @Column(name = "transporteur_societe")
-    private String transporteurSociete;
+    @Column(name = "supplier_email")
+    private String supplierEmail;
 
-    @Column(name = "numero_vehicule")
-    private String numeroVehicule;
+    @Column(name = "supplier_contact")
+    private String supplierContact;
 
-    @Column(name = "id_bon_commande")
-    private UUID idBonCommande;
+    @Column(name = "supplier_address")
+    private String supplierAddress;
 
-    @Column(name = "numero_commande")
-    private String numeroCommande;
+    // --- Informations de Livraison ---
+    @Column(name = "delivery_name")
+    private String deliveryName;
 
-    @NotNull(message = "La date de réception est obligatoire")
-    @Column(name = "date_reception")
-    private LocalDate dateReception;
+    @Column(name = "delivery_address")
+    private String deliveryAddress;
 
-    @NotNull(message = "La date du document est obligatoire")
-    @Column(name = "date_document")
-    private LocalDate dateDocument;
+    @Column(name = "delivery_email")
+    private String deliveryEmail;
+
+    @Column(name = "delivery_contact")
+    private String deliveryContact;
+
+    // --- Dates (Passées en LocalDateTime) ---
+    @Column(name = "date_bon_achat")
+    private LocalDateTime dateBonAchat;
 
     @Column(name = "date_systeme")
-    private LocalDate dateSysteme;
+    private LocalDateTime dateSysteme;
 
-    @NotNull(message = "Le statut est obligatoire")
+    @Column(name = "date_livraison_prevue")
+    private LocalDateTime dateLivraisonPrevue;
+
+    // --- Transport & Statut ---
+    @Column(name = "transport_method")
+    private String transportMethod;
+
+    @Column(name = "instructions_livraison")
+    private String instructionsLivraison;
+
     @Enumerated(EnumType.STRING)
-    @Column(name = "statut")
-    private StatutBonAchat statut;
+    @Column(name = "status")
+    private StatutBonAchat status;
 
-    @Column(name = "prepare_par")
-    private String preparePar;
+    // --- STOCKAGE JSON DES LIGNES ---
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "lines", columnDefinition = "jsonb")
+    private List<LigneBonAchat> lines;
 
-    @Column(name = "inspecte_par")
-    private String inspectePar;
+    // --- Totaux ---
+    @Column(name = "subtotal_amount", precision = 19, scale = 4)
+    private BigDecimal subtotalAmount;
 
-    @Column(name = "approuve_par")
-    private String approuvePar;
+    @Column(name = "tax_amount", precision = 19, scale = 4)
+    private BigDecimal taxAmount;
 
-    @Column(name = "remarques", length = 1000)
-    private String remarques;
+    @Column(name = "grand_total", precision = 19, scale = 4)
+    private BigDecimal grandTotal;
 
-    @OneToMany(mappedBy = "bonAchat", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<LigneBonAchat> lignes = new ArrayList<>();
+    // --- Audit ---
+    @Column(name = "prepared_by")
+    private UUID preparedBy;
+
+    @Column(name = "approved_by")
+    private UUID approvedBy;
+
+    @Column(name = "remarks", length = 1000)
+    private String remarks;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 }

@@ -1,6 +1,7 @@
 package com.example.account.modules.facturation.repository;
 
 import com.example.account.modules.facturation.model.entity.BonCommande;
+import com.example.account.modules.facturation.model.enums.StatusBonCommande;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,52 +9,43 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface BonCommandeRepository extends JpaRepository<BonCommande, UUID> {
-    Page<BonCommande> findAll(Pageable pageable);
 
+    // --- Recherches de base ---
     Optional<BonCommande> findByNumeroCommande(String numeroCommande);
+    
+    List<BonCommande> findByIdClient(UUID idClient);
 
-    List<BonCommande> findByIdFournisseur(UUID idFournisseur);
+    List<BonCommande> findByStatut(StatusBonCommande statut);
 
-    List<BonCommande> findByStatut(String statut);
+    // --- Filtrage par Organisation (Multi-tenancy) ---
+    Page<BonCommande> findByOrganizationId(UUID organizationId, Pageable pageable);
 
-    List<BonCommande> findByDevise(String devise);
+    // --- Recherches par Date (Passage à LocalDateTime) ---
+    List<BonCommande> findByDateCommandeBetweenAndOrganizationId(LocalDateTime start, LocalDateTime end, UUID orgId);
 
-    @Query("SELECT bc FROM BonCommande bc WHERE bc.dateCommande BETWEEN ?1 AND ?2")
-    List<BonCommande> findByDateCommandeBetween(LocalDate startDate, LocalDate endDate);
+    // --- Recherches Textuelles ---
+    List<BonCommande> findByNumeroCommandeContainingIgnoreCase(String numero);
 
-    @Query("SELECT bc FROM BonCommande bc WHERE bc.dateLivraisonPrevue BETWEEN ?1 AND ?2")
-    List<BonCommande> findByDateLivraisonPrevueBetween(LocalDate startDate, LocalDate endDate);
+    List<BonCommande> findByNomClientContainingIgnoreCase(String nomClient);
 
-    @Query("SELECT bc FROM BonCommande bc WHERE bc.montantTotal BETWEEN ?1 AND ?2")
-    List<BonCommande> findByMontantTotalBetween(BigDecimal minAmount, BigDecimal maxAmount);
+    // --- Statistiques et Agrégations ---
+    @Query("SELECT SUM(bc.montantTTC) FROM BonCommande bc WHERE bc.idClient = ?1 AND bc.organizationId = ?2")
+    BigDecimal sumMontantByClient(UUID idClient, UUID organizationId);
 
-    @Query("SELECT bc FROM BonCommande bc WHERE bc.idFournisseur = ?1 AND bc.statut = ?2")
-    List<BonCommande> findByFournisseurAndStatut(UUID idFournisseur, String statut);
+    @Query("SELECT COUNT(bc) FROM BonCommande bc WHERE bc.statut = ?1 AND bc.organizationId = ?2")
+    Long countByStatutAndOrganizationId(StatusBonCommande statut, UUID organizationId);
 
-    @Query("SELECT bc FROM BonCommande bc WHERE bc.numeroCommande LIKE %?1%")
-    List<BonCommande> findByNumeroCommandeContaining(String numeroCommande);
+    boolean existsByNumeroCommandeAndOrganizationId(String numeroCommande, UUID organizationId);
 
-    @Query("SELECT bc FROM BonCommande bc WHERE bc.nomFournisseur LIKE %?1%")
-    List<BonCommande> findByNomFournisseurContaining(String nomFournisseur);
-
-    @Query("SELECT SUM(bc.montantTotal) FROM BonCommande bc WHERE bc.idFournisseur = ?1")
-    BigDecimal sumMontantByFournisseur(UUID idFournisseur);
-
-    @Query("SELECT SUM(bc.montantTotal) FROM BonCommande bc WHERE bc.statut = ?1")
-    BigDecimal sumMontantByStatut(String statut);
-
-    @Query("SELECT COUNT(bc) FROM BonCommande bc WHERE bc.statut = ?1")
-    Long countByStatut(String statut);
-
-    @Query("SELECT COUNT(bc) FROM BonCommande bc WHERE bc.idFournisseur = ?1")
-    Long countByFournisseur(UUID idFournisseur);
-
-    boolean existsByNumeroCommande(String numeroCommande);
+    // --- Requête Spéciale JSON (Si vous utilisez PostgreSQL JSONB) ---
+    // Exemple : Trouver les commandes contenant un produit spécifique dans le champ 'lines'
+    @Query(value = "SELECT * FROM bons_commande WHERE lines @> CAST(:jsonQuery AS jsonb)", nativeQuery = true)
+    List<BonCommande> findByProductInLines(String jsonQuery);
 }

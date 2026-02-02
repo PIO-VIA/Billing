@@ -34,17 +34,19 @@ public class BonAchatController {
         return ResponseEntity.ok(bonAchatService.getBonAchatById(id));
     }
 
+     @PutMapping("/{id}")
+    @Operation(summary = "Update un bon d'achat par ID")
+    public ResponseEntity<BonAchatResponse> updateBonAchatById(@PathVariable UUID id,@RequestBody BonAchatRequest request) {
+        return ResponseEntity.ok(bonAchatService.updateBonAchat(id, request));
+    }
+
     @GetMapping
     @Operation(summary = "Lister tous les bons d'achat")
     public ResponseEntity<List<BonAchatResponse>> getAllBonsAchat() {
         return ResponseEntity.ok(bonAchatService.getAllBonsAchat());
     }
 
-    @GetMapping("/fournisseur/{idFournisseur}")
-    @Operation(summary = "Lister les bons d'achat par fournisseur")
-    public ResponseEntity<List<BonAchatResponse>> getBonsAchatByFournisseur(@PathVariable UUID idFournisseur) {
-        return ResponseEntity.ok(bonAchatService.getBonsAchatByFournisseur(idFournisseur));
-    }
+    
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Supprimer un bon d'achat")

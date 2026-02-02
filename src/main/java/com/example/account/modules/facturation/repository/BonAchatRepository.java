@@ -10,7 +10,25 @@ import java.util.UUID;
 
 @Repository
 public interface BonAchatRepository extends JpaRepository<BonAchat, UUID> {
+
+    // Recherche par numéro unique
     Optional<BonAchat> findByNumeroBonAchat(String numeroBonAchat);
-    List<BonAchat> findByIdFournisseur(UUID idFournisseur);
+
+    // Recherche par fournisseur (nom mis à jour)
+    List<BonAchat> findBySupplierId(UUID supplierId);
+
+    // Vérification d'existence
     boolean existsByNumeroBonAchat(String numeroBonAchat);
+
+    /**
+     * Recherche tous les bons d'achat d'une organisation spécifique.
+     * Utile car votre entité étend OrganizationScoped.
+     */
+    List<BonAchat> findByOrganizationId(UUID organizationId);
+
+    /**
+     * Recherche par numéro au sein d'une organisation précise pour éviter 
+     * les collisions si les numéros ne sont uniques que par client.
+     */
+    Optional<BonAchat> findByNumeroBonAchatAndOrganizationId(String numeroBonAchat, UUID organizationId);
 }
