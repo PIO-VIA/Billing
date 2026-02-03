@@ -15,24 +15,12 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Entity
-@Table(
-    name = "lignes_facture_proforma",
-    indexes = {
-        @Index(name = "idx_ligne_proforma_org", columnList = "organization_id"),
-        @Index(name = "idx_ligne_proforma_head", columnList = "id_proforma_invoice")
-    }
-)
-public class LigneFactureProforma extends OrganizationScoped {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id_ligne_proforma")
-    private UUID idLigneProforma;
+public class LigneFactureProforma {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_proforma_invoice", nullable = false)
-    private FactureProforma factureProforma;
+ 
+
+    
 
     @NotNull(message = "L'ID produit est obligatoire")
     @Column(name = "id_produit")

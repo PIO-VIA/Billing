@@ -15,24 +15,12 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Entity
-@Table(
-    name = "lignes_bon_livraison",
-    indexes = {
-        @Index(name = "idx_lignebonlivraison_org", columnList = "organization_id"),
-        @Index(name = "idx_lignebonlivraison_bonlivraison", columnList = "id_bon_livraison")
-    }
-)
-public class LigneBonLivraison extends OrganizationScoped {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id_ligne_bon_livraison")
-    private UUID idLigneBonLivraison;
+public class LigneBonLivraison  {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_bon_livraison", nullable = false)
-    private BonLivraison bonLivraison;
+    
+
+   
 
     @NotNull(message = "L'ID produit est obligatoire")
     @Column(name = "id_produit")

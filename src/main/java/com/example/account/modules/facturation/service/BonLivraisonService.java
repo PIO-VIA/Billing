@@ -31,22 +31,6 @@ public class BonLivraisonService {
 
         BonLivraison bonLivraison = bonLivraisonMapper.toEntity(request);
         
-        // Generate number if not provided
-        if (bonLivraison.getNumeroBonLivraison() == null || bonLivraison.getNumeroBonLivraison().isBlank()) {
-            bonLivraison.setNumeroBonLivraison("BL-" + System.currentTimeMillis());
-        }
-
-        // Set status if not provided
-        if (bonLivraison.getStatut() == null) {
-            bonLivraison.setStatut(StatutBonLivraison.EN_PREPARATION);
-        }
-
-        // Link lines
-        if (bonLivraison.getLignes() != null) {
-            for (LigneBonLivraison ligne : bonLivraison.getLignes()) {
-                ligne.setBonLivraison(bonLivraison);
-            }
-        }
 
         BonLivraison savedBonLivraison = bonLivraisonRepository.save(bonLivraison);
         return bonLivraisonMapper.toResponse(savedBonLivraison);
@@ -103,6 +87,19 @@ public class BonLivraisonService {
                 .orElseThrow(() -> new IllegalArgumentException("Bon de livraison non trouvé: " + id));
 
         bonLivraison.setStatut(nouveauStatut);
+        bonLivraison.setUpdatedAt(LocalDateTime.now());
+
+        return bonLivraisonMapper.toResponse(bonLivraisonRepository.save(bonLivraison));
+    }
+
+     @Transactional
+    public BonLivraisonResponse update(UUID id,BonLivraisonRequest request) {
+        log.info("Mise à jour du  bon de livraison {} vers {}", id);
+        BonLivraison bonLivraison = bonLivraisonRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Bon de livraison non trouvé: " + id));
+
+        bonLivraisonMapper.updateEntityFromDTO(request, bonLivraison);
+        
         bonLivraison.setUpdatedAt(LocalDateTime.now());
 
         return bonLivraisonMapper.toResponse(bonLivraisonRepository.save(bonLivraison));

@@ -35,6 +35,13 @@ public class FactureProformaController {
         return ResponseEntity.ok(proformaService.getProformaById(id));
     }
 
+     @PutMapping("/{id}")
+    @Operation(summary = "Récupérer une facture proforma par ID")
+    public ResponseEntity<ProformaInvoiceResponse> updateFactureProforma(@PathVariable UUID id,@RequestBody ProformaInvoiceRequest request) {
+        return ResponseEntity.ok(proformaService.updateFactureProforma(id, request));
+    }
+
+
     @GetMapping
     @Operation(summary = "Lister toutes les factures proforma")
     public ResponseEntity<List<ProformaInvoiceResponse>> getAllProformas() {

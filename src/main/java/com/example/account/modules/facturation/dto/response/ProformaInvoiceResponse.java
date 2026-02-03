@@ -60,4 +60,6 @@ public class ProformaInvoiceResponse {
     private Integer nbreEcheance;
     private UUID referalClientId;
     private BigDecimal finalAmount;
+     private UUID organizationId;
+
 }

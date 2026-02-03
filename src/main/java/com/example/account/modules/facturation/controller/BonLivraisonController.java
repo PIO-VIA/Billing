@@ -34,6 +34,11 @@ public class BonLivraisonController {
     public ResponseEntity<BonLivraisonResponse> getBonLivraisonById(@PathVariable UUID id) {
         return ResponseEntity.ok(bonLivraisonService.getBonLivraisonById(id));
     }
+    @PutMapping("/{id}")
+    @Operation(summary = "Récupérer un bon de livraison par ID")
+    public ResponseEntity<BonLivraisonResponse> updatedLivraison(@PathVariable UUID id,@RequestBody BonLivraisonRequest request) {
+        return ResponseEntity.ok(bonLivraisonService.update(id, request));
+    }
 
     @GetMapping
     @Operation(summary = "Lister tous les bons de livraison")
