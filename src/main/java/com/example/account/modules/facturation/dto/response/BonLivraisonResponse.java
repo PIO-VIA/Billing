@@ -48,4 +48,5 @@ public class BonLivraisonResponse {
     private StatutBonLivraison statut;
     private String transporteur;
     private String numeroSuivi;
+    private UUID organizationId;
 }

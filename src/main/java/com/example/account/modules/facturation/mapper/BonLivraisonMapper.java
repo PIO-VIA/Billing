@@ -5,6 +5,7 @@ import com.example.account.modules.facturation.dto.response.BonLivraisonResponse
 import com.example.account.modules.facturation.model.entity.BonLivraison;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import java.util.List;
@@ -27,5 +28,8 @@ public interface BonLivraisonMapper {
     @Mapping(target = "lines", source = "lignes")
     BonLivraisonResponse toResponse(BonLivraison entity);
 
+    @Mapping(target = "lignes", source = "lines")
     List<BonLivraisonResponse> toResponseList(List<BonLivraison> entities);
+
+    void updateEntityFromDTO(BonLivraisonRequest reuqest,@MappingTarget BonLivraison object);
 }

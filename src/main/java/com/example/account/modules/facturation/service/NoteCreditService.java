@@ -30,11 +30,9 @@ public class NoteCreditService {
         log.info("Création d'une nouvelle note de crédit");
         
         NoteCredit entity = noteCreditMapper.toEntity(request);
-        entity.setOrganizationId(OrganizationContext.getCurrentOrganizationId());
+      //  entity.setOrganizationId(OrganizationContext.getCurrentOrganizationId());
         
-        if (entity.getLignesFacture() != null && !entity.getLignesFacture().isEmpty()) {
-            calculateMontants(entity);
-        }
+        
         
         NoteCredit saved = noteCreditRepository.save(entity);
         return noteCreditMapper.toResponse(saved);
@@ -44,14 +42,12 @@ public class NoteCreditService {
     public NoteCreditResponse updateNoteCredit(UUID id, NoteCreditRequest request) {
         log.info("Mise à jour de la note de crédit: {}", id);
         
-        NoteCredit entity = noteCreditRepository.findByIdNoteCreditAndOrganizationId(id, OrganizationContext.getCurrentOrganizationId())
+        NoteCredit entity = noteCreditRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Note de crédit non trouvée"));
         
         noteCreditMapper.updateEntityFromRequest(request, entity);
         
-        if (entity.getLignesFacture() != null && !entity.getLignesFacture().isEmpty()) {
-            calculateMontants(entity);
-        }
+       
         
         NoteCredit updated = noteCreditRepository.save(entity);
         return noteCreditMapper.toResponse(updated);
@@ -66,8 +62,8 @@ public class NoteCreditService {
 
     @Transactional(readOnly = true)
     public List<NoteCreditResponse> getAllNoteCredits() {
-        UUID orgId = OrganizationContext.getCurrentOrganizationId();
-        List<NoteCredit> entities = noteCreditRepository.findByOrganizationId(orgId);
+       // UUID orgId = OrganizationContext.getCurrentOrganizationId();
+        List<NoteCredit> entities = noteCreditRepository.findAll();
         return noteCreditMapper.toResponseList(entities);
     }
 
@@ -78,28 +74,5 @@ public class NoteCreditService {
         noteCreditRepository.delete(entity);
     }
 
-    private void calculateMontants(NoteCredit entity) {
-        if (entity.getLignesFacture() == null || entity.getLignesFacture().isEmpty()) {
-            return;
-        }
-
-        BigDecimal montantHT = entity.getLignesFacture().stream()
-                .filter(ligne -> !Boolean.TRUE.equals(ligne.getIsTaxLine()))
-                .map(ligne -> ligne.getMontantTotal() != null ? ligne.getMontantTotal() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal montantTVA = entity.getLignesFacture().stream()
-                .filter(ligne -> Boolean.TRUE.equals(ligne.getIsTaxLine()))
-                .map(ligne -> ligne.getMontantTotal() != null ? ligne.getMontantTotal() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal montantTTC = montantHT.add(montantTVA);
-
-        entity.setMontantHT(montantHT);
-        entity.setMontantTVA(montantTVA);
-        entity.setMontantTTC(montantTTC);
-        entity.setMontantTotal(montantTTC);
-        entity.setMontantRestant(montantTTC);
-        entity.setFinalAmount(montantTTC);
-    }
+    
 }

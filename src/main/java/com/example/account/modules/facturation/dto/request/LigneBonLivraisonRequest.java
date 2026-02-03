@@ -16,8 +16,7 @@ import java.util.UUID;
 @Builder
 public class LigneBonLivraisonRequest {
 
-    @NotNull(message = "L'ID produit est obligatoire")
-    private UUID idProduit;
+ 
 
     private String description;
 

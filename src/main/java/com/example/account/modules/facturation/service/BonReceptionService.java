@@ -26,14 +26,14 @@ public class BonReceptionService {
     public BondeReceptionResponse createBondeReception(BondeReceptionCreateRequest dto) {
         log.info("Création d'un nouveau Bon de Réception");
         BondeReception bondeReception = bondeReceptionMapper.toEntity(dto);
-        bondeReception.setOrganizationId(OrganizationContext.getCurrentOrganizationId());
+        //bondeReception.setOrganizationId(OrganizationContext.getCurrentOrganizationId());
         return bondeReceptionMapper.toDto(bonReceptionRepository.save(bondeReception));
     }
 
     @Transactional(readOnly = true)
     public List<BondeReceptionResponse> getAllBondeReception() {
-        UUID orgId = OrganizationContext.getCurrentOrganizationId();
-        List<BondeReception> bons = bonReceptionRepository.findByOrganizationId(orgId);
+       // UUID orgId = OrganizationContext.getCurrentOrganizationId();
+        List<BondeReception> bons = bonReceptionRepository.findAll();
         return bondeReceptionMapper.toDtoList(bons);
     }
 
@@ -47,7 +47,7 @@ public class BonReceptionService {
     @Transactional
     public BondeReceptionResponse updateBondeReception(UUID id, BondeReceptionResponse dto) {
         log.info("Mise à jour du Bon de Réception: {}", id);
-        BondeReception bondeReception = bonReceptionRepository.findByIdGRNAndOrganizationId(id, OrganizationContext.getCurrentOrganizationId())
+        BondeReception bondeReception = bonReceptionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Bon de Réception non trouvé"));
         
         bondeReceptionMapper.updateEntityFromDto(dto, bondeReception);

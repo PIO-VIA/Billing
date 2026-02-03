@@ -31,11 +31,7 @@ public class FactureProformaService {
 
         FactureProforma proforma = proformaMapper.toEntity(request);
         
-        // Generate number if not provided
-        if (proforma.getNumeroProformaInvoice() == null || proforma.getNumeroProformaInvoice().isBlank()) {
-            proforma.setNumeroProformaInvoice("PRO-" + System.currentTimeMillis());
-        }
-
+     
         proforma.setDateCreation(LocalDateTime.now());
 
         // Set status if not provided
@@ -43,65 +39,14 @@ public class FactureProformaService {
             proforma.setStatut(StatutProforma.BROUILLON);
         }
 
-        // Calculate line totals and link lines
-        if (proforma.getLignesFactureProforma() != null) {
-            for (LigneFactureProforma ligne : proforma.getLignesFactureProforma()) {
-                ligne.setFactureProforma(proforma);
-                calculateLigneTotal(ligne);
-            }
-            calculateProformaTotals(proforma);
-        }
+        
 
         FactureProforma savedProforma = proformaRepository.save(proforma);
         return proformaMapper.toResponse(savedProforma);
     }
 
-    private void calculateLigneTotal(LigneFactureProforma ligne) {
-        BigDecimal quantite = new BigDecimal(ligne.getQuantite());
-        BigDecimal prixU = ligne.getPrixUnitaire() != null ? ligne.getPrixUnitaire() : BigDecimal.ZERO;
-        
-        BigDecimal total = prixU.multiply(quantite);
-        
-        if (ligne.getRemiseMontant() != null && ligne.getRemiseMontant().compareTo(BigDecimal.ZERO) > 0) {
-            total = total.subtract(ligne.getRemiseMontant());
-        } else if (ligne.getRemisePourcentage() != null && ligne.getRemisePourcentage().compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal remise = total.multiply(ligne.getRemisePourcentage()).divide(new BigDecimal(100));
-            total = total.subtract(remise);
-        }
-        
-        ligne.setMontantTotal(total);
-    }
+   
 
-    private void calculateProformaTotals(FactureProforma proforma) {
-        BigDecimal totalHT = proforma.getLignesFactureProforma().stream()
-                .map(l -> l.getMontantTotal() != null ? l.getMontantTotal() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
-        proforma.setMontantHT(totalHT);
-        
-        // Simple TVA calculation if applicable
-        BigDecimal totalTVA = BigDecimal.ZERO;
-        for (LigneFactureProforma ligne : proforma.getLignesFactureProforma()) {
-            if (ligne.getTauxTva() != null && ligne.getTauxTva().compareTo(BigDecimal.ZERO) > 0) {
-                totalTVA = totalTVA.add(ligne.getMontantTotal().multiply(ligne.getTauxTva()).divide(new BigDecimal(100)));
-            }
-        }
-        
-        proforma.setMontantTVA(totalTVA);
-        BigDecimal ttc = totalHT.add(totalTVA);
-        
-        // Global discount
-        if (proforma.getRemiseGlobaleMontant() != null && proforma.getRemiseGlobaleMontant().compareTo(BigDecimal.ZERO) > 0) {
-            ttc = ttc.subtract(proforma.getRemiseGlobaleMontant());
-        } else if (proforma.getRemiseGlobalePourcentage() != null && proforma.getRemiseGlobalePourcentage().compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal remise = ttc.multiply(proforma.getRemiseGlobalePourcentage()).divide(new BigDecimal(100));
-            ttc = ttc.subtract(remise);
-        }
-        
-        proforma.setMontantTTC(ttc);
-        proforma.setMontantTotal(ttc);
-        proforma.setFinalAmount(ttc);
-    }
 
     @Transactional(readOnly = true)
     public ProformaInvoiceResponse getProformaById(UUID id) {
@@ -140,6 +85,19 @@ public class FactureProformaService {
         } else if (nouveauStatut == StatutProforma.REFUSE) {
             proforma.setDateRefus(LocalDateTime.now());
         }
+        
+        return proformaMapper.toResponse(proformaRepository.save(proforma));
+    }
+
+
+      @Transactional
+    public ProformaInvoiceResponse updateFactureProforma(UUID id, ProformaInvoiceRequest request) {
+        FactureProforma proforma = proformaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Facture proforma non trouvée: " + id));
+        
+        proformaMapper.updateProformaFromDTO(request, proforma);
+        
+      
         
         return proformaMapper.toResponse(proformaRepository.save(proforma));
     }

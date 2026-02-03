@@ -10,7 +10,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -72,7 +74,8 @@ public class FactureProforma extends OrganizationScoped {
     @Column(name = "telephone_client")
     private String telephoneClient;
 
-    @OneToMany(mappedBy = "factureProforma", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "lignes_facture_proforma", columnDefinition = "jsonb")
     @Builder.Default
     private List<LigneFactureProforma> lignesFactureProforma = new ArrayList<>();
 
