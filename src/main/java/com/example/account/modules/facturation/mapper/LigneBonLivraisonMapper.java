@@ -16,7 +16,6 @@ import java.util.List;
 public interface LigneBonLivraisonMapper {
 
     @Mapping(target = "idLigneBonLivraison", ignore = true)
-    @Mapping(target = "bonLivraison", ignore = true)
     LigneBonLivraison toEntity(LigneBonLivraisonRequest request);
 
     @Mapping(target = "productId", source = "idProduit")

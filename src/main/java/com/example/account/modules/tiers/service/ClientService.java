@@ -10,15 +10,11 @@ import com.example.account.modules.tiers.repository.ClientRepository;
 import com.example.account.modules.tiers.service.producer.ClientEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -27,131 +23,127 @@ import java.util.UUID;
 public class ClientService {
     
     private final ClientRepository clientRepository;
-  
     private final ClientMapper clientMapper;
     private final ClientEventProducer clientEventProducer;
 
-
-
     @Transactional
-    public ClientResponse createClient(ClientCreateRequest request) {
+    public Mono<ClientResponse> createClient(ClientCreateRequest request) {
         log.info("Création d'un nouveau client: {}", request.getUsername());
 
-        // Vérifications
-        if (clientRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Un client avec ce username existe déjà");
-        }
-        if (request.getEmail() != null && clientRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Un client avec cet email existe déjà");
-        }
-
-        // Créer et sauvegarder le client
-        Client client = clientMapper.toEntity(request);
-        Client savedClient = clientRepository.save(client);
-        ClientResponse response = clientMapper.toResponse(savedClient);
-
-        // Publier l'événement
-        clientEventProducer.publishClientCreated(response);
-
-        log.info("Client créé avec succès: {}", savedClient.getIdClient());
-        return response;
+        return clientRepository.existsByUsername(request.getUsername())
+                .flatMap(exists -> {
+                    if (exists) {
+                        return Mono.error(new IllegalArgumentException("Un client avec ce username existe déjà"));
+                    }
+                    if (request.getEmail() != null) {
+                        return clientRepository.existsByEmail(request.getEmail());
+                    }
+                    return Mono.just(false);
+                })
+                .flatMap(existsEmail -> {
+                    if (existsEmail) {
+                        return Mono.error(new IllegalArgumentException("Un client avec cet email existe déjà"));
+                    }
+                    Client client = clientMapper.toEntity(request);
+                    return clientRepository.save(client);
+                })
+                .map(savedClient -> {
+                    ClientResponse response = clientMapper.toResponse(savedClient);
+                    clientEventProducer.publishClientCreated(response);
+                    log.info("Client créé avec succès: {}", savedClient.getIdClient());
+                    return response;
+                });
     }
 
     @Transactional
-    @CachePut(value = "clients", key = "#clientId")
-    public ClientResponse updateClient(UUID clientId, ClientUpdateRequest request) {
+    public Mono<ClientResponse> updateClient(UUID clientId, ClientUpdateRequest request) {
         log.info("Mise à jour du client: {}", clientId);
 
-        Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new IllegalArgumentException("Client non trouvé: " + clientId));
-
-        // Mise à jour
-        clientMapper.updateEntityFromRequest(request, client);
-        Client updatedClient = clientRepository.save(client);
-        ClientResponse response = clientMapper.toResponse(updatedClient);
-
-        // Publier l'événement
-        clientEventProducer.publishClientUpdated(response);
-
-        log.info("Client mis à jour avec succès: {}", clientId);
-        return response;
+        return clientRepository.findById(clientId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Client non trouvé: " + clientId)))
+                .flatMap(client -> {
+                    clientMapper.updateEntityFromRequest(request, client);
+                    return clientRepository.save(client);
+                })
+                .map(updatedClient -> {
+                    ClientResponse response = clientMapper.toResponse(updatedClient);
+                    clientEventProducer.publishClientUpdated(response);
+                    log.info("Client mis à jour avec succès: {}", clientId);
+                    return response;
+                });
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "clients", key = "#clientId")
-    public ClientResponse getClientById(UUID clientId) {
+    public Mono<ClientResponse> getClientById(UUID clientId) {
         log.info("Récupération du client: {}", clientId);
 
-        Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new IllegalArgumentException("Client non trouvé: " + clientId));
-
-        return clientMapper.toResponse(client);
+        return clientRepository.findById(clientId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Client non trouvé: " + clientId)))
+                .map(clientMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public ClientResponse getClientByUsername(String username) {
+    public Mono<ClientResponse> getClientByUsername(String username) {
         log.info("Récupération du client par username: {}", username);
 
-        Client client = clientRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Client non trouvé avec username: " + username));
-
-        return clientMapper.toResponse(client);
+        return clientRepository.findByUsername(username)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Client non trouvé avec username: " + username)))
+                .map(clientMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<ClientResponse> getAllClients() {
+    public Flux<ClientResponse> getAllClients() {
         log.info("Récupération de tous les clients");
-        List<Client> clients = clientRepository.findAll();
-        return clientMapper.toResponseList(clients);
+        return clientRepository.findAll()
+                .map(clientMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<ClientResponse> getActiveClients() {
+    public Flux<ClientResponse> getActiveClients() {
         log.info("Récupération des clients actifs");
-        List<Client> clients = clientRepository.findAllActiveClients();
-        return clientMapper.toResponseList(clients);
+        return clientRepository.findAllActiveClients()
+                .map(clientMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<ClientResponse> getClientsByType(TypeClient typeClient) {
+    public Flux<ClientResponse> getClientsByType(TypeClient typeClient) {
         log.info("Récupération des clients par type: {}", typeClient);
-        List<Client> clients = clientRepository.findByTypeClient(typeClient);
-        return clientMapper.toResponseList(clients);
+        return clientRepository.findByTypeClient(typeClient)
+                .map(clientMapper::toResponse);
     }
 
     @Transactional
-    @CacheEvict(value = "clients", key = "#clientId")
-    public void deleteClient(UUID clientId) {
+    public Mono<Void> deleteClient(UUID clientId) {
         log.info("Suppression du client: {}", clientId);
 
-        if (!clientRepository.existsById(clientId)) {
-            throw new IllegalArgumentException("Client non trouvé: " + clientId);
-        }
-
-        clientRepository.deleteById(clientId);
-
-        // Publier l'événement
-        clientEventProducer.publishClientDeleted(clientId);
-
-        log.info("Client supprimé avec succès: {}", clientId);
+        return clientRepository.existsById(clientId)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new IllegalArgumentException("Client non trouvé: " + clientId));
+                    }
+                    return clientRepository.deleteById(clientId);
+                })
+                .doOnSuccess(v -> {
+                    clientEventProducer.publishClientDeleted(clientId);
+                    log.info("Client supprimé avec succès: {}", clientId);
+                });
     }
 
     @Transactional
-    @CachePut(value = "clients", key = "#clientId")
-    public ClientResponse updateSolde(UUID clientId, Double montant) {
+    public Mono<ClientResponse> updateSolde(UUID clientId, Double montant) {
         log.info("Mise à jour du solde du client {}: {}", clientId, montant);
 
-        Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new IllegalArgumentException("Client non trouvé: " + clientId));
-
-        client.setSoldeCourant(client.getSoldeCourant() + montant);
-        Client updatedClient = clientRepository.save(client);
-
-        return clientMapper.toResponse(updatedClient);
+        return clientRepository.findById(clientId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Client non trouvé: " + clientId)))
+                .flatMap(client -> {
+                    client.setSoldeCourant(client.getSoldeCourant() + montant);
+                    return clientRepository.save(client);
+                })
+                .map(clientMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public Long countActiveClients() {
+    public Mono<Long> countActiveClients() {
         return clientRepository.countActiveClients();
     }
 }

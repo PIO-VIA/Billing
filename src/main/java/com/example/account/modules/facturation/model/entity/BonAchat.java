@@ -2,13 +2,11 @@ package com.example.account.modules.facturation.model.entity;
 
 import com.example.account.modules.core.model.entity.OrganizationScoped;
 import com.example.account.modules.facturation.model.enums.StatutBonAchat;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -20,108 +18,96 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(callSuper = true)
-@Entity
-@Table(
-    name = "bons_achat",
-    indexes = {
-        @Index(name = "idx_bonachat_org", columnList = "organization_id"),
-        @Index(name = "idx_bonachat_numero", columnList = "numero_bon_achat")
-    }
-)
+@Table("bons_achat")
 public class BonAchat extends OrganizationScoped {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id_bon_achat")
+    @Column("id_bon_achat")
     private UUID idBonAchat;
 
     @NotBlank
-    @Column(name = "numero_bon_achat", unique = true)
+    @Column("numero_bon_achat")
     private String numeroBonAchat;
 
     // --- Informations Fournisseur ---
-    @Column(name = "supplier_id")
+    @Column("supplier_id")
     private UUID supplierId;
     
-    @Column(name = "supplier_name")
+    @Column("supplier_name")
     private String supplierName;
 
-    @Column(name = "supplier_code")
+    @Column("supplier_code")
     private String supplierCode;
 
-    @Column(name = "supplier_email")
+    @Column("supplier_email")
     private String supplierEmail;
 
-    @Column(name = "supplier_contact")
+    @Column("supplier_contact")
     private String supplierContact;
 
-    @Column(name = "supplier_address")
+    @Column("supplier_address")
     private String supplierAddress;
 
     // --- Informations de Livraison ---
-    @Column(name = "delivery_name")
+    @Column("delivery_name")
     private String deliveryName;
 
-    @Column(name = "delivery_address")
+    @Column("delivery_address")
     private String deliveryAddress;
 
-    @Column(name = "delivery_email")
+    @Column("delivery_email")
     private String deliveryEmail;
 
-    @Column(name = "delivery_contact")
+    @Column("delivery_contact")
     private String deliveryContact;
 
-    // --- Dates (Passées en LocalDateTime) ---
-    @Column(name = "date_bon_achat")
+    // --- Dates ---
+    @Column("date_bon_achat")
     private LocalDateTime dateBonAchat;
 
-    @Column(name = "date_systeme")
+    @Column("date_systeme")
     private LocalDateTime dateSysteme;
 
-    @Column(name = "date_livraison_prevue")
+    @Column("date_livraison_prevue")
     private LocalDateTime dateLivraisonPrevue;
 
     // --- Transport & Statut ---
-    @Column(name = "transport_method")
+    @Column("transport_method")
     private String transportMethod;
 
-    @Column(name = "instructions_livraison")
+    @Column("instructions_livraison")
     private String instructionsLivraison;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status")
+    @Column("status")
     private StatutBonAchat status;
 
     // --- STOCKAGE JSON DES LIGNES ---
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "lines", columnDefinition = "jsonb")
+    @Column("lines")
     private List<LigneBonAchat> lines;
 
     // --- Totaux ---
-    @Column(name = "subtotal_amount", precision = 19, scale = 4)
+    @Column("subtotal_amount")
     private BigDecimal subtotalAmount;
 
-    @Column(name = "tax_amount", precision = 19, scale = 4)
+    @Column("tax_amount")
     private BigDecimal taxAmount;
 
-    @Column(name = "grand_total", precision = 19, scale = 4)
+    @Column("grand_total")
     private BigDecimal grandTotal;
 
     // --- Audit ---
-    @Column(name = "prepared_by")
+    @Column("prepared_by")
     private UUID preparedBy;
 
-    @Column(name = "approved_by")
+    @Column("approved_by")
     private UUID approvedBy;
 
-    @Column(name = "remarks", length = 1000)
+    @Column("remarks")
     private String remarks;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column("created_at")
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column("updated_at")
     private LocalDateTime updatedAt;
 }

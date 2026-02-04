@@ -16,7 +16,6 @@ import java.util.List;
 public interface LigneFactureProformaMapper {
 
     @Mapping(target = "idLigneProforma", ignore = true)
-    @Mapping(target = "factureProforma", ignore = true)
     @Mapping(target = "montantTotal", ignore = true) // Will be calculated in service
     LigneFactureProforma toEntity(LigneProformaRequest request);
 

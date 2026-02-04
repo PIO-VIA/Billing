@@ -1,43 +1,34 @@
 package com.example.account.modules.core.model.entity;
 
-
-
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-
 import com.example.account.modules.core.model.enums.PosStatus;
+import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.UUID;
-import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "pos_terminals")
+@Table("pos_terminals")
 @Getter
- @Setter 
- @NoArgsConstructor 
- @AllArgsConstructor 
- @Builder
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class PosTerminal {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column("id")
     private UUID id;
 
-    private String code;        // e.g., "POS-01"
-   
-    
-    
-    @Enumerated(EnumType.STRING)
-    private PosStatus status;   // OPEN, CLOSED, MAINTENANCE
+    @Column("code")
+    private String code;
 
-    // Relationship to your Agency
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "agency_id", nullable = false)
-    private Agency agency;
+    @Column("status")
+    private PosStatus status;
 
-    
+    @Column("agency_id")
+    private UUID agencyId;
+
+    @Column("is_active")
     private boolean isActive;
-    
 }
-

@@ -1,16 +1,13 @@
 package com.example.account.modules.facturation.model.entity;
 
 import com.example.account.modules.core.model.entity.OrganizationScoped;
-import com.example.account.modules.facturation.dto.request.LigneFactureCreateRequest;
 import com.example.account.modules.facturation.model.enums.StatutFacture;
 import com.example.account.modules.facturation.model.enums.TypePaiementFacture;
 import lombok.*;
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 import jakarta.validation.constraints.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,159 +18,143 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(callSuper = true)
-@Entity
-@Table(
-    name = "factures",
-    indexes = {
-        @Index(name = "idx_facture_org", columnList = "organization_id"),
-        @Index(name = "idx_facture_org_numero", columnList = "organization_id, numero_facture"),
-        @Index(name = "idx_facture_org_client", columnList = "organization_id, id_client")
-    }
-)
+@Table("factures")
 public class Facture extends OrganizationScoped {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id_facture")
+    @Column("id_facture")
     private UUID idFacture;
 
     @NotBlank(message = "Le numéro de facture est obligatoire")
-    @Column(name = "numero_facture")
+    @Column("numero_facture")
     private String numeroFacture;
 
     @NotNull(message = "La date de facturation est obligatoire")
-    @Column(name = "date_facturation")
+    @Column("date_facturation")
     private LocalDateTime dateFacturation;
 
     @NotNull(message = "La date d'échéance est obligatoire")
-    @Column(name = "date_echeance")
+    @Column("date_echeance")
     private LocalDateTime dateEcheance;
 
-    @Column(name = "date_systeme")
+    @Column("date_systeme")
     private LocalDateTime dateSysteme;
 
-    @Column(name = "type")
+    @Column("type")
     private String type;
 
     @NotNull(message = "L'état est obligatoire")
-    @Enumerated(EnumType.STRING)
-    @Column(name = "etat")
+    @Column("etat")
     private StatutFacture etat;
 
     @NotNull(message = "L'ID client est obligatoire")
-    @Column(name = "id_client")
-    private UUID idClient; // String to support 'c001' style IDs
+    @Column("id_client")
+    private UUID idClient;
 
-    @Column(name = "nom_client")
+    @Column("nom_client")
     private String nomClient;
 
-    @Column(name = "adresse_client")
+    @Column("adresse_client")
     private String adresseClient;
 
-    @Column(name = "email_client")
+    @Column("email_client")
     private String emailClient;
 
-    @Column(name = "telephone_client")
+    @Column("telephone_client")
     private String telephoneClient;
 
-    // --- JSON STORAGE FOR LINES ---
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "lignes_facture", columnDefinition = "jsonb")
+    @Column("lignes_facture")
     private List<LigneFacture> lignesFacture;
 
-    @Column(name = "montant_ht")
+    @Column("montant_ht")
     private BigDecimal montantHT;
 
-    @Column(name = "montant_tva")
+    @Column("montant_tva")
     private BigDecimal montantTVA;
 
-    @Column(name = "montant_ttc")
+    @Column("montant_ttc")
     private BigDecimal montantTTC;
 
-    @Column(name = "montant_total")
+    @Column("montant_total")
     private BigDecimal montantTotal;
 
-    @Column(name = "montant_restant")
+    @Column("montant_restant")
     private BigDecimal montantRestant;
 
-    @Column(name = "final_amount")
+    @Column("final_amount")
     private BigDecimal finalAmount;
 
-    @Column(name = "apply_vat")
+    @Column("apply_vat")
     private Boolean applyVat;
 
-    @Column(name = "devise")
+    @Column("devise")
     private String devise;
 
-    @Column(name = "taux_change")
+    @Column("taux_change")
     @Builder.Default
     private BigDecimal tauxChange = BigDecimal.ONE;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "mode_reglement")
+    @Column("mode_reglement")
     private TypePaiementFacture modeReglement;
 
-    @Column(name = "conditions_paiement")
+    @Column("conditions_paiement")
     private String conditionsPaiement;
 
-    @Column(name = "nbre_echeance")
+    @Column("nbre_echeance")
     private Integer nbreEcheance;
 
-    @Column(name = "nos_ref")
+    @Column("nos_ref")
     private String nosRef;
 
-    @Column(name = "vos_ref")
+    @Column("vos_ref")
     private String vosRef;
 
-    @Column(name = "reference_commande")
+    @Column("reference_commande")
     private String referenceCommande;
 
-    @Column(name = "id_devis_origine")
+    @Column("id_devis_origine")
     private String idDevisOrigine;
 
-    @Column(name = "referal_client_id")
+    @Column("referal_client_id")
     private UUID referalClientId;
 
-    @Column(name = "notes", columnDefinition = "TEXT")
+    @Column("notes")
     private String notes;
 
-    @Column(name = "pdf_path")
+    @Column("pdf_path")
     private String pdfPath;
 
-    @Column(name = "envoye_par_email")
+    @Column("envoye_par_email")
     @Builder.Default
     private Boolean envoyeParEmail = false;
 
-    @Column(name = "date_envoi_email")
+    @Column("date_envoi_email")
     private LocalDateTime dateEnvoiEmail;
 
-    @Column(name = "remise_globale_pourcentage")
+    @Column("remise_globale_pourcentage")
     @Builder.Default
     private BigDecimal remiseGlobalePourcentage = BigDecimal.ZERO;
 
-    @Column(name = "remise_globale_montant")
+    @Column("remise_globale_montant")
     @Builder.Default
     private BigDecimal remiseGlobaleMontant = BigDecimal.ZERO;
 
-    @Column(name = "created_by")
+    @Column("created_by")
     private UUID createdBy;
 
-    @Column(name = "validated_by")
+    @Column("validated_by")
     private UUID validatedBy;
 
-    @Column(name = "validated_at")
+    @Column("validated_at")
     private LocalDateTime validatedAt;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("created_at")
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @Column("updated_at")
     private LocalDateTime updatedAt;
 
-    @Version
-    @Column(name = "version")
+    @Column("version")
     @Builder.Default
     private Long version = 0L;
 }

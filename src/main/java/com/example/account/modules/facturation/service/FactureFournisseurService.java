@@ -1,39 +1,47 @@
 package com.example.account.modules.facturation.service;
 
-import java.util.List;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.account.modules.facturation.dto.request.FactureFournisseurCreateRequest;
 import com.example.account.modules.facturation.dto.response.FactureFournisseurResponse;
 import com.example.account.modules.facturation.mapper.FactureFournisseurMapper;
 import com.example.account.modules.facturation.model.entity.FactureFournisseur;
 import com.example.account.modules.facturation.repository.FactureFournisseurRepository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class FactureFournisseurService {
     
-    @Autowired
-    private FactureFournisseurRepository factureFournisseurRepository;
-    @Autowired
-    private FactureFournisseurMapper factureFournisseurMapper;
+    private final FactureFournisseurRepository factureFournisseurRepository;
+    private final FactureFournisseurMapper factureFournisseurMapper;
 
-    public FactureFournisseurResponse createFacture(FactureFournisseurCreateRequest dto){
+    @Transactional
+    public Mono<FactureFournisseurResponse> createFacture(FactureFournisseurCreateRequest dto){
         FactureFournisseur factureFournisseur = factureFournisseurMapper.toEntity(dto);
-        return factureFournisseurMapper.toDto(factureFournisseurRepository.save(factureFournisseur));
+        return factureFournisseurRepository.save(factureFournisseur)
+                .map(factureFournisseurMapper::toDto);
     }
 
-    public List<FactureFournisseurResponse> getAllFactures(){
-        List<FactureFournisseur> factures = factureFournisseurRepository.findAll();
-        return factureFournisseurMapper.toDtoList(factures);
+    @Transactional(readOnly = true)
+    public Flux<FactureFournisseurResponse> getAllFactures(){
+        return factureFournisseurRepository.findAll()
+                .map(factureFournisseurMapper::toDto);
     }
 
-    public FactureFournisseurResponse updateFacture(UUID id, FactureFournisseurResponse dto) throws Exception{
-        FactureFournisseur factureFournisseur = factureFournisseurRepository.findById(id).orElseThrow(()->new Exception("Facture Fournisseur does not exists"));
-        factureFournisseurMapper.updateEntityFromDto(dto, factureFournisseur);
-        factureFournisseurRepository.save(factureFournisseur);
-        return factureFournisseurMapper.toDto(factureFournisseur);
+    @Transactional
+    public Mono<FactureFournisseurResponse> updateFacture(UUID id, FactureFournisseurResponse dto) {
+        return factureFournisseurRepository.findById(id)
+                .switchIfEmpty(Mono.error(new Exception("Facture Fournisseur does not exists")))
+                .flatMap(factureFournisseur -> {
+                    factureFournisseurMapper.updateEntityFromDto(dto, factureFournisseur);
+                    return factureFournisseurRepository.save(factureFournisseur);
+                })
+                .map(factureFournisseurMapper::toDto);
     }
 }

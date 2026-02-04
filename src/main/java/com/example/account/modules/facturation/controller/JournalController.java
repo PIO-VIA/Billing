@@ -9,13 +9,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -29,83 +28,72 @@ public class JournalController {
 
     @PostMapping
     @Operation(summary = "Créer un nouveau journal")
-    public ResponseEntity<JournalResponse> createJournal(@Valid @RequestBody JournalCreateRequest request) {
+    public Mono<ResponseEntity<JournalResponse>> createJournal(@Valid @RequestBody JournalCreateRequest request) {
         log.info("Requête de création de journal: {}", request.getNomJournal());
-        JournalResponse response = journalService.createJournal(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return journalService.createJournal(request)
+                .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 
     @PutMapping("/{journalId}")
     @Operation(summary = "Mettre à jour un journal")
-    public ResponseEntity<JournalResponse> updateJournal(
+    public Mono<ResponseEntity<JournalResponse>> updateJournal(
             @PathVariable UUID journalId,
             @Valid @RequestBody JournalUpdateRequest request) {
         log.info("Requête de mise à jour du journal: {}", journalId);
-        JournalResponse response = journalService.updateJournal(journalId, request);
-        return ResponseEntity.ok(response);
+        return journalService.updateJournal(journalId, request)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping("/{journalId}")
     @Operation(summary = "Récupérer un journal par ID")
-    public ResponseEntity<JournalResponse> getJournalById(@PathVariable UUID journalId) {
+    public Mono<ResponseEntity<JournalResponse>> getJournalById(@PathVariable UUID journalId) {
         log.info("Requête de récupération du journal: {}", journalId);
-        JournalResponse response = journalService.getJournalById(journalId);
-        return ResponseEntity.ok(response);
+        return journalService.getJournalById(journalId)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping("/nom/{nomJournal}")
     @Operation(summary = "Récupérer un journal par nom")
-    public ResponseEntity<JournalResponse> getJournalByNom(@PathVariable String nomJournal) {
+    public Mono<ResponseEntity<JournalResponse>> getJournalByNom(@PathVariable String nomJournal) {
         log.info("Requête de récupération du journal par nom: {}", nomJournal);
-        JournalResponse response = journalService.getJournalByNom(nomJournal);
-        return ResponseEntity.ok(response);
+        return journalService.getJournalByNom(nomJournal)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping
     @Operation(summary = "Récupérer tous les journals")
-    public ResponseEntity<List<JournalResponse>> getAllJournals() {
+    public Flux<JournalResponse> getAllJournals() {
         log.info("Requête de récupération de tous les journals");
-        List<JournalResponse> responses = journalService.getAllJournals();
-        return ResponseEntity.ok(responses);
-    }
-
-    @GetMapping("/page")
-    @Operation(summary = "Récupérer tous les journals avec pagination")
-    public ResponseEntity<Page<JournalResponse>> getAllJournalsPaginated(Pageable pageable) {
-        log.info("Requête de récupération de tous les journals avec pagination");
-        Page<JournalResponse> responses = journalService.getAllJournals(pageable);
-        return ResponseEntity.ok(responses);
+        return journalService.getAllJournals();
     }
 
     @GetMapping("/type/{type}")
     @Operation(summary = "Récupérer les journals par type")
-    public ResponseEntity<List<JournalResponse>> getJournalsByType(@PathVariable String type) {
+    public Flux<JournalResponse> getJournalsByType(@PathVariable String type) {
         log.info("Requête de récupération des journals par type: {}", type);
-        List<JournalResponse> responses = journalService.getJournalsByType(type);
-        return ResponseEntity.ok(responses);
+        return journalService.getJournalsByType(type);
     }
 
     @GetMapping("/search")
     @Operation(summary = "Rechercher des journals par nom")
-    public ResponseEntity<List<JournalResponse>> searchJournalsByNom(@RequestParam String nom) {
+    public Flux<JournalResponse> searchJournalsByNom(@RequestParam String nom) {
         log.info("Requête de recherche des journals par nom: {}", nom);
-        List<JournalResponse> responses = journalService.searchJournalsByNom(nom);
-        return ResponseEntity.ok(responses);
+        return journalService.searchJournalsByNom(nom);
     }
 
     @DeleteMapping("/{journalId}")
     @Operation(summary = "Supprimer un journal")
-    public ResponseEntity<Void> deleteJournal(@PathVariable UUID journalId) {
+    public Mono<ResponseEntity<Void>> deleteJournal(@PathVariable UUID journalId) {
         log.info("Requête de suppression du journal: {}", journalId);
-        journalService.deleteJournal(journalId);
-        return ResponseEntity.noContent().build();
+        return journalService.deleteJournal(journalId)
+                .then(Mono.just(ResponseEntity.noContent().build()));
     }
 
     @GetMapping("/count/type/{type}")
     @Operation(summary = "Compter les journals par type")
-    public ResponseEntity<Long> countByType(@PathVariable String type) {
+    public Mono<ResponseEntity<Long>> countByType(@PathVariable String type) {
         log.info("Requête de comptage des journals par type: {}", type);
-        Long count = journalService.countByType(type);
-        return ResponseEntity.ok(count);
+        return journalService.countByType(type)
+                .map(ResponseEntity::ok);
     }
 }

@@ -1,30 +1,24 @@
 package com.example.account.modules.facturation.controller;
 
 import com.example.account.modules.facturation.dto.request.DevisCreateRequest;
-
 import com.example.account.modules.facturation.dto.response.DevisResponse;
-
 import com.example.account.modules.facturation.model.enums.StatutDevis;
-
 import com.example.account.modules.facturation.service.DevisService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-
 
 @RestController
 @RequestMapping("/api/devis")
@@ -37,114 +31,105 @@ public class DevisController {
 
     @PostMapping
     @Operation(summary = "Créer un nouveau devis")
-    public ResponseEntity<DevisResponse> createDevis(@Valid @RequestBody DevisCreateRequest request) {
+    public Mono<ResponseEntity<DevisResponse>> createDevis(@Valid @RequestBody DevisCreateRequest request) {
         log.info("Requête de création de devis pour le client: {}", request.getIdClient());
-        DevisResponse response = devisService.createDevis(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return devisService.createDevis(request)
+                .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 
-
-   
-    
     @PutMapping("/{devisId}")
     @Operation(summary = "Mettre à jour un devis")
-    public ResponseEntity<DevisResponse> updateDevis(
+    public Mono<ResponseEntity<DevisResponse>> updateDevis(
             @PathVariable UUID devisId,
             @Valid @RequestBody DevisCreateRequest request) {
         log.info("Requête de mise à jour du devis: {}", devisId);
-        DevisResponse response = devisService.updateDevis(devisId, request);
-        return ResponseEntity.ok(response);
+        return devisService.updateDevis(devisId, request)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping("/{devisId}")
     @Operation(summary = "Récupérer un devis par ID")
-    public ResponseEntity<DevisResponse> getDevisById(@PathVariable UUID devisId) {
+    public Mono<ResponseEntity<DevisResponse>> getDevisById(@PathVariable UUID devisId) {
         log.info("Requête de récupération du devis: {}", devisId);
-        DevisResponse response = devisService.getDevisById(devisId);
-        return ResponseEntity.ok(response);
+        return devisService.getDevisById(devisId)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping("/numero/{numeroDevis}")
     @Operation(summary = "Récupérer un devis par numéro")
-    public ResponseEntity<DevisResponse> getDevisByNumero(@PathVariable String numeroDevis) {
+    public Mono<ResponseEntity<DevisResponse>> getDevisByNumero(@PathVariable String numeroDevis) {
         log.info("Requête de récupération du devis par numéro: {}", numeroDevis);
-        DevisResponse response = devisService.getDevisByNumero(numeroDevis);
-        return ResponseEntity.ok(response);
+        return devisService.getDevisByNumero(numeroDevis)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping
     @Operation(summary = "Récupérer tous les devis")
-    public ResponseEntity<List<DevisResponse>> getAllDevis() {
+    public Flux<DevisResponse> getAllDevis() {
         log.info("Requête de récupération de tous les devis");
-        List<DevisResponse> responses = devisService.getAllDevis();
-        return ResponseEntity.ok(responses);
+        return devisService.getAllDevis();
     }
 
     @GetMapping("/paginated")
-    @Operation(summary = "Récupérer tous les devis avec pagination")
-    public ResponseEntity<Page<DevisResponse>> getAllDevisPaginated(Pageable pageable) {
+    @Operation(summary = "Récupérer tous les devis with pagination")
+    public Flux<DevisResponse> getAllDevisPaginated(Pageable pageable) {
         log.info("Requête de récupération de tous les devis avec pagination");
-        Page<DevisResponse> responses = devisService.getAllDevis(pageable);
-        return ResponseEntity.ok(responses);
+        return devisService.getAllDevis(pageable);
     }
 
     @GetMapping("/client/{clientId}")
     @Operation(summary = "Récupérer les devis d'un client")
-    public ResponseEntity<List<DevisResponse>> getDevisByClient(@PathVariable UUID clientId) {
+    public Flux<DevisResponse> getDevisByClient(@PathVariable UUID clientId) {
         log.info("Requête de récupération des devis du client: {}", clientId);
-        List<DevisResponse> responses = devisService.getDevisByClient(clientId);
-        return ResponseEntity.ok(responses);
+        return devisService.getDevisByClient(clientId);
     }
 
     @GetMapping("/statut/{statut}")
     @Operation(summary = "Récupérer les devis par statut")
-    public ResponseEntity<List<DevisResponse>> getDevisByStatut(@PathVariable StatutDevis statut) {
+    public Flux<DevisResponse> getDevisByStatut(@PathVariable StatutDevis statut) {
         log.info("Requête de récupération des devis par statut: {}", statut);
-        List<DevisResponse> responses = devisService.getDevisByStatut(statut);
-        return ResponseEntity.ok(responses);
+        return devisService.getDevisByStatut(statut);
     }
 
     @GetMapping("/expires")
     @Operation(summary = "Récupérer les devis expirés")
-    public ResponseEntity<List<DevisResponse>> getDevisExpires() {
+    public Flux<DevisResponse> getDevisExpires() {
         log.info("Requête de récupération des devis expirés");
-        List<DevisResponse> responses = devisService.getDevisExpires();
-        return ResponseEntity.ok(responses);
+        return devisService.getDevisExpires();
     }
 
     @GetMapping("/periode")
     @Operation(summary = "Récupérer les devis par période")
-    public ResponseEntity<List<DevisResponse>> getDevisByPeriode(
+    public Flux<DevisResponse> getDevisByPeriode(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin) {
         log.info("Requête de récupération des devis entre {} et {}", dateDebut, dateFin);
-        List<DevisResponse> responses = devisService.getDevisByPeriode(dateDebut, dateFin);
-        return ResponseEntity.ok(responses);
+        return devisService.getDevisByPeriode(dateDebut, dateFin);
     }
 
     @DeleteMapping("/{devisId}")
     @Operation(summary = "Supprimer un devis")
-    public ResponseEntity<Void> deleteDevis(@PathVariable UUID devisId) {
+    public Mono<ResponseEntity<Void>> deleteDevis(@PathVariable UUID devisId) {
         log.info("Requête de suppression du devis: {}", devisId);
-        devisService.deleteDevis(devisId);
-        return ResponseEntity.noContent().build();
+        return devisService.deleteDevis(devisId)
+                .then(Mono.just(ResponseEntity.noContent().build()));
     }
 
     @PutMapping("/{devisId}/accepter")
     @Operation(summary = "Accepter un devis")
-    public ResponseEntity<DevisResponse> accepterDevis(@PathVariable UUID devisId) {
+    public Mono<ResponseEntity<DevisResponse>> accepterDevis(@PathVariable UUID devisId) {
         log.info("Requête d'acceptation du devis: {}", devisId);
-        DevisResponse response = devisService.accepterDevis(devisId);
-        return ResponseEntity.ok(response);
+        return devisService.accepterDevis(devisId)
+                .map(ResponseEntity::ok);
     }
 
     @PutMapping("/{devisId}/refuser")
     @Operation(summary = "Refuser un devis")
-    public ResponseEntity<DevisResponse> refuserDevis(
+    public Mono<ResponseEntity<DevisResponse>> refuserDevis(
             @PathVariable UUID devisId,
             @RequestParam(required = false) String motifRefus) {
         log.info("Requête de refus du devis: {}", devisId);
-        DevisResponse response = devisService.refuserDevis(devisId, motifRefus);
-        return ResponseEntity.ok(response);
+        return devisService.refuserDevis(devisId, motifRefus)
+                .map(ResponseEntity::ok);
     }
 }

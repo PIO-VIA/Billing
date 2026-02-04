@@ -1,35 +1,36 @@
 package com.example.account.modules.facturation.repository;
 
 import com.example.account.modules.facturation.model.entity.BonLivraison;
-import org.springframework.data.domain.Page;
+import com.example.account.modules.facturation.model.enums.StatutBonLivraison;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface BonLivraisonRepository extends JpaRepository<BonLivraison, UUID> {
+public interface BonLivraisonRepository extends R2dbcRepository<BonLivraison, UUID> {
 
-    Page<BonLivraison> findAll(Pageable pageable);
+    Flux<BonLivraison> findAllBy(Pageable pageable);
 
-    Optional<BonLivraison> findByNumeroBonLivraison(String numeroBonLivraison);
+    Mono<BonLivraison> findByNumeroBonLivraison(String numeroBonLivraison);
 
-    List<BonLivraison> findByIdClient(UUID idClient);
+    Flux<BonLivraison> findByIdClient(UUID idClient);
 
-    List<BonLivraison> findByIdFacture(UUID idFacture);
+    Flux<BonLivraison> findByIdFacture(UUID idFacture);
 
-    List<BonLivraison> findByStatut(String statut);
+    Flux<BonLivraison> findByStatut(StatutBonLivraison statut);
 
-    @Query("SELECT bl FROM BonLivraison bl WHERE bl.dateLivraison BETWEEN ?1 AND ?2")
-    List<BonLivraison> findByDateLivraisonBetween(LocalDate startDate, LocalDate endDate);
+    @Query("SELECT * FROM bons_livraison bl WHERE bl.date_livraison BETWEEN :startDate AND :endDate")
+    Flux<BonLivraison> findByDateLivraisonBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT bl FROM BonLivraison bl WHERE bl.livraisonEffectuee = false AND bl.dateLivraison < ?1")
-    List<BonLivraison> findLivraisonsEnRetard(LocalDate dateReference);
+    @Query("SELECT * FROM bons_livraison bl WHERE bl.livraison_effectuee = false AND bl.date_livraison < :dateReference")
+    Flux<BonLivraison> findLivraisonsEnRetard(@Param("dateReference") LocalDate dateReference);
 
-    boolean existsByNumeroBonLivraison(String numeroBonLivraison);
+    Mono<Boolean> existsByNumeroBonLivraison(String numeroBonLivraison);
 }

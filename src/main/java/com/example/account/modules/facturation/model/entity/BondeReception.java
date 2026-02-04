@@ -3,96 +3,83 @@ package com.example.account.modules.facturation.model.entity;
 import com.example.account.modules.core.model.entity.OrganizationScoped;
 import com.example.account.modules.facturation.model.entity.Lines.LineBonReception;
 import com.example.account.modules.facturation.model.enums.StatusBonReception;
-import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.type.SqlTypes;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Version;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-@Entity
-@Table(
-    name = "goods_receipt_notes",
-    indexes = {
-        @Index(name = "idx_grn_org", columnList = "organization_id"),
-        @Index(name = "idx_grn_org_number", columnList = "organization_id, grn_number"),
-        @Index(name = "idx_grn_org_supplier", columnList = "organization_id, supplier_id")
-    }
-)
-@Getter @Setter 
-@NoArgsConstructor @AllArgsConstructor 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
+@EqualsAndHashCode(callSuper = true)
+@Table("goods_receipt_notes")
 public class BondeReception extends OrganizationScoped {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column("id_grn")
     private UUID idGRN;
 
-    @Column(name = "grn_number", unique = true)
+    @Column("grn_number")
     private String grnNumber;
 
     // Mapping to Tier (Supplier)
-    @Column(name = "supplier_id")
+    @Column("supplier_id")
     private UUID supplierId;
     
-    @Column(name = "supplier_name")
+    @Column("supplier_name")
     private String supplierName;
 
-    @Column(name = "transporter_company_name")
+    @Column("transporter_company_name")
     private String transporterCompanyName;
     
-    @Column(name = "vehicle_number")
+    @Column("vehicle_number")
     private String vehicleNumber;
 
     // Mapping to Purchase Order
-    @Column(name = "purchase_order_id")
+    @Column("purchase_order_id")
     private UUID purchaseOrderId;
     
-    @Column(name = "purchase_order_number")
+    @Column("purchase_order_number")
     private String purchaseOrderNumber;
 
-    @Column(name = "receipt_date")
+    @Column("receipt_date")
     private LocalDate receiptDate;   // Actual date goods received
     
-    @Column(name = "document_date")
+    @Column("document_date")
     private LocalDate documentDate;  // GRN creation date
     
-    @Column(name = "system_date")
+    @Column("system_date")
     private LocalDateTime systemDate;
 
-    @Enumerated(EnumType.STRING)
+    @Column("status")
     private StatusBonReception status;
 
-    /**
-     * Storing lines as a JSON column in the database.
-     */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "lines", columnDefinition = "jsonb") 
+    @Column("lines") 
     private List<LineBonReception> lines;
 
-    @Column(name = "prepared_by")
+    @Column("prepared_by")
     private UUID preparedBy;
     
-    @Column(name = "inspected_by")
+    @Column("inspected_by")
     private UUID inspectedBy;
     
-    @Column(name = "approved_by")
+    @Column("approved_by")
     private UUID approvedBy;
 
-    @Column(name = "remarks", columnDefinition = "TEXT")
+    @Column("remarks")
     private String remarks;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("created_at")
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @Column("updated_at")
     private LocalDateTime updatedAt;
 
     @Version

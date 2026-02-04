@@ -1,5 +1,6 @@
 package com.example.account.modules.facturation.service;
 
+import com.example.account.modules.core.context.OrganizationContext;
 import com.example.account.modules.facturation.dto.request.BonLivraisonRequest;
 import com.example.account.modules.facturation.dto.response.BonLivraisonResponse;
 import com.example.account.modules.facturation.mapper.BonLivraisonMapper;
@@ -7,14 +8,15 @@ import com.example.account.modules.facturation.model.entity.BonLivraison;
 import com.example.account.modules.facturation.model.entity.LigneBonLivraison;
 import com.example.account.modules.facturation.model.enums.StatutBonLivraison;
 import com.example.account.modules.facturation.repository.BonLivraisonRepository;
+import com.example.account.modules.facturation.repository.LigneBonLivraisonRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -23,88 +25,148 @@ import java.util.UUID;
 public class BonLivraisonService {
 
     private final BonLivraisonRepository bonLivraisonRepository;
+    private final LigneBonLivraisonRepository ligneBonLivraisonRepository;
     private final BonLivraisonMapper bonLivraisonMapper;
 
     @Transactional
-    public BonLivraisonResponse createBonLivraison(BonLivraisonRequest request) {
+    public Mono<BonLivraisonResponse> createBonLivraison(BonLivraisonRequest request) {
         log.info("Création d'un nouveau bon de livraison pour le client: {}", request.getIdClient());
 
-        BonLivraison bonLivraison = bonLivraisonMapper.toEntity(request);
-        
-        // Generate number if not provided
-        if (bonLivraison.getNumeroBonLivraison() == null || bonLivraison.getNumeroBonLivraison().isBlank()) {
-            bonLivraison.setNumeroBonLivraison("BL-" + System.currentTimeMillis());
-        }
+        return OrganizationContext.getOrganizationId()
+                .flatMap(orgId -> {
+                    BonLivraison bonLivraison = bonLivraisonMapper.toEntity(request);
+                    
+                    if (bonLivraison.getNumeroBonLivraison() == null || bonLivraison.getNumeroBonLivraison().isBlank()) {
+                        bonLivraison.setNumeroBonLivraison("BL-" + System.currentTimeMillis());
+                    }
 
-        // Set status if not provided
-        if (bonLivraison.getStatut() == null) {
-            bonLivraison.setStatut(StatutBonLivraison.EN_PREPARATION);
-        }
+                    if (bonLivraison.getStatut() == null) {
+                        bonLivraison.setStatut(StatutBonLivraison.EN_PREPARATION);
+                    }
 
-        // Link lines
-        if (bonLivraison.getLignes() != null) {
-            for (LigneBonLivraison ligne : bonLivraison.getLignes()) {
-                ligne.setBonLivraison(bonLivraison);
-            }
-        }
+                    bonLivraison.setOrganizationId(orgId);
+                    bonLivraison.setCreatedAt(LocalDateTime.now());
+                    bonLivraison.setUpdatedAt(LocalDateTime.now());
+                    bonLivraison.setLivraisonEffectuee(false);
 
-        BonLivraison savedBonLivraison = bonLivraisonRepository.save(bonLivraison);
-        return bonLivraisonMapper.toResponse(savedBonLivraison);
+                    java.util.List<LigneBonLivraison> tempLignes = bonLivraison.getLignes();
+                    
+                    return bonLivraisonRepository.save(bonLivraison)
+                            .flatMap(savedBL -> {
+                                if (tempLignes == null || tempLignes.isEmpty()) {
+                                    return Mono.just(savedBL);
+                                }
+                                
+                                return Flux.fromIterable(tempLignes)
+                                        .map(ligne -> {
+                                            ligne.setIdBonLivraison(savedBL.getIdBonLivraison());
+                                            ligne.setOrganizationId(orgId);
+                                            return ligne;
+                                        })
+                                        .flatMap(ligneBonLivraisonRepository::save)
+                                        .collectList()
+                                        .map(savedLignes -> {
+                                            savedBL.setLignes(savedLignes);
+                                            return savedBL;
+                                        });
+                            });
+                })
+                .map(bonLivraisonMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public BonLivraisonResponse getBonLivraisonById(UUID id) {
+    public Mono<BonLivraisonResponse> getBonLivraisonById(UUID id) {
         log.info("Récupération du bon de livraison: {}", id);
-        BonLivraison bonLivraison = bonLivraisonRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Bon de livraison non trouvé: " + id));
-        return bonLivraisonMapper.toResponse(bonLivraison);
+        return bonLivraisonRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de livraison non trouvé: " + id)))
+                .flatMap(bonLivraison -> ligneBonLivraisonRepository.findByIdBonLivraison(id)
+                        .collectList()
+                        .map(lignes -> {
+                            bonLivraison.setLignes(lignes);
+                            return bonLivraison;
+                        }))
+                .map(bonLivraisonMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<BonLivraisonResponse> getAllBonLivraisons() {
-        return bonLivraisonMapper.toResponseList(bonLivraisonRepository.findAll());
+    public Flux<BonLivraisonResponse> getAllBonLivraisons() {
+        return bonLivraisonRepository.findAll()
+                .flatMap(bl -> ligneBonLivraisonRepository.findByIdBonLivraison(bl.getIdBonLivraison())
+                        .collectList()
+                        .map(lignes -> {
+                            bl.setLignes(lignes);
+                            return bl;
+                        }))
+                .map(bonLivraisonMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<BonLivraisonResponse> getBonLivraisonsByClient(UUID idClient) {
-        return bonLivraisonMapper.toResponseList(bonLivraisonRepository.findByIdClient(idClient));
+    public Flux<BonLivraisonResponse> getBonLivraisonsByClient(UUID idClient) {
+        return bonLivraisonRepository.findByIdClient(idClient)
+                .flatMap(bl -> ligneBonLivraisonRepository.findByIdBonLivraison(bl.getIdBonLivraison())
+                        .collectList()
+                        .map(lignes -> {
+                            bl.setLignes(lignes);
+                            return bl;
+                        }))
+                .map(bonLivraisonMapper::toResponse);
     }
 
     @Transactional
-    public void deleteBonLivraison(UUID id) {
-        if (!bonLivraisonRepository.existsById(id)) {
-            throw new IllegalArgumentException("Bon de livraison non trouvé: " + id);
-        }
-        bonLivraisonRepository.deleteById(id);
+    public Mono<Void> deleteBonLivraison(UUID id) {
+        return bonLivraisonRepository.existsById(id)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new IllegalArgumentException("Bon de livraison non trouvé: " + id));
+                    }
+                    return ligneBonLivraisonRepository.findByIdBonLivraison(id)
+                            .flatMap(ligneBonLivraisonRepository::delete)
+                            .then(bonLivraisonRepository.deleteById(id));
+                });
     }
 
     @Transactional
-    public BonLivraisonResponse marquerCommeEffectuee(UUID id) {
+    public Mono<BonLivraisonResponse> marquerCommeEffectuee(UUID id) {
         log.info("Marquage du bon de livraison {} comme effectuée", id);
-        BonLivraison bonLivraison = bonLivraisonRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Bon de livraison non trouvé: " + id));
+        return bonLivraisonRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de livraison non trouvé: " + id)))
+                .flatMap(bonLivraison -> {
+                    if (Boolean.TRUE.equals(bonLivraison.getLivraisonEffectuee())) {
+                        return Mono.error(new IllegalStateException("La livraison a déjà été effectuée"));
+                    }
 
-        if (bonLivraison.getLivraisonEffectuee()) {
-            throw new IllegalStateException("La livraison a déjà été effectuée");
-        }
+                    bonLivraison.setLivraisonEffectuee(true);
+                    bonLivraison.setDateLivraisonEffective(LocalDateTime.now());
+                    bonLivraison.setStatut(StatutBonLivraison.LIVRE);
+                    bonLivraison.setUpdatedAt(LocalDateTime.now());
 
-        bonLivraison.setLivraisonEffectuee(true);
-        bonLivraison.setDateLivraisonEffective(LocalDateTime.now());
-        bonLivraison.setStatut(StatutBonLivraison.LIVRE);
-        bonLivraison.setUpdatedAt(LocalDateTime.now());
-
-        return bonLivraisonMapper.toResponse(bonLivraisonRepository.save(bonLivraison));
+                    return bonLivraisonRepository.save(bonLivraison)
+                            .flatMap(savedBL -> ligneBonLivraisonRepository.findByIdBonLivraison(id)
+                                    .collectList()
+                                    .map(lignes -> {
+                                        savedBL.setLignes(lignes);
+                                        return savedBL;
+                                    }));
+                })
+                .map(bonLivraisonMapper::toResponse);
     }
 
     @Transactional
-    public BonLivraisonResponse updateStatut(UUID id, StatutBonLivraison nouveauStatut) {
+    public Mono<BonLivraisonResponse> updateStatut(UUID id, StatutBonLivraison nouveauStatut) {
         log.info("Mise à jour du statut du bon de livraison {} vers {}", id, nouveauStatut);
-        BonLivraison bonLivraison = bonLivraisonRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Bon de livraison non trouvé: " + id));
-
-        bonLivraison.setStatut(nouveauStatut);
-        bonLivraison.setUpdatedAt(LocalDateTime.now());
-
-        return bonLivraisonMapper.toResponse(bonLivraisonRepository.save(bonLivraison));
+        return bonLivraisonRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de livraison non trouvé: " + id)))
+                .flatMap(bonLivraison -> {
+                    bonLivraison.setStatut(nouveauStatut);
+                    bonLivraison.setUpdatedAt(LocalDateTime.now());
+                    return bonLivraisonRepository.save(bonLivraison)
+                            .flatMap(savedBL -> ligneBonLivraisonRepository.findByIdBonLivraison(id)
+                                    .collectList()
+                                    .map(lignes -> {
+                                        savedBL.setLignes(lignes);
+                                        return savedBL;
+                                    }));
+                })
+                .map(bonLivraisonMapper::toResponse);
     }
 }

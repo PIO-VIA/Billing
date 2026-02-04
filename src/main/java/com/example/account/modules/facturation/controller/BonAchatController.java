@@ -10,8 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -24,34 +25,35 @@ public class BonAchatController {
 
     @PostMapping
     @Operation(summary = "Créer un nouveau bon d'achat")
-    public ResponseEntity<BonAchatResponse> createBonAchat(@Valid @RequestBody BonAchatRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(bonAchatService.createBonAchat(request));
+    public Mono<ResponseEntity<BonAchatResponse>> createBonAchat(@Valid @RequestBody BonAchatRequest request) {
+        return bonAchatService.createBonAchat(request)
+                .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Récupérer un bon d'achat par ID")
-    public ResponseEntity<BonAchatResponse> getBonAchatById(@PathVariable UUID id) {
-        return ResponseEntity.ok(bonAchatService.getBonAchatById(id));
+    public Mono<ResponseEntity<BonAchatResponse>> getBonAchatById(@PathVariable UUID id) {
+        return bonAchatService.getBonAchatById(id)
+                .map(ResponseEntity::ok);
     }
 
-     @PutMapping("/{id}")
+    @PutMapping("/{id}")
     @Operation(summary = "Update un bon d'achat par ID")
-    public ResponseEntity<BonAchatResponse> updateBonAchatById(@PathVariable UUID id,@RequestBody BonAchatRequest request) {
-        return ResponseEntity.ok(bonAchatService.updateBonAchat(id, request));
+    public Mono<ResponseEntity<BonAchatResponse>> updateBonAchatById(@PathVariable UUID id, @RequestBody BonAchatRequest request) {
+        return bonAchatService.updateBonAchat(id, request)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping
     @Operation(summary = "Lister tous les bons d'achat")
-    public ResponseEntity<List<BonAchatResponse>> getAllBonsAchat() {
-        return ResponseEntity.ok(bonAchatService.getAllBonsAchat());
+    public Flux<BonAchatResponse> getAllBonsAchat() {
+        return bonAchatService.getAllBonsAchat();
     }
-
-    
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Supprimer un bon d'achat")
-    public ResponseEntity<Void> deleteBonAchat(@PathVariable UUID id) {
-        bonAchatService.deleteBonAchat(id);
-        return ResponseEntity.noContent().build();
+    public Mono<ResponseEntity<Void>> deleteBonAchat(@PathVariable UUID id) {
+        return bonAchatService.deleteBonAchat(id)
+                .then(Mono.just(ResponseEntity.noContent().build()));
     }
 }

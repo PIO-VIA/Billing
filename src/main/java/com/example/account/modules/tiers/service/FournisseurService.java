@@ -11,8 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -25,146 +26,149 @@ public class FournisseurService {
     private final FournisseurEventProducer fournisseurEventProducer;
 
     @Transactional
-    public FournisseurResponse createFournisseur(FournisseurCreateRequest request) {
+    public Mono<FournisseurResponse> createFournisseur(FournisseurCreateRequest request) {
         log.info("Création d'un nouveau fournisseur: {}", request.getUsername());
 
-        // Vérifications
-        if (fournisseurRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Un fournisseur avec ce username existe déjà");
-        }
-        if (request.getEmail() != null && fournisseurRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Un fournisseur avec cet email existe déjà");
-        }
-
-        // Créer et sauvegarder le fournisseur
-        Fournisseur fournisseur = fournisseurMapper.toEntity(request);
-        Fournisseur savedFournisseur = fournisseurRepository.save(fournisseur);
-        FournisseurResponse response = fournisseurMapper.toResponse(savedFournisseur);
-
-        // Publier l'événement
-        fournisseurEventProducer.publishFournisseurCreated(response);
-
-        log.info("Fournisseur créé avec succès: {}", savedFournisseur.getIdFournisseur());
-        return response;
+        return fournisseurRepository.existsByUsername(request.getUsername())
+                .flatMap(exists -> {
+                    if (exists) {
+                        return Mono.error(new IllegalArgumentException("Un fournisseur avec ce username existe déjà"));
+                    }
+                    if (request.getEmail() != null) {
+                        return fournisseurRepository.existsByEmail(request.getEmail());
+                    }
+                    return Mono.just(false);
+                })
+                .flatMap(existsEmail -> {
+                    if (existsEmail) {
+                        return Mono.error(new IllegalArgumentException("Un fournisseur avec cet email existe déjà"));
+                    }
+                    Fournisseur fournisseur = fournisseurMapper.toEntity(request);
+                    return fournisseurRepository.save(fournisseur);
+                })
+                .map(savedFournisseur -> {
+                    FournisseurResponse response = fournisseurMapper.toResponse(savedFournisseur);
+                    fournisseurEventProducer.publishFournisseurCreated(response);
+                    log.info("Fournisseur créé avec succès: {}", savedFournisseur.getIdFournisseur());
+                    return response;
+                });
     }
 
     @Transactional
-    public FournisseurResponse updateFournisseur(UUID fournisseurId, FournisseurUpdateRequest request) {
+    public Mono<FournisseurResponse> updateFournisseur(UUID fournisseurId, FournisseurUpdateRequest request) {
         log.info("Mise à jour du fournisseur: {}", fournisseurId);
 
-        Fournisseur fournisseur = fournisseurRepository.findById(fournisseurId)
-                .orElseThrow(() -> new IllegalArgumentException("Fournisseur non trouvé: " + fournisseurId));
-
-        // Mise à jour
-        fournisseurMapper.updateEntityFromRequest(request, fournisseur);
-        Fournisseur updatedFournisseur = fournisseurRepository.save(fournisseur);
-        FournisseurResponse response = fournisseurMapper.toResponse(updatedFournisseur);
-
-        // Publier l'événement
-        fournisseurEventProducer.publishFournisseurUpdated(response);
-
-        log.info("Fournisseur mis à jour avec succès: {}", fournisseurId);
-        return response;
+        return fournisseurRepository.findById(fournisseurId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Fournisseur non trouvé: " + fournisseurId)))
+                .flatMap(fournisseur -> {
+                    fournisseurMapper.updateEntityFromRequest(request, fournisseur);
+                    return fournisseurRepository.save(fournisseur);
+                })
+                .map(updatedFournisseur -> {
+                    FournisseurResponse response = fournisseurMapper.toResponse(updatedFournisseur);
+                    fournisseurEventProducer.publishFournisseurUpdated(response);
+                    log.info("Fournisseur mis à jour avec succès: {}", fournisseurId);
+                    return response;
+                });
     }
 
     @Transactional(readOnly = true)
-    public FournisseurResponse getFournisseurById(UUID fournisseurId) {
+    public Mono<FournisseurResponse> getFournisseurById(UUID fournisseurId) {
         log.info("Récupération du fournisseur: {}", fournisseurId);
 
-        Fournisseur fournisseur = fournisseurRepository.findById(fournisseurId)
-                .orElseThrow(() -> new IllegalArgumentException("Fournisseur non trouvé: " + fournisseurId));
-
-        return fournisseurMapper.toResponse(fournisseur);
+        return fournisseurRepository.findById(fournisseurId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Fournisseur non trouvé: " + fournisseurId)))
+                .map(fournisseurMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public FournisseurResponse getFournisseurByUsername(String username) {
+    public Mono<FournisseurResponse> getFournisseurByUsername(String username) {
         log.info("Récupération du fournisseur par username: {}", username);
 
-        Fournisseur fournisseur = fournisseurRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Fournisseur non trouvé avec username: " + username));
-
-        return fournisseurMapper.toResponse(fournisseur);
+        return fournisseurRepository.findByUsername(username)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Fournisseur non trouvé avec username: " + username)))
+                .map(fournisseurMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<FournisseurResponse> getAllFournisseurs() {
+    public Flux<FournisseurResponse> getAllFournisseurs() {
         log.info("Récupération de tous les fournisseurs");
-        List<Fournisseur> fournisseurs = fournisseurRepository.findAll();
-        return fournisseurMapper.toResponseList(fournisseurs);
+        return fournisseurRepository.findAll()
+                .map(fournisseurMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<FournisseurResponse> getActiveFournisseurs() {
+    public Flux<FournisseurResponse> getActiveFournisseurs() {
         log.info("Récupération des fournisseurs actifs");
-        List<Fournisseur> fournisseurs = fournisseurRepository.findByActifTrue();
-        return fournisseurMapper.toResponseList(fournisseurs);
+        return fournisseurRepository.findByActifTrue()
+                .map(fournisseurMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<FournisseurResponse> getFournisseursByCategorie(String categorie) {
+    public Flux<FournisseurResponse> getFournisseursByCategorie(String categorie) {
         log.info("Récupération des fournisseurs par catégorie: {}", categorie);
-        List<Fournisseur> fournisseurs = fournisseurRepository.findByCategorie(categorie);
-        return fournisseurMapper.toResponseList(fournisseurs);
+        return fournisseurRepository.findByCategorie(categorie)
+                .map(fournisseurMapper::toResponse);
     }
 
     @Transactional
-    public void deleteFournisseur(UUID fournisseurId) {
+    public Mono<Void> deleteFournisseur(UUID fournisseurId) {
         log.info("Suppression du fournisseur: {}", fournisseurId);
 
-        if (!fournisseurRepository.existsById(fournisseurId)) {
-            throw new IllegalArgumentException("Fournisseur non trouvé: " + fournisseurId);
-        }
-
-        fournisseurRepository.deleteById(fournisseurId);
-
-        // Publier l'événement
-        fournisseurEventProducer.publishFournisseurDeleted(fournisseurId);
-
-        log.info("Fournisseur supprimé avec succès: {}", fournisseurId);
+        return fournisseurRepository.existsById(fournisseurId)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new IllegalArgumentException("Fournisseur non trouvé: " + fournisseurId));
+                    }
+                    return fournisseurRepository.deleteById(fournisseurId);
+                })
+                .doOnSuccess(v -> {
+                    fournisseurEventProducer.publishFournisseurDeleted(fournisseurId);
+                    log.info("Fournisseur supprimé avec succès: {}", fournisseurId);
+                });
     }
 
     @Transactional
-    public FournisseurResponse updateSolde(UUID fournisseurId, Double montant) {
+    public Mono<FournisseurResponse> updateSolde(UUID fournisseurId, Double montant) {
         log.info("Mise à jour du solde du fournisseur {}: {}", fournisseurId, montant);
 
-        Fournisseur fournisseur = fournisseurRepository.findById(fournisseurId)
-                .orElseThrow(() -> new IllegalArgumentException("Fournisseur non trouvé: " + fournisseurId));
-
-        fournisseur.setSoldeCourant(fournisseur.getSoldeCourant() + montant);
-        Fournisseur updatedFournisseur = fournisseurRepository.save(fournisseur);
-
-        return fournisseurMapper.toResponse(updatedFournisseur);
+        return fournisseurRepository.findById(fournisseurId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Fournisseur non trouvé: " + fournisseurId)))
+                .flatMap(fournisseur -> {
+                    fournisseur.setSoldeCourant(fournisseur.getSoldeCourant() + montant);
+                    return fournisseurRepository.save(fournisseur);
+                })
+                .map(fournisseurMapper::toResponse);
     }
 
     @Transactional
-    public FournisseurResponse desactiverFournisseur(UUID fournisseurId) {
+    public Mono<FournisseurResponse> desactiverFournisseur(UUID fournisseurId) {
         log.info("Désactivation du fournisseur: {}", fournisseurId);
 
-        Fournisseur fournisseur = fournisseurRepository.findById(fournisseurId)
-                .orElseThrow(() -> new IllegalArgumentException("Fournisseur non trouvé: " + fournisseurId));
-
-        fournisseur.setActif(false);
-        Fournisseur updatedFournisseur = fournisseurRepository.save(fournisseur);
-
-        return fournisseurMapper.toResponse(updatedFournisseur);
+        return fournisseurRepository.findById(fournisseurId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Fournisseur non trouvé: " + fournisseurId)))
+                .flatMap(fournisseur -> {
+                    fournisseur.setActif(false);
+                    return fournisseurRepository.save(fournisseur);
+                })
+                .map(fournisseurMapper::toResponse);
     }
 
     @Transactional
-    public FournisseurResponse activerFournisseur(UUID fournisseurId) {
+    public Mono<FournisseurResponse> activerFournisseur(UUID fournisseurId) {
         log.info("Activation du fournisseur: {}", fournisseurId);
 
-        Fournisseur fournisseur = fournisseurRepository.findById(fournisseurId)
-                .orElseThrow(() -> new IllegalArgumentException("Fournisseur non trouvé: " + fournisseurId));
-
-        fournisseur.setActif(true);
-        Fournisseur updatedFournisseur = fournisseurRepository.save(fournisseur);
-
-        return fournisseurMapper.toResponse(updatedFournisseur);
+        return fournisseurRepository.findById(fournisseurId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Fournisseur non trouvé: " + fournisseurId)))
+                .flatMap(fournisseur -> {
+                    fournisseur.setActif(true);
+                    return fournisseurRepository.save(fournisseur);
+                })
+                .map(fournisseurMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public Long countActiveFournisseurs() {
+    public Mono<Long> countActiveFournisseurs() {
         return fournisseurRepository.countByActifTrue();
     }
 }

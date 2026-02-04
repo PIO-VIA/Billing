@@ -1,5 +1,6 @@
 package com.example.account.modules.facturation.service;
 
+import com.example.account.modules.core.context.OrganizationContext;
 import com.example.account.modules.facturation.dto.request.PaiementCreateRequest;
 import com.example.account.modules.facturation.dto.request.PaiementUpdateRequest;
 import com.example.account.modules.facturation.dto.response.PaiementResponse;
@@ -10,14 +11,14 @@ import com.example.account.modules.facturation.repository.PaiementRepository;
 import com.example.account.modules.facturation.service.producer.PaiementEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -31,145 +32,145 @@ public class PaiementService {
     private final FactureService factureService;
 
     @Transactional
-    public PaiementResponse createPaiement(PaiementCreateRequest request) {
+    public Mono<PaiementResponse> createPaiement(PaiementCreateRequest request) {
         log.info("Création d'un nouveau paiement pour le client: {}", request.getIdClient());
 
-        // Créer et sauvegarder le paiement
-        Paiement paiement = paiementMapper.toEntity(request);
-        Paiement savedPaiement = paiementRepository.save(paiement);
+        return OrganizationContext.getOrganizationId()
+                .flatMap(orgId -> {
+                    Paiement paiement = paiementMapper.toEntity(request);
+                    paiement.setOrganizationId(orgId);
+                    paiement.setCreatedAt(LocalDateTime.now());
+                    paiement.setUpdatedAt(LocalDateTime.now());
 
-        // Si le paiement est lié à une facture, mettre à jour la facture
-        if (request.getIdFacture() != null) {
-            try {
-                factureService.enregistrerPaiement(request.getIdFacture(), request.getMontant());
-            } catch (Exception e) {
-                log.error("Erreur lors de la mise à jour de la facture: {}", e.getMessage());
-            }
-        }
+                    return paiementRepository.save(paiement)
+                            .flatMap(savedPaiement -> {
+                                Mono<Void> updateFacture = Mono.empty();
+                                if (request.getIdFacture() != null) {
+                                    updateFacture = factureService.enregistrerPaiement(request.getIdFacture(), request.getMontant())
+                                            .then()
+                                            .onErrorResume(e -> {
+                                                log.error("Erreur lors de la mise à jour de la facture: {}", e.getMessage());
+                                                return Mono.empty();
+                                            });
+                                }
 
-        PaiementResponse response = paiementMapper.toResponse(savedPaiement);
-
-        // Publier l'événement
-        paiementEventProducer.publishPaiementCreated(response);
-
-        log.info("Paiement créé avec succès: {}", savedPaiement.getIdPaiement());
-        return response;
+                                return updateFacture.thenReturn(savedPaiement);
+                            });
+                })
+                .map(savedPaiement -> {
+                    PaiementResponse response = paiementMapper.toResponse(savedPaiement);
+                    paiementEventProducer.publishPaiementCreated(response);
+                    log.info("Paiement créé avec succès: {}", savedPaiement.getIdPaiement());
+                    return response;
+                });
     }
 
     @Transactional
-    public PaiementResponse updatePaiement(UUID paiementId, PaiementUpdateRequest request) {
+    public Mono<PaiementResponse> updatePaiement(UUID paiementId, PaiementUpdateRequest request) {
         log.info("Mise à jour du paiement: {}", paiementId);
 
-        Paiement paiement = paiementRepository.findById(paiementId)
-                .orElseThrow(() -> new IllegalArgumentException("Paiement non trouvé: " + paiementId));
-
-        paiementMapper.updateEntityFromRequest(request, paiement);
-        Paiement updatedPaiement = paiementRepository.save(paiement);
-        PaiementResponse response = paiementMapper.toResponse(updatedPaiement);
-
-        // Publier l'événement
-        paiementEventProducer.publishPaiementUpdated(response);
-
-        log.info("Paiement mis à jour avec succès: {}", paiementId);
-        return response;
+        return paiementRepository.findById(paiementId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Paiement non trouvé: " + paiementId)))
+                .flatMap(paiement -> {
+                    paiementMapper.updateEntityFromRequest(request, paiement);
+                    paiement.setUpdatedAt(LocalDateTime.now());
+                    return paiementRepository.save(paiement);
+                })
+                .map(updatedPaiement -> {
+                    PaiementResponse response = paiementMapper.toResponse(updatedPaiement);
+                    paiementEventProducer.publishPaiementUpdated(response);
+                    log.info("Paiement mis à jour avec succès: {}", paiementId);
+                    return response;
+                });
     }
 
     @Transactional(readOnly = true)
-    public PaiementResponse getPaiementById(UUID paiementId) {
+    public Mono<PaiementResponse> getPaiementById(UUID paiementId) {
         log.info("Récupération du paiement: {}", paiementId);
-
-        Paiement paiement = paiementRepository.findById(paiementId)
-                .orElseThrow(() -> new IllegalArgumentException("Paiement non trouvé: " + paiementId));
-
-        return paiementMapper.toResponse(paiement);
+        return paiementRepository.findById(paiementId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Paiement non trouvé: " + paiementId)))
+                .map(paiementMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<PaiementResponse> getAllPaiements() {
+    public Flux<PaiementResponse> getAllPaiements() {
         log.info("Récupération de tous les paiements");
-        List<Paiement> paiements = paiementRepository.findAll();
-        return paiementMapper.toResponseList(paiements);
+        return paiementRepository.findAll()
+                .map(paiementMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public Page<PaiementResponse> getAllPaiements(Pageable pageable) {
-        log.info("Récupération de tous les paiements avec pagination");
-        Page<Paiement> paiements = paiementRepository.findAll(pageable);
-        return paiements.map(paiementMapper::toResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public List<PaiementResponse> getPaiementsByClient(UUID clientId) {
+    public Flux<PaiementResponse> getPaiementsByClient(UUID clientId) {
         log.info("Récupération des paiements du client: {}", clientId);
-        List<Paiement> paiements = paiementRepository.findByIdClient(clientId);
-        return paiementMapper.toResponseList(paiements);
+        return paiementRepository.findByIdClient(clientId)
+                .map(paiementMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<PaiementResponse> getPaiementsByFacture(UUID factureId) {
+    public Flux<PaiementResponse> getPaiementsByFacture(UUID factureId) {
         log.info("Récupération des paiements de la facture: {}", factureId);
-        List<Paiement> paiements = paiementRepository.findByIdFacture(factureId);
-        return paiementMapper.toResponseList(paiements);
+        return paiementRepository.findByIdFacture(factureId)
+                .map(paiementMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<PaiementResponse> getPaiementsByModePaiement(TypePaiement modePaiement) {
+    public Flux<PaiementResponse> getPaiementsByModePaiement(TypePaiement modePaiement) {
         log.info("Récupération des paiements par mode de paiement: {}", modePaiement);
-        List<Paiement> paiements = paiementRepository.findByModePaiement(modePaiement);
-        return paiementMapper.toResponseList(paiements);
+        return paiementRepository.findByModePaiement(modePaiement)
+                .map(paiementMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<PaiementResponse> getPaiementsByPeriode(LocalDate dateDebut, LocalDate dateFin) {
+    public Flux<PaiementResponse> getPaiementsByPeriode(LocalDate dateDebut, LocalDate dateFin) {
         log.info("Récupération des paiements entre {} et {}", dateDebut, dateFin);
-        List<Paiement> paiements = paiementRepository.findByDateBetween(dateDebut, dateFin);
-        return paiementMapper.toResponseList(paiements);
+        return paiementRepository.findByDateBetween(dateDebut, dateFin)
+                .map(paiementMapper::toResponse);
     }
 
     @Transactional
-    public void deletePaiement(UUID paiementId) {
+    public Mono<Void> deletePaiement(UUID paiementId) {
         log.info("Suppression du paiement: {}", paiementId);
-
-        if (!paiementRepository.existsById(paiementId)) {
-            throw new IllegalArgumentException("Paiement non trouvé: " + paiementId);
-        }
-
-        paiementRepository.deleteById(paiementId);
-
-        // Publier l'événement
-        paiementEventProducer.publishPaiementDeleted(paiementId);
-
-        log.info("Paiement supprimé avec succès: {}", paiementId);
+        return paiementRepository.existsById(paiementId)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new IllegalArgumentException("Paiement non trouvé: " + paiementId));
+                    }
+                    return paiementRepository.deleteById(paiementId)
+                            .doOnSuccess(v -> {
+                                paiementEventProducer.publishPaiementDeleted(paiementId);
+                                log.info("Paiement supprimé avec succès: {}", paiementId);
+                            });
+                });
     }
 
     @Transactional(readOnly = true)
-    public BigDecimal getTotalPaiementsByClient(UUID clientId) {
+    public Mono<BigDecimal> getTotalPaiementsByClient(UUID clientId) {
         log.info("Calcul du total des paiements du client: {}", clientId);
-        BigDecimal total = paiementRepository.sumMontantByClient(clientId);
-        return total != null ? total : BigDecimal.ZERO;
+        return paiementRepository.sumMontantByClient(clientId)
+                .defaultIfEmpty(BigDecimal.ZERO);
     }
 
     @Transactional(readOnly = true)
-    public BigDecimal getTotalPaiementsByFacture(UUID factureId) {
+    public Mono<BigDecimal> getTotalPaiementsByFacture(UUID factureId) {
         log.info("Calcul du total des paiements de la facture: {}", factureId);
-        BigDecimal total = paiementRepository.sumMontantByFacture(factureId);
-        return total != null ? total : BigDecimal.ZERO;
+        return paiementRepository.sumMontantByFacture(factureId)
+                .defaultIfEmpty(BigDecimal.ZERO);
     }
 
     @Transactional(readOnly = true)
-    public BigDecimal getTotalPaiementsByPeriode(LocalDate dateDebut, LocalDate dateFin) {
+    public Mono<BigDecimal> getTotalPaiementsByPeriode(LocalDate dateDebut, LocalDate dateFin) {
         log.info("Calcul du total des paiements entre {} et {}", dateDebut, dateFin);
-        BigDecimal total = paiementRepository.sumMontantByDateBetween(dateDebut, dateFin);
-        return total != null ? total : BigDecimal.ZERO;
+        return paiementRepository.sumMontantByDateBetween(dateDebut, dateFin)
+                .defaultIfEmpty(BigDecimal.ZERO);
     }
 
     @Transactional(readOnly = true)
-    public Long countPaiementsByClient(UUID clientId) {
+    public Mono<Long> countPaiementsByClient(UUID clientId) {
         return paiementRepository.countByIdClient(clientId);
     }
 
     @Transactional(readOnly = true)
-    public Long countPaiementsByModePaiement(TypePaiement modePaiement) {
+    public Mono<Long> countPaiementsByModePaiement(TypePaiement modePaiement) {
         return paiementRepository.countByModePaiement(modePaiement);
     }
 }

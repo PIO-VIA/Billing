@@ -1,14 +1,14 @@
 package com.example.account.modules.core.repository;
 
 import com.example.account.modules.core.model.entity.Organization;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface OrganizationRepository extends JpaRepository<Organization, UUID> {
-    Optional<Organization> findByCode(String code);
-    boolean existsByCode(String code);
+public interface OrganizationRepository extends R2dbcRepository<Organization, UUID> {
+    Mono<Organization> findByCode(String code);
+    Mono<Boolean> existsByCode(String code);
 }

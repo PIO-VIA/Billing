@@ -4,10 +4,12 @@ import com.example.account.modules.facturation.dto.request.BondeReceptionCreateR
 import com.example.account.modules.facturation.dto.response.BondeReceptionResponse;
 import com.example.account.modules.facturation.service.BonReceptionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -18,28 +20,31 @@ public class BondeReceptionController {
     private final BonReceptionService bonReceptionService;
 
     @GetMapping
-    public ResponseEntity<List<BondeReceptionResponse>> getBons() {
-        return ResponseEntity.ok(bonReceptionService.getAllBondeReception());
+    public Flux<BondeReceptionResponse> getBons() {
+        return bonReceptionService.getAllBondeReception();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BondeReceptionResponse> getBonById(@PathVariable UUID id) {
-        return ResponseEntity.ok(bonReceptionService.getBondeReceptionById(id));
+    public Mono<ResponseEntity<BondeReceptionResponse>> getBonById(@PathVariable UUID id) {
+        return bonReceptionService.getBondeReceptionById(id)
+                .map(ResponseEntity::ok);
     }
 
     @PostMapping
-    public ResponseEntity<BondeReceptionResponse> createBon(@RequestBody BondeReceptionCreateRequest dto) {
-        return ResponseEntity.status(201).body(bonReceptionService.createBondeReception(dto));
+    public Mono<ResponseEntity<BondeReceptionResponse>> createBon(@RequestBody BondeReceptionCreateRequest dto) {
+        return bonReceptionService.createBondeReception(dto)
+                .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BondeReceptionResponse> updateBon(@PathVariable UUID id, @RequestBody BondeReceptionResponse updatedData) {
-        return ResponseEntity.ok(bonReceptionService.updateBondeReception(id, updatedData));
+    public Mono<ResponseEntity<BondeReceptionResponse>> updateBon(@PathVariable UUID id, @RequestBody BondeReceptionResponse updatedData) {
+        return bonReceptionService.updateBondeReception(id, updatedData)
+                .map(ResponseEntity::ok);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBon(@PathVariable UUID id) {
-        bonReceptionService.deleteBondeReception(id);
-        return ResponseEntity.noContent().build();
+    public Mono<ResponseEntity<Void>> deleteBon(@PathVariable UUID id) {
+        return bonReceptionService.deleteBondeReception(id)
+                .then(Mono.just(ResponseEntity.noContent().build()));
     }
 }

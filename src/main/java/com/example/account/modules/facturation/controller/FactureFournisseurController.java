@@ -1,54 +1,42 @@
 package com.example.account.modules.facturation.controller;
 
-import org.springframework.web.bind.annotation.RestController;
-
 import com.example.account.modules.facturation.dto.request.FactureFournisseurCreateRequest;
 import com.example.account.modules.facturation.dto.response.FactureFournisseurResponse;
 import com.example.account.modules.facturation.service.FactureFournisseurService;
-
-import jakarta.persistence.EntityNotFoundException;
-
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/facture-fournisseurs")
+@RequiredArgsConstructor
 public class FactureFournisseurController {
 
-    @Autowired
-    private FactureFournisseurService factureFournisseurService;
+    private final FactureFournisseurService factureFournisseurService;
 
     @GetMapping
-    public ResponseEntity<List<FactureFournisseurResponse>> getFactures() {
-        return ResponseEntity.status(200).body(factureFournisseurService.getAllFactures());
+    public Flux<FactureFournisseurResponse> getFactures() {
+        return factureFournisseurService.getAllFactures();
     }
     
     @PostMapping
-    public ResponseEntity<FactureFournisseurResponse> createFacture(@RequestBody FactureFournisseurCreateRequest dto) {
-        return ResponseEntity.status(201).body(factureFournisseurService.createFacture(dto));
+    public Mono<ResponseEntity<FactureFournisseurResponse>> createFacture(@RequestBody FactureFournisseurCreateRequest dto) {
+        return factureFournisseurService.createFacture(dto)
+                .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<FactureFournisseurResponse> updateFacture(
+    public Mono<ResponseEntity<FactureFournisseurResponse>> updateFacture(
         @PathVariable UUID id, 
         @RequestBody FactureFournisseurResponse updatedData) {
     
-        try {
-            FactureFournisseurResponse result = factureFournisseurService.updateFacture(id, updatedData);
-            return ResponseEntity.ok(result);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+        return factureFournisseurService.updateFacture(id, updatedData)
+                .map(ResponseEntity::ok)
+                .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().build()));
     }
 }

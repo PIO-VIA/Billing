@@ -2,128 +2,111 @@ package com.example.account.modules.facturation.model.entity;
 
 import com.example.account.modules.core.model.entity.OrganizationScoped;
 import com.example.account.modules.facturation.model.enums.StatutBonLivraison;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.EqualsAndHashCode;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Entity
-@Table(
-    name = "bons_livraison",
-    indexes = {
-        @Index(name = "idx_bonlivraison_org", columnList = "organization_id"),
-        @Index(name = "idx_bonlivraison_org_numerobonlivraison", columnList = "organization_id, numero_bon_livraison")
-    }
-)
+@EqualsAndHashCode(callSuper = true)
+@Table("bons_livraison")
 public class BonLivraison extends OrganizationScoped {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id_bon_livraison")
+    @Column("id_bon_livraison")
     private UUID idBonLivraison;
 
-    @NotBlank(message = "Le numéro de bon de livraison est obligatoire")
-    @Column(name = "numero_bon_livraison", unique = true)
+    @Column("numero_bon_livraison")
     private String numeroBonLivraison;
 
-    @NotNull(message = "Le client est obligatoire")
-    @Column(name = "id_client")
+    @Column("id_client")
     private UUID idClient;
 
-    @Column(name = "nom_client")
+    @Column("nom_client")
     private String nomClient;
 
     // Receiver Information
-    @Column(name = "nom_destinataire")
+    @Column("nom_destinataire")
     private String nomDestinataire;
 
-    @Column(name = "adresse_destinataire")
+    @Column("adresse_destinataire")
     private String adresseDestinataire;
 
-    @Column(name = "contact_destinataire")
+    @Column("contact_destinataire")
     private String contactDestinataire;
 
     // Agency / Pickup Address
-    @Column(name = "nom_agence")
+    @Column("nom_agence")
     private String nomAgence;
 
-    @Column(name = "adresse_agence")
+    @Column("adresse_agence")
     private String adresseAgence;
 
-    @Column(name = "contact_agence")
+    @Column("contact_agence")
     private String contactAgence;
 
-    @NotNull(message = "La date de livraison est obligatoire")
-    @Column(name = "date_livraison")
+    @Column("date_livraison")
     private LocalDate dateLivraison;
 
-    @Column(name = "date_echeance")
+    @Column("date_echeance")
     private LocalDate dateEcheance;
 
-    @Column(name = "id_facture")
+    @Column("id_facture")
     private UUID idFacture;
 
-    @Column(name = "numero_facture")
+    @Column("numero_facture")
     private String numeroFacture;
 
-    @Column(name = "id_bon_commande")
+    @Column("id_bon_commande")
     private UUID idBonCommande;
 
-    @Column(name = "numero_commande")
+    @Column("numero_commande")
     private String numeroCommande;
 
-    @Column(name = "statut")
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private StatutBonLivraison statut = StatutBonLivraison.EN_PREPARATION;
+    @Column("statut")
+    private StatutBonLivraison statut;
 
-    @OneToMany(mappedBy = "bonLivraison", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.springframework.data.annotation.Transient
     @Builder.Default
-    private List<LigneBonLivraison> lignes = new ArrayList<>();
+    private java.util.List<LigneBonLivraison> lignes = new java.util.ArrayList<>();
 
-    @Column(name = "montant_total")
+    @Column("montant_total")
     private BigDecimal montantTotal;
 
-    @Column(name = "conditions_generales", length = 1000)
+    @Column("conditions_generales")
     private String conditionsGenerales;
 
-    @Column(name = "transporteur")
+    @Column("transporteur")
     private String transporteur;
 
-    @Column(name = "numero_suivi")
+    @Column("numero_suivi")
     private String numeroSuivi;
 
-    @Column(name = "created_by")
+    @Column("created_by")
     private String createdBy;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("created_at")
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @Column("updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "livraison_effectuee")
-    @Builder.Default
-    private Boolean livraisonEffectuee = false;
+    @Column("livraison_effectuee")
+    private Boolean livraisonEffectuee;
 
-    @Column(name = "date_livraison_effective")
+    @Column("date_livraison_effective")
     private LocalDateTime dateLivraisonEffective;
 }
 

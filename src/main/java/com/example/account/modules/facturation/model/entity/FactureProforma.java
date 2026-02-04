@@ -3,14 +3,15 @@ package com.example.account.modules.facturation.model.entity;
 import com.example.account.modules.core.model.entity.OrganizationScoped;
 import com.example.account.modules.facturation.model.enums.ModeReglement;
 import com.example.account.modules.facturation.model.enums.StatutProforma;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.EqualsAndHashCode;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -23,145 +24,129 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Entity
-@Table(
-    name = "factures_proforma",
-    indexes = {
-        @Index(name = "idx_proforma_org", columnList = "organization_id"),
-        @Index(name = "idx_proforma_org_numero", columnList = "organization_id, numero_proforma_invoice")
-    }
-)
+@EqualsAndHashCode(callSuper = true)
+@Table("factures_proforma")
 public class FactureProforma extends OrganizationScoped {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id_proforma_invoice")
+    @Column("id_proforma_invoice")
     private UUID idProformaInvoice;
 
-    @NotBlank(message = "Le numéro de proforma est obligatoire")
-    @Column(name = "numero_proforma_invoice", unique = true)
+    @Column("numero_proforma_invoice")
     private String numeroProformaInvoice;
 
-    @Column(name = "date_creation")
+    @Column("date_creation")
     private LocalDateTime dateCreation;
 
-    @Column(name = "type")
+    @Column("type")
     private String type;
 
-    @NotNull(message = "Le statut est obligatoire")
-    @Enumerated(EnumType.STRING)
-    @Column(name = "statut")
+    @Column("statut")
     private StatutProforma statut;
 
-    @Column(name = "montant_total")
+    @Column("montant_total")
     private BigDecimal montantTotal;
 
-    @NotNull(message = "Le client est obligatoire")
-    @Column(name = "id_client")
+    @Column("id_client")
     private UUID idClient;
 
-    @Column(name = "nom_client")
+    @Column("nom_client")
     private String nomClient;
 
-    @Column(name = "adresse_client")
+    @Column("adresse_client")
     private String adresseClient;
 
-    @Column(name = "email_client")
+    @Column("email_client")
     private String emailClient;
 
-    @Column(name = "telephone_client")
+    @Column("telephone_client")
     private String telephoneClient;
 
-    @OneToMany(mappedBy = "factureProforma", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Transient
     @Builder.Default
     private List<LigneFactureProforma> lignesFactureProforma = new ArrayList<>();
 
-    @Column(name = "montant_ht")
+    @Column("montant_ht")
     private BigDecimal montantHT;
 
-    @Column(name = "montant_tva")
+    @Column("montant_tva")
     private BigDecimal montantTVA;
 
-    @Column(name = "montant_ttc")
+    @Column("montant_ttc")
     private BigDecimal montantTTC;
 
-    @Column(name = "devise")
+    @Column("devise")
     private String devise;
 
-    @Column(name = "taux_change")
+    @Column("taux_change")
     private BigDecimal tauxChange;
 
-    @Column(name = "conditions_paiement")
+    @Column("conditions_paiement")
     private String conditionsPaiement;
 
-    @Column(name = "notes", length = 1000)
+    @Column("notes")
     private String notes;
 
-    @Column(name = "reference_externe")
+    @Column("reference_externe")
     private String referenceExterne;
 
-    @Column(name = "pdf_path")
+    @Column("pdf_path")
     private String pdfPath;
 
-    @Column(name = "envoye_par_email")
-    @Builder.Default
-    private Boolean envoyeParEmail = false;
+    @Column("envoye_par_email")
+    private Boolean envoyeParEmail;
 
-    @Column(name = "date_envoi_email")
+    @Column("date_envoi_email")
     private LocalDateTime dateEnvoiEmail;
 
-    @Column(name = "date_acceptation")
+    @Column("date_acceptation")
     private LocalDateTime dateAcceptation;
 
-    @Column(name = "date_refus")
+    @Column("date_refus")
     private LocalDateTime dateRefus;
 
-    @Column(name = "motif_refus")
+    @Column("motif_refus")
     private String motifRefus;
 
-    @Column(name = "id_facture_convertie")
+    @Column("id_facture_convertie")
     private UUID idFactureConvertie;
 
-    @Column(name = "remise_globale_pourcentage")
+    @Column("remise_globale_pourcentage")
     private BigDecimal remiseGlobalePourcentage;
 
-    @Column(name = "remise_globale_montant")
+    @Column("remise_globale_montant")
     private BigDecimal remiseGlobaleMontant;
 
-    @Column(name = "validite_offre_jours")
+    @Column("validite_offre_jours")
     private Integer validiteOffreJours;
 
-    @Column(name = "apply_vat")
-    @Builder.Default
-    private Boolean applyVat = true;
+    @Column("apply_vat")
+    private Boolean applyVat;
 
-    @Column(name = "date_systeme")
+    @Column("date_systeme")
     private LocalDate dateSysteme;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "mode_reglement")
+    @Column("mode_reglement")
     private ModeReglement modeReglement;
 
-    @Column(name = "nos_ref")
+    @Column("nos_ref")
     private String nosRef;
 
-    @Column(name = "vos_ref")
+    @Column("vos_ref")
     private String vosRef;
 
-    @Column(name = "nbre_echeance")
+    @Column("nbre_echeance")
     private Integer nbreEcheance;
 
-    @Column(name = "referal_client_id")
+    @Column("referal_client_id")
     private UUID referalClientId;
 
-    @Column(name = "final_amount")
+    @Column("final_amount")
     private BigDecimal finalAmount;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("created_at")
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @Column("updated_at")
     private LocalDateTime updatedAt;
 }

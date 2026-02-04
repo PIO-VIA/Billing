@@ -6,14 +6,20 @@ import com.example.account.modules.facturation.dto.response.NoteCreditResponse;
 import com.example.account.modules.facturation.mapper.NoteCreditMapper;
 import com.example.account.modules.facturation.model.entity.LigneNoteCredit;
 import com.example.account.modules.facturation.model.entity.NoteCredit;
-import com.example.account.modules.facturation.model.enums.StatutNoteCredit;
 import com.example.account.modules.facturation.repository.NoteCreditRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,58 +30,88 @@ public class NoteCreditService {
 
     private final NoteCreditRepository noteCreditRepository;
     private final NoteCreditMapper noteCreditMapper;
+    private final ObjectMapper objectMapper;
 
     @Transactional
-    public NoteCreditResponse createNoteCredit(NoteCreditRequest request) {
+    public Mono<NoteCreditResponse> createNoteCredit(NoteCreditRequest request) {
         log.info("Création d'une nouvelle note de crédit");
         
-        NoteCredit entity = noteCreditMapper.toEntity(request);
-        entity.setOrganizationId(OrganizationContext.getCurrentOrganizationId());
-        
-        if (entity.getLignesFacture() != null && !entity.getLignesFacture().isEmpty()) {
-            calculateMontants(entity);
-        }
-        
-        NoteCredit saved = noteCreditRepository.save(entity);
-        return noteCreditMapper.toResponse(saved);
+        return OrganizationContext.getOrganizationId()
+                .flatMap(orgId -> {
+                    NoteCredit entity = noteCreditMapper.toEntity(request);
+                    entity.setOrganizationId(orgId);
+                    entity.setCreatedAt(LocalDateTime.now());
+                    entity.setUpdatedAt(LocalDateTime.now());
+                    
+                    if (entity.getLignesFacture() != null && !entity.getLignesFacture().isEmpty()) {
+                        calculateMontants(entity);
+                        serializeLines(entity);
+                    }
+                    
+                    return noteCreditRepository.save(entity)
+                            .map(saved -> {
+                                deserializeLines(saved);
+                                return saved;
+                            });
+                })
+                .map(noteCreditMapper::toResponse);
     }
 
     @Transactional
-    public NoteCreditResponse updateNoteCredit(UUID id, NoteCreditRequest request) {
+    public Mono<NoteCreditResponse> updateNoteCredit(UUID id, NoteCreditRequest request) {
         log.info("Mise à jour de la note de crédit: {}", id);
         
-        NoteCredit entity = noteCreditRepository.findByIdNoteCreditAndOrganizationId(id, OrganizationContext.getCurrentOrganizationId())
-                .orElseThrow(() -> new IllegalArgumentException("Note de crédit non trouvée"));
-        
-        noteCreditMapper.updateEntityFromRequest(request, entity);
-        
-        if (entity.getLignesFacture() != null && !entity.getLignesFacture().isEmpty()) {
-            calculateMontants(entity);
-        }
-        
-        NoteCredit updated = noteCreditRepository.save(entity);
-        return noteCreditMapper.toResponse(updated);
+        return OrganizationContext.getOrganizationId()
+                .flatMap(orgId -> noteCreditRepository.findByIdNoteCreditAndOrganizationId(id, orgId)
+                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Note de crédit non trouvée")))
+                        .flatMap(entity -> {
+                            deserializeLines(entity); // Need lines to merge/update
+                            noteCreditMapper.updateEntityFromRequest(request, entity);
+                            
+                            if (entity.getLignesFacture() != null && !entity.getLignesFacture().isEmpty()) {
+                                calculateMontants(entity);
+                                serializeLines(entity);
+                            }
+                            
+                            entity.setUpdatedAt(LocalDateTime.now());
+                            return noteCreditRepository.save(entity);
+                        })
+                        .map(saved -> {
+                            deserializeLines(saved);
+                            return saved;
+                        }))
+                .map(noteCreditMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public NoteCreditResponse getNoteCreditById(UUID id) {
-        return noteCreditRepository.findByIdNoteCreditAndOrganizationId(id, OrganizationContext.getCurrentOrganizationId())
-                .map(noteCreditMapper::toResponse)
-                .orElseThrow(() -> new IllegalArgumentException("Note de crédit non trouvée"));
+    public Mono<NoteCreditResponse> getNoteCreditById(UUID id) {
+        return OrganizationContext.getOrganizationId()
+                .flatMap(orgId -> noteCreditRepository.findByIdNoteCreditAndOrganizationId(id, orgId))
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Note de crédit non trouvée")))
+                .map(entity -> {
+                    deserializeLines(entity);
+                    return entity;
+                })
+                .map(noteCreditMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<NoteCreditResponse> getAllNoteCredits() {
-        UUID orgId = OrganizationContext.getCurrentOrganizationId();
-        List<NoteCredit> entities = noteCreditRepository.findByOrganizationId(orgId);
-        return noteCreditMapper.toResponseList(entities);
+    public Flux<NoteCreditResponse> getAllNoteCredits() {
+        return OrganizationContext.getOrganizationId()
+                .flatMapMany(noteCreditRepository::findByOrganizationId)
+                .map(entity -> {
+                    deserializeLines(entity);
+                    return entity;
+                })
+                .map(noteCreditMapper::toResponse);
     }
 
     @Transactional
-    public void deleteNoteCredit(UUID id) {
-        NoteCredit entity = noteCreditRepository.findByIdNoteCreditAndOrganizationId(id, OrganizationContext.getCurrentOrganizationId())
-                .orElseThrow(() -> new IllegalArgumentException("Note de crédit non trouvée"));
-        noteCreditRepository.delete(entity);
+    public Mono<Void> deleteNoteCredit(UUID id) {
+        return OrganizationContext.getOrganizationId()
+                .flatMap(orgId -> noteCreditRepository.findByIdNoteCreditAndOrganizationId(id, orgId))
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Note de crédit non trouvée")))
+                .flatMap(noteCreditRepository::delete);
     }
 
     private void calculateMontants(NoteCredit entity) {
@@ -101,5 +137,32 @@ public class NoteCreditService {
         entity.setMontantTotal(montantTTC);
         entity.setMontantRestant(montantTTC);
         entity.setFinalAmount(montantTTC);
+    }
+
+    private void serializeLines(NoteCredit entity) {
+        try {
+            if (entity.getLignesFacture() != null) {
+                entity.setLignesFactureJson(objectMapper.writeValueAsString(entity.getLignesFacture()));
+            }
+        } catch (JsonProcessingException e) {
+            log.error("Erreur lors de la sérialisation des lignes de la note de crédit", e);
+            throw new RuntimeException("Erreur de sérialisation JSON", e);
+        }
+    }
+
+    private void deserializeLines(NoteCredit entity) {
+        try {
+            if (entity.getLignesFactureJson() != null) {
+                List<LigneNoteCredit> lines = objectMapper.readValue(
+                        entity.getLignesFactureJson(), 
+                        new TypeReference<List<LigneNoteCredit>>() {});
+                entity.setLignesFacture(lines);
+            } else {
+                entity.setLignesFacture(Collections.emptyList());
+            }
+        } catch (JsonProcessingException e) {
+            log.error("Erreur lors de la désérialisation des lignes de la note de crédit", e);
+            entity.setLignesFacture(Collections.emptyList());
+        }
     }
 }

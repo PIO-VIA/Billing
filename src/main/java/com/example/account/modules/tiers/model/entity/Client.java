@@ -6,7 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -15,76 +17,66 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Entity
-@Table(
-    name = "clients",
-    indexes = {
-        @Index(name = "idx_client_org", columnList = "organization_id"),
-        @Index(name = "idx_client_org_username", columnList = "organization_id, username"),
-        @Index(name = "idx_client_org_code", columnList = "organization_id, code_client")
-    }
-)
+@Table("clients")
 public class Client extends OrganizationScoped {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id_client")
+    @Column("id_client")
     private UUID idClient;
 
     @NotBlank(message = "Le nom d'utilisateur est obligatoire")
-    @Column(name = "username")
+    @Column("username")
     private String username;
 
     @NotBlank(message = "La catégorie est obligatoire")
-    @Column(name = "categorie")
+    @Column("categorie")
     private String categorie;
 
-    @Column(name = "site_web")
+    @Column("site_web")
     private String siteWeb;
 
-    @Column(name = "n_tva")
+    @Column("n_tva")
     @Builder.Default
     private Boolean nTva = false;
 
     @NotBlank(message = "L'adresse est obligatoire")
-    @Column(name = "adresse")
+    @Column("adresse")
     private String adresse;
 
-    @Column(name = "telephone")
+    @Column("telephone")
     private String telephone;
 
     @Email(message = "Format d'email invalide")
-    @Column(name = "email")
+    @Column("email")
     private String email;
 
     @NotNull(message = "Le type de client est obligatoire")
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type_client")
+    @Column("type_client")
     private TypeClient typeClient;
 
-    @Column(name = "raison_sociale")
+    @Column("raison_sociale")
     private String raisonSociale;
 
-    @Column(name = "numero_tva")
+    @Column("numero_tva")
     private String numeroTva;
 
-    @Column(name = "code_client")
+    @Column("code_client")
     private String codeClient;
 
-    @Column(name = "limite_credit")
+    @Column("limite_credit")
     private Double limiteCredit;
 
-    @Column(name = "solde_courant")
+    @Column("solde_courant")
     @Builder.Default
     private Double soldeCourant = 0.0;
 
-    @Column(name = "actif")
+    @Column("actif")
     @Builder.Default
     private Boolean actif = true;
 
-    @Column(name = "created_at")
+    @Column("created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column("updated_at")
     private LocalDateTime updatedAt;
 }

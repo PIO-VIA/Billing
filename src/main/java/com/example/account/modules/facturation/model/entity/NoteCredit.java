@@ -3,14 +3,12 @@ package com.example.account.modules.facturation.model.entity;
 import com.example.account.modules.core.model.entity.OrganizationScoped;
 import com.example.account.modules.facturation.model.enums.ModeReglementNoteCredit;
 import com.example.account.modules.facturation.model.enums.StatutNoteCredit;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.type.SqlTypes;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.annotation.Version;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,109 +19,139 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Entity
-@Table(
-    name = "note_credits",
-    indexes = {
-        @Index(name = "idx_note_credit_org", columnList = "organization_id"),
-        @Index(name = "idx_note_credit_org_numero", columnList = "organization_id, numero_note_credit"),
-        @Index(name = "idx_note_credit_org_client", columnList = "organization_id, id_client")
-    }
-)
+@EqualsAndHashCode(callSuper = true)
+@Table("note_credits")
 public class NoteCredit extends OrganizationScoped {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id_note_credit")
+    @Column("id_note_credit")
     private UUID idNoteCredit;
 
-    @NotBlank(message = "Le numéro de note de crédit est obligatoire")
-    @Column(name = "numero_note_credit", unique = true)
+    @Column("numero_note_credit")
     private String numeroNoteCredit;
 
-    @Column(name = "numero_facture")
+    @Column("numero_facture")
     private String numeroFacture;
 
-    @Column(name = "date_facturation")
+    @Column("date_facturation")
     private LocalDateTime dateFacturation;
 
-    @Column(name = "date_echeance")
+    @Column("date_echeance")
     private LocalDateTime dateEcheance;
 
-    @Column(name = "date_systeme")
+    @Column("date_systeme")
     private LocalDateTime dateSysteme;
 
-    @NotNull(message = "L'état est obligatoire")
-    @Enumerated(EnumType.STRING)
+    @Column("etat")
     private StatutNoteCredit etat;
 
+    @Column("type")
     @Builder.Default
     private String type = "AVOIR";
 
-    @NotNull(message = "L'ID client est obligatoire")
+    @Column("id_client")
     private String idClient;
 
+    @Column("nom_client")
     private String nomClient;
+
+    @Column("adresse_client")
     private String adresseClient;
+
+    @Column("email_client")
     private String emailClient;
+
+    @Column("telephone_client")
     private String telephoneClient;
 
+    @Column("montant_ht")
     private BigDecimal montantHT;
+
+    @Column("montant_tva")
     private BigDecimal montantTVA;
+
+    @Column("montant_ttc")
     private BigDecimal montantTTC;
+
+    @Column("montant_total")
     private BigDecimal montantTotal;
+
+    @Column("montant_restant")
     private BigDecimal montantRestant;
+
+    @Column("final_amount")
     private BigDecimal finalAmount;
 
+    @Column("remise_globale_pourcentage")
     @Builder.Default
     private BigDecimal remiseGlobalePourcentage = BigDecimal.ZERO;
 
+    @Column("remise_globale_montant")
     @Builder.Default
     private BigDecimal remiseGlobaleMontant = BigDecimal.ZERO;
 
+    @Column("apply_vat")
     @Builder.Default
     private Boolean applyVat = true;
 
+    @Column("devise")
     private String devise;
 
+    @Column("taux_change")
     @Builder.Default
     private BigDecimal tauxChange = BigDecimal.ONE;
 
-    @Enumerated(EnumType.STRING)
+    @Column("mode_reglement")
     private ModeReglementNoteCredit modeReglement;
 
+    @Column("conditions_paiement")
     private String conditionsPaiement;
+
+    @Column("nbre_echeance")
     private Integer nbreEcheance;
+
+    @Column("nos_ref")
     private String nosRef;
+
+    @Column("vos_ref")
     private String vosRef;
+
+    @Column("reference_commande")
     private String referenceCommande;
+
+    @Column("id_devis_origine")
     private UUID idDevisOrigine;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "lignes_facture", columnDefinition = "jsonb")
+    @Column("lignes_facture")
+    private String lignesFactureJson;
+
+    @Transient
     private List<LigneNoteCredit> lignesFacture;
 
-    @Column(length = 1000)
+    @Column("notes")
     private String notes;
 
+    @Column("pdf_path")
     private String pdfPath;
 
+    @Column("envoye_par_email")
     @Builder.Default
     private Boolean envoyeParEmail = false;
 
+    @Column("date_envoi_email")
     private LocalDateTime dateEnvoiEmail;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("created_at")
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @Column("updated_at")
     private LocalDateTime updatedAt;
 
+    @Column("referal_client_id")
     private String referalClientId;
 
     @Version
+    @Column("version")
     @Builder.Default
     private Long version = 0L;
 }

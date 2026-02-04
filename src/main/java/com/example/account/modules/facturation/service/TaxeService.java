@@ -9,13 +9,13 @@ import com.example.account.modules.facturation.repository.TaxesRepository;
 import com.example.account.modules.facturation.service.producer.TaxeEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -28,187 +28,184 @@ public class TaxeService {
     private final TaxeEventProducer taxeEventProducer;
 
     @Transactional
-    public TaxeResponse createTaxe(TaxeCreateRequest request) {
+    public Mono<TaxeResponse> createTaxe(TaxeCreateRequest request) {
         log.info("Création d'une nouvelle taxe: {}", request.getNomTaxe());
 
-        // Vérifications
-        if (taxesRepository.existsByNomTaxe(request.getNomTaxe())) {
-            throw new IllegalArgumentException("Une taxe avec ce nom existe déjà");
-        }
-
-        // Créer et sauvegarder la taxe
-        Taxes taxe = taxeMapper.toEntity(request);
-        Taxes savedTaxe = taxesRepository.save(taxe);
-        TaxeResponse response = taxeMapper.toResponse(savedTaxe);
-
-        // Publier l'événement
-        taxeEventProducer.publishTaxeCreated(response);
-
-        log.info("Taxe créée avec succès: {}", savedTaxe.getIdTaxe());
-        return response;
+        return taxesRepository.existsByNomTaxe(request.getNomTaxe())
+                .flatMap(exists -> {
+                    if (exists) {
+                        return Mono.error(new IllegalArgumentException("Une taxe avec ce nom existe déjà"));
+                    }
+                    Taxes taxe = taxeMapper.toEntity(request);
+                    return taxesRepository.save(taxe);
+                })
+                .map(savedTaxe -> {
+                    TaxeResponse response = taxeMapper.toResponse(savedTaxe);
+                    taxeEventProducer.publishTaxeCreated(response);
+                    log.info("Taxe créée avec succès: {}", savedTaxe.getIdTaxe());
+                    return response;
+                });
     }
 
     @Transactional
-    public TaxeResponse updateTaxe(UUID taxeId, TaxeUpdateRequest request) {
+    public Mono<TaxeResponse> updateTaxe(UUID taxeId, TaxeUpdateRequest request) {
         log.info("Mise à jour de la taxe: {}", taxeId);
 
-        Taxes taxe = taxesRepository.findById(taxeId)
-                .orElseThrow(() -> new IllegalArgumentException("Taxe non trouvée: " + taxeId));
-
-        // Mise à jour
-        taxeMapper.updateEntityFromRequest(request, taxe);
-        Taxes updatedTaxe = taxesRepository.save(taxe);
-        TaxeResponse response = taxeMapper.toResponse(updatedTaxe);
-
-        // Publier l'événement
-        taxeEventProducer.publishTaxeUpdated(response);
-
-        log.info("Taxe mise à jour avec succès: {}", taxeId);
-        return response;
+        return taxesRepository.findById(taxeId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Taxe non trouvée: " + taxeId)))
+                .flatMap(taxe -> {
+                    taxeMapper.updateEntityFromRequest(request, taxe);
+                    return taxesRepository.save(taxe);
+                })
+                .map(updatedTaxe -> {
+                    TaxeResponse response = taxeMapper.toResponse(updatedTaxe);
+                    taxeEventProducer.publishTaxeUpdated(response);
+                    log.info("Taxe mise à jour avec succès: {}", taxeId);
+                    return response;
+                });
     }
 
     @Transactional(readOnly = true)
-    public TaxeResponse getTaxeById(UUID taxeId) {
+    public Mono<TaxeResponse> getTaxeById(UUID taxeId) {
         log.info("Récupération de la taxe: {}", taxeId);
 
-        Taxes taxe = taxesRepository.findById(taxeId)
-                .orElseThrow(() -> new IllegalArgumentException("Taxe non trouvée: " + taxeId));
-
-        return taxeMapper.toResponse(taxe);
+        return taxesRepository.findById(taxeId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Taxe non trouvée: " + taxeId)))
+                .map(taxeMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public TaxeResponse getTaxeByNom(String nomTaxe) {
+    public Mono<TaxeResponse> getTaxeByNom(String nomTaxe) {
         log.info("Récupération de la taxe par nom: {}", nomTaxe);
 
-        Taxes taxe = taxesRepository.findByNomTaxe(nomTaxe)
-                .orElseThrow(() -> new IllegalArgumentException("Taxe non trouvée avec nom: " + nomTaxe));
-
-        return taxeMapper.toResponse(taxe);
+        return taxesRepository.findByNomTaxe(nomTaxe)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Taxe non trouvée avec nom: " + nomTaxe)))
+                .map(taxeMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<TaxeResponse> getAllTaxes() {
+    public Flux<TaxeResponse> getAllTaxes() {
         log.info("Récupération de toutes les taxes");
-        List<Taxes> taxes = taxesRepository.findAll();
-        return taxeMapper.toResponseList(taxes);
+        return taxesRepository.findAll()
+                .map(taxeMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public Page<TaxeResponse> getAllTaxes(Pageable pageable) {
+    public Flux<TaxeResponse> getAllTaxes(Pageable pageable) {
         log.info("Récupération de toutes les taxes (paginée)");
-        Page<Taxes> taxes = taxesRepository.findAll(pageable);
-        return taxes.map(taxeMapper::toResponse);
+        return taxesRepository.findAllBy(pageable)
+                .map(taxeMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<TaxeResponse> getActiveTaxes() {
+    public Flux<TaxeResponse> getActiveTaxes() {
         log.info("Récupération des taxes actives");
-        List<Taxes> taxes = taxesRepository.findAllActiveTaxes();
-        return taxeMapper.toResponseList(taxes);
+        return taxesRepository.findAllActiveTaxes()
+                .map(taxeMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<TaxeResponse> getTaxesByType(String typeTaxe) {
+    public Flux<TaxeResponse> getTaxesByType(String typeTaxe) {
         log.info("Récupération des taxes par type: {}", typeTaxe);
-        List<Taxes> taxes = taxesRepository.findByTypeTaxe(typeTaxe);
-        return taxeMapper.toResponseList(taxes);
+        return taxesRepository.findByTypeTaxe(typeTaxe)
+                .map(taxeMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<TaxeResponse> getActiveTaxesByType(String typeTaxe) {
+    public Flux<TaxeResponse> getActiveTaxesByType(String typeTaxe) {
         log.info("Récupération des taxes actives par type: {}", typeTaxe);
-        List<Taxes> taxes = taxesRepository.findActiveByTypeTaxe(typeTaxe);
-        return taxeMapper.toResponseList(taxes);
+        return taxesRepository.findActiveByTypeTaxe(typeTaxe)
+                .map(taxeMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<TaxeResponse> getTaxesByPorte(String porteTaxe) {
+    public Flux<TaxeResponse> getTaxesByPorte(String porteTaxe) {
         log.info("Récupération des taxes par portée: {}", porteTaxe);
-        List<Taxes> taxes = taxesRepository.findByPorteTaxe(porteTaxe);
-        return taxeMapper.toResponseList(taxes);
+        return taxesRepository.findByPorteTaxe(porteTaxe)
+                .map(taxeMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<TaxeResponse> getTaxesByPositionFiscale(String positionFiscale) {
+    public Flux<TaxeResponse> getTaxesByPositionFiscale(String positionFiscale) {
         log.info("Récupération des taxes par position fiscale: {}", positionFiscale);
-        List<Taxes> taxes = taxesRepository.findByPositionFiscale(positionFiscale);
-        return taxeMapper.toResponseList(taxes);
+        return taxesRepository.findByPositionFiscale(positionFiscale)
+                .map(taxeMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<TaxeResponse> getTaxesByCalculRange(BigDecimal minTaux, BigDecimal maxTaux) {
+    public Flux<TaxeResponse> getTaxesByCalculRange(BigDecimal minTaux, BigDecimal maxTaux) {
         log.info("Récupération des taxes par plage de calcul: {} - {}", minTaux, maxTaux);
-        List<Taxes> taxes = taxesRepository.findByCalculTaxeBetween(minTaux, maxTaux);
-        return taxeMapper.toResponseList(taxes);
+        return taxesRepository.findByCalculTaxeBetween(minTaux, maxTaux)
+                .map(taxeMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<TaxeResponse> getTaxesByMontantRange(BigDecimal minMontant, BigDecimal maxMontant) {
+    public Flux<TaxeResponse> getTaxesByMontantRange(BigDecimal minMontant, BigDecimal maxMontant) {
         log.info("Récupération des taxes par plage de montant: {} - {}", minMontant, maxMontant);
-        List<Taxes> taxes = taxesRepository.findByMontantBetween(minMontant, maxMontant);
-        return taxeMapper.toResponseList(taxes);
+        return taxesRepository.findByMontantBetween(minMontant, maxMontant)
+                .map(taxeMapper::toResponse);
     }
 
     @Transactional
-    public void deleteTaxe(UUID taxeId) {
+    public Mono<Void> deleteTaxe(UUID taxeId) {
         log.info("Suppression de la taxe: {}", taxeId);
 
-        if (!taxesRepository.existsById(taxeId)) {
-            throw new IllegalArgumentException("Taxe non trouvée: " + taxeId);
-        }
-
-        taxesRepository.deleteById(taxeId);
-
-        // Publier l'événement
-        taxeEventProducer.publishTaxeDeleted(taxeId);
-
-        log.info("Taxe supprimée avec succès: {}", taxeId);
+        return taxesRepository.existsById(taxeId)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new IllegalArgumentException("Taxe non trouvée: " + taxeId));
+                    }
+                    return taxesRepository.deleteById(taxeId);
+                })
+                .doOnSuccess(v -> {
+                    taxeEventProducer.publishTaxeDeleted(taxeId);
+                    log.info("Taxe supprimée avec succès: {}", taxeId);
+                });
     }
 
     @Transactional
-    public TaxeResponse activerTaxe(UUID taxeId) {
+    public Mono<TaxeResponse> activerTaxe(UUID taxeId) {
         log.info("Activation de la taxe: {}", taxeId);
 
-        Taxes taxe = taxesRepository.findById(taxeId)
-                .orElseThrow(() -> new IllegalArgumentException("Taxe non trouvée: " + taxeId));
-
-        taxe.setActif(true);
-        Taxes updatedTaxe = taxesRepository.save(taxe);
-        TaxeResponse response = taxeMapper.toResponse(updatedTaxe);
-
-        // Publier l'événement
-        taxeEventProducer.publishTaxeUpdated(response);
-
-        log.info("Taxe activée avec succès: {}", taxeId);
-        return response;
+        return taxesRepository.findById(taxeId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Taxe non trouvée: " + taxeId)))
+                .flatMap(taxe -> {
+                    taxe.setActif(true);
+                    return taxesRepository.save(taxe);
+                })
+                .map(savedTaxe -> {
+                    TaxeResponse response = taxeMapper.toResponse(savedTaxe);
+                    taxeEventProducer.publishTaxeUpdated(response);
+                    log.info("Taxe activée avec succès: {}", taxeId);
+                    return response;
+                });
     }
 
     @Transactional
-    public TaxeResponse desactiverTaxe(UUID taxeId) {
+    public Mono<TaxeResponse> desactiverTaxe(UUID taxeId) {
         log.info("Désactivation de la taxe: {}", taxeId);
 
-        Taxes taxe = taxesRepository.findById(taxeId)
-                .orElseThrow(() -> new IllegalArgumentException("Taxe non trouvée: " + taxeId));
-
-        taxe.setActif(false);
-        Taxes updatedTaxe = taxesRepository.save(taxe);
-        TaxeResponse response = taxeMapper.toResponse(updatedTaxe);
-
-        // Publier l'événement
-        taxeEventProducer.publishTaxeUpdated(response);
-
-        log.info("Taxe désactivée avec succès: {}", taxeId);
-        return response;
+        return taxesRepository.findById(taxeId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Taxe non trouvée: " + taxeId)))
+                .flatMap(taxe -> {
+                    taxe.setActif(false);
+                    return taxesRepository.save(taxe);
+                })
+                .map(savedTaxe -> {
+                    TaxeResponse response = taxeMapper.toResponse(savedTaxe);
+                    taxeEventProducer.publishTaxeUpdated(response);
+                    log.info("Taxe désactivée avec succès: {}", taxeId);
+                    return response;
+                });
     }
 
     @Transactional(readOnly = true)
-    public Long countActiveTaxes() {
+    public Mono<Long> countActiveTaxes() {
         return taxesRepository.countActiveTaxes();
     }
 
     @Transactional(readOnly = true)
-    public Long countByType(String typeTaxe) {
+    public Mono<Long> countByType(String typeTaxe) {
         return taxesRepository.countByTypeTaxe(typeTaxe);
     }
 }
