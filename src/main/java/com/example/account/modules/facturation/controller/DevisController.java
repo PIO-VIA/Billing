@@ -3,10 +3,12 @@ package com.example.account.modules.facturation.controller;
 import com.example.account.modules.facturation.dto.request.DevisCreateRequest;
 
 import com.example.account.modules.facturation.dto.response.DevisResponse;
-
+import com.example.account.modules.facturation.dto.response.ExternalResponses.EnrichedDevisResponse;
 import com.example.account.modules.facturation.model.enums.StatutDevis;
 
 import com.example.account.modules.facturation.service.DevisService;
+import com.example.account.modules.facturation.service.Journals.DevisJournalService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -22,8 +24,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 
 @RestController
@@ -34,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class DevisController {
 
     private final DevisService devisService;
+    private final DevisJournalService devisJournalService;
 
     @PostMapping
     @Operation(summary = "Créer un nouveau devis")
@@ -43,6 +44,14 @@ public class DevisController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+
+     @GetMapping("/enriched/{orgId}")
+    @Operation(summary = "Enrechir les devis")
+    public ResponseEntity<List<EnrichedDevisResponse>> getEnrichedDevis(@PathVariable UUID orgId) {
+        log.info("Requête de récupération du devis: {}");
+        List<EnrichedDevisResponse> response = devisJournalService.enrichDevis(orgId);
+        return ResponseEntity.ok(response);
+    }
 
    
     

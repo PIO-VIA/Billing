@@ -176,4 +176,7 @@ public class Facture extends OrganizationScoped {
     @Column(name = "version")
     @Builder.Default
     private Long version = 0L;
+
+    private UUID organizationId;
+    
 }

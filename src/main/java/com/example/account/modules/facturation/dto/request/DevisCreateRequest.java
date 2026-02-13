@@ -73,7 +73,7 @@ public class DevisCreateRequest {
 
     // --- Added Fields from UpdatedDevisResponse ---
 
-    @NotNull(message = "Le flag de TVA est obligatoire")
+   
     private Boolean applyVat;
 
     private LocalDateTime dateSysteme;
@@ -89,6 +89,8 @@ public class DevisCreateRequest {
     private String referalClientId;
     
     private String pdfPath;
+   
     private UUID organizationId;
+    private UUID createdBy;
     
 }

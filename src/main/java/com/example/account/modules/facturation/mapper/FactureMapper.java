@@ -62,11 +62,7 @@ public interface FactureMapper extends BaseMapper<Facture, FactureCreateRequest,
 
     List<FactureResponse> toResponseList(List<Facture> factures);
 
-    // Méthode utilitaire pour générer le numéro de facture
-    default String generateNumeroFacture() {
-        return "FAC-" + System.currentTimeMillis();
-    }
-
+ 
     
 
    

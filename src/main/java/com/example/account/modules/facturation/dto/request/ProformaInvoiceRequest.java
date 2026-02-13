@@ -53,4 +53,5 @@ public class ProformaInvoiceRequest {
     private BigDecimal remiseGlobalePourcentage;
     private BigDecimal remiseGlobaleMontant;
     private Integer validiteOffreJours;
+    private UUID organizationId;
 }

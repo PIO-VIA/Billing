@@ -56,7 +56,7 @@ public class Devis extends OrganizationScoped {
     @Column(name = "lignes_devis", columnDefinition = "jsonb")
     private List<LigneDevis> lignesDevis; 
 
-    @NotNull(message = "Le montant total est obligatoire")
+    
     private BigDecimal montantTotal;
 
     @NotNull(message = "L'ID client est obligatoire")
@@ -124,4 +124,7 @@ public class Devis extends OrganizationScoped {
     @Version
     @Builder.Default
     private Long version = 0L;
+
+    private UUID organizationId;
+    private UUID createdBy;
 }

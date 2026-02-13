@@ -3,6 +3,7 @@ package com.example.account.modules.facturation.service;
 import com.example.account.modules.facturation.dto.request.FactureCreateRequest;
 import com.example.account.modules.facturation.dto.request.FactureUpdateRequest;
 import com.example.account.modules.facturation.dto.response.FactureResponse;
+import com.example.account.modules.facturation.dto.response.ExternalResponses.SellerAuthResponse;
 import com.example.account.modules.facturation.mapper.FactureMapper;
 
 
@@ -10,6 +11,7 @@ import com.example.account.modules.facturation.model.entity.Facture;
 import com.example.account.modules.facturation.model.enums.StatutFacture;
 import com.example.account.modules.tiers.repository.ClientRepository;
 import com.example.account.modules.facturation.repository.FactureRepository;
+import com.example.account.modules.facturation.service.ExternalServices.*;
 import com.example.account.modules.facturation.service.producer.FactureEventProducer;
 
 import com.example.account.modules.facturation.repository.DevisRepository;
@@ -42,24 +44,30 @@ public class FactureService {
     private final PdfGeneratorService pdfGeneratorService;
     private final EmailService emailService;
     private final DevisRepository devisRepository;
-    
+    private final AccountingService accountingService;
+
+    private final SellerService sellerService;
 
 
     @Transactional
     public FactureResponse createFacture(FactureCreateRequest request) {
         log.info("Création d'une nouvelle facture pour le client: {}", request.getIdClient());
 
-      
+      System.out.println(request);
 
         // Créer la facture
         Facture facture = factureMapper.toEntity(request);
 
         
 
-        
+        System.out.println(facture);
 
         Facture savedFacture = factureRepository.save(facture);
+
+        System.out.println(savedFacture);
         FactureResponse response = factureMapper.toResponse(savedFacture);
+
+        System.out.println(response);
 
         // Publier l'événement
        // factureEventProducer.publishFactureCreated(response);
@@ -97,6 +105,20 @@ public class FactureService {
                 .orElseThrow(() -> new IllegalArgumentException("Facture non trouvée: " + factureId));
 
         return factureMapper.toResponse(facture);
+    }
+
+
+    @Transactional(readOnly = true)
+    public void accountFacture(UUID factureId) throws  Exception{
+
+      
+
+      try {
+    accountingService.sendFactureData(factureId);
+} catch (Exception e) {
+    log.error("Failed to sync facture {} with accounting: {}", factureId, e.getMessage());
+    throw new Exception("Accounting sync failed: " + e.getMessage());
+}
     }
 
     @Transactional(readOnly = true)
@@ -259,5 +281,15 @@ public class FactureService {
         emailService.sendRappelPaiementEmail(facture, facture.getEmailClient());
 
         log.info("Rappel de paiement envoyé pour la facture {} à {}", facture.getNumeroFacture(), facture.getEmailClient());
+    }
+
+
+    //graphql logic
+
+    //first link objects together
+    public void enrichFactures(UUID orgId){
+        List<SellerAuthResponse> sellers=sellerService.getSellersByOrganization(orgId);
+        //load factures for that organization
+
     }
 }

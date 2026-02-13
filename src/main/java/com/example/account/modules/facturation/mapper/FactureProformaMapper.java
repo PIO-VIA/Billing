@@ -5,14 +5,14 @@ import com.example.account.modules.facturation.dto.response.ProformaInvoiceRespo
 import com.example.account.modules.facturation.model.entity.FactureProforma;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import java.util.List;
 
 @Mapper(
         componentModel = "spring",
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
-        uses = {LigneFactureProformaMapper.class}
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public interface FactureProformaMapper {
 
@@ -26,4 +26,5 @@ public interface FactureProformaMapper {
     ProformaInvoiceResponse toResponse(FactureProforma entity);
 
     List<ProformaInvoiceResponse> toResponseList(List<FactureProforma> entities);
+    void updateProformaFromDTO(ProformaInvoiceRequest reuqest,@MappingTarget FactureProforma proforma);
 }

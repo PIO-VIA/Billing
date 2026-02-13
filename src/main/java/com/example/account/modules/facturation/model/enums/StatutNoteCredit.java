@@ -4,12 +4,10 @@ import lombok.Getter;
 
 @Getter
 public enum StatutNoteCredit {
-    BROUILLON("Brouillon"),
-    ENVOYE("Envoyé"),
-    PAYE("Payé"),
-    PARTIELLEMENT_PAYE("Partiellement payé"),
-    EN_RETARD("En retard"),
-    ANNULE("Annulé");
+    BROUILLON ("BROUILLON"),
+        APPLIQUÉ  ("APPLIQUÉ"), // Deducted from client's balance
+        REMBOURSÉ  ("REMBOURSÉ"), // Money sent back to client
+        ANNULÉ ( "ANNULÉ");
 
     private final String libelle;
 
