@@ -45,4 +45,5 @@ public interface DevisRepository extends JpaRepository<Devis, UUID> {
     List<Devis> findConvertedToInvoice();
 
     Page<Devis> findAll(Pageable pageable);
+    List<Devis> findByOrganizationId(UUID organizationId);
 }

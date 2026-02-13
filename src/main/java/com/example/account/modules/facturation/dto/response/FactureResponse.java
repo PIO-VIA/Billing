@@ -80,4 +80,5 @@ public class FactureResponse {
     private Long version;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    
 }

@@ -4,6 +4,7 @@ import com.example.account.modules.facturation.dto.request.DevisCreateRequest;
 import com.example.account.modules.facturation.dto.request.LigneDevisCreateRequest;
 import com.example.account.modules.facturation.dto.response.DevisResponse;
 import com.example.account.modules.facturation.dto.response.LigneDevisResponse;
+import com.example.account.modules.facturation.dto.response.ExternalResponses.SellerAuthResponse;
 import com.example.account.modules.facturation.mapper.DevisMapper;
 
 import com.example.account.modules.tiers.model.entity.Client;
@@ -12,7 +13,7 @@ import com.example.account.modules.facturation.model.entity.LigneDevis;
 import com.example.account.modules.facturation.model.enums.StatutDevis;
 import com.example.account.modules.tiers.repository.ClientRepository;
 import com.example.account.modules.facturation.repository.DevisRepository;
-
+import com.example.account.modules.facturation.service.ExternalServices.SellerService;
 import com.example.account.modules.facturation.service.producer.DevisEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +38,7 @@ public class DevisService {
     private final DevisMapper devisMapper;
     private final DevisEventProducer devisEventProducer;
 
-    
+    private final SellerService sellerService;
 
     @Transactional
     public DevisResponse createDevis(DevisCreateRequest request) {
@@ -45,8 +46,9 @@ public class DevisService {
 
         
         // Créer le devis
+        System.out.println(request);
         Devis devis = devisMapper.toEntity(request);
-     
+        System.out.println(devis);
         devis.setCreatedAt(LocalDateTime.now());
         devis.setUpdatedAt(LocalDateTime.now());
 
@@ -54,8 +56,9 @@ public class DevisService {
 
         
         Devis savedDevis = devisRepository.save(devis);
+        System.out.println(savedDevis);
         DevisResponse response = devisMapper.toResponse(savedDevis);
-
+        System.out.println(response);
         // Publier l'événement
         devisEventProducer.publishDevisCreated(response);
 
@@ -203,6 +206,9 @@ public class DevisService {
     }
 
     
+
+
+   
 
     
 }

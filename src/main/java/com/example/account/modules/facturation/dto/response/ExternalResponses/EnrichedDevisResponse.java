@@ -1,5 +1,6 @@
-package com.example.account.modules.facturation.dto.response;
+package com.example.account.modules.facturation.dto.response.ExternalResponses;
 
+import com.example.account.modules.facturation.dto.response.LigneDevisResponse;
 import com.example.account.modules.facturation.model.enums.StatutDevis;
 import com.example.account.modules.facturation.model.enums.TypePaiementDevis;
 import lombok.AllArgsConstructor;
@@ -11,12 +12,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-
+import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DevisResponse {
+public class EnrichedDevisResponse {
 
     private UUID idDevis;
     private String numeroDevis;
@@ -74,5 +75,9 @@ public class DevisResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private UUID organizationId;
-    private UUID createdBy;
+    private String organizationName;
+    private UUID agencyId;
+    private String agencyName;
+    private UUID salesPointId;
+    private String salesPointName;
 }

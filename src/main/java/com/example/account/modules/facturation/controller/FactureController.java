@@ -59,8 +59,20 @@ public class FactureController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/account/{factureId}")
+    @Operation(summary = "Récupérer une facture par ID")
+    public ResponseEntity<?> accountFacture(@PathVariable UUID factureId) {
+        log.info("Comptabiliser la facture: {}", factureId);
+        try {
+            factureService.accountFacture(factureId);
+        return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(" Accounting Operation Failed");
+        }
+    }
+
     @GetMapping("/numero/{numeroFacture}")
-    @Operation(summary = "Récupérer une facture par numéro")
+    @Operation(summary = "Comptabiliser une Facture")
     public ResponseEntity<FactureResponse> getFactureByNumero(@PathVariable String numeroFacture) {
         log.info("Requête de récupération de la facture par numéro: {}", numeroFacture);
         FactureResponse response = factureService.getFactureByNumero(numeroFacture);
