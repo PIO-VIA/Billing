@@ -124,4 +124,7 @@ public class Devis extends OrganizationScoped {
     @Version
     @Builder.Default
     private Long version = 0L;
+
+    private UUID organizationId;
+    private UUID createdBy;
 }
