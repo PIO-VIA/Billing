@@ -13,8 +13,9 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
-import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 @Service
@@ -34,152 +35,160 @@ public class EmailService {
     /**
      * Envoie un email de création de facture au client
      */
-    public void sendFactureCreationEmail(Facture facture, String toEmail, byte[] pdfAttachment) {
-        log.info("Envoi de l'email de création de facture {} à {}", facture.getNumeroFacture(), toEmail);
+    public Mono<Void> sendFactureCreationEmail(Facture facture, String toEmail, byte[] pdfAttachment) {
+        return Mono.fromRunnable(() -> {
+            log.info("Envoi de l'email de création de facture {} à {}", facture.getNumeroFacture(), toEmail);
 
-        try {
-            // Préparer le contexte Thymeleaf
-            Context context = new Context(Locale.FRENCH);
-            context.setVariable("client", facture.getNomClient());
-            context.setVariable("numeroFacture", facture.getNumeroFacture());
-            context.setVariable("dateFacturation", facture.getDateFacturation());
-            context.setVariable("dateEcheance", facture.getDateEcheance());
-            context.setVariable("montantTotal", facture.getMontantTotal());
-            context.setVariable("facture", facture);
-            context.setVariable("baseUrl", baseUrl);
+            try {
+                // Préparer le contexte Thymeleaf
+                Context context = new Context(Locale.FRENCH);
+                context.setVariable("client", facture.getNomClient());
+                context.setVariable("numeroFacture", facture.getNumeroFacture());
+                context.setVariable("dateFacturation", facture.getDateFacturation());
+                context.setVariable("dateEcheance", facture.getDateEcheance());
+                context.setVariable("montantTotal", facture.getMontantTotal());
+                context.setVariable("facture", facture);
+                context.setVariable("baseUrl", baseUrl);
 
-            // Générer le contenu HTML de l'email
-            String htmlContent = templateEngine.process("email/facture-creation", context);
+                // Générer le contenu HTML de l'email
+                String htmlContent = templateEngine.process("email/facture-creation", context);
 
-            // Créer et envoyer l'email
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                // Créer et envoyer l'email
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail);
-            helper.setTo(toEmail);
-            helper.setSubject("Nouvelle facture " + facture.getNumeroFacture());
-            helper.setText(htmlContent, true);
+                helper.setFrom(fromEmail);
+                helper.setTo(toEmail);
+                helper.setSubject("Nouvelle facture " + facture.getNumeroFacture());
+                helper.setText(htmlContent, true);
 
-            // Attacher le PDF si fourni
-            if (pdfAttachment != null && pdfAttachment.length > 0) {
-                String filename = "Facture_" + facture.getNumeroFacture() + ".pdf";
-                helper.addAttachment(filename, new ByteArrayResource(pdfAttachment));
+                // Attacher le PDF si fourni
+                if (pdfAttachment != null && pdfAttachment.length > 0) {
+                    String filename = "Facture_" + facture.getNumeroFacture() + ".pdf";
+                    helper.addAttachment(filename, new ByteArrayResource(pdfAttachment));
+                }
+
+                mailSender.send(message);
+                log.info("Email de facture envoyé avec succès à {}", toEmail);
+
+            } catch (MessagingException e) {
+                log.error("Erreur lors de l'envoi de l'email de facture à {}: {}", toEmail, e.getMessage(), e);
+                throw new RuntimeException("Erreur lors de l'envoi de l'email de facture", e);
             }
-
-            mailSender.send(message);
-            log.info("Email de facture envoyé avec succès à {}", toEmail);
-
-        } catch (MessagingException e) {
-            log.error("Erreur lors de l'envoi de l'email de facture à {}: {}", toEmail, e.getMessage(), e);
-            throw new RuntimeException("Erreur lors de l'envoi de l'email de facture", e);
-        }
+        }).subscribeOn(Schedulers.boundedElastic()).then();
     }
 
     /**
      * Envoie un email de rappel de paiement
      */
-    public void sendRappelPaiementEmail(Facture facture, String toEmail) {
-        log.info("Envoi de l'email de rappel de paiement pour facture {} à {}", facture.getNumeroFacture(), toEmail);
+    public Mono<Void> sendRappelPaiementEmail(Facture facture, String toEmail) {
+        return Mono.fromRunnable(() -> {
+            log.info("Envoi de l'email de rappel de paiement pour facture {} à {}", facture.getNumeroFacture(), toEmail);
 
-        try {
-            // Préparer le contexte Thymeleaf
-            Context context = new Context(Locale.FRENCH);
-            context.setVariable("client", facture.getNomClient());
-            context.setVariable("numeroFacture", facture.getNumeroFacture());
-            context.setVariable("dateFacturation", facture.getDateFacturation());
-            context.setVariable("dateEcheance", facture.getDateEcheance());
-            context.setVariable("montantRestant", facture.getMontantRestant());
-            context.setVariable("facture", facture);
-            context.setVariable("baseUrl", baseUrl);
+            try {
+                // Préparer le contexte Thymeleaf
+                Context context = new Context(Locale.FRENCH);
+                context.setVariable("client", facture.getNomClient());
+                context.setVariable("numeroFacture", facture.getNumeroFacture());
+                context.setVariable("dateFacturation", facture.getDateFacturation());
+                context.setVariable("dateEcheance", facture.getDateEcheance());
+                context.setVariable("montantRestant", facture.getMontantRestant());
+                context.setVariable("facture", facture);
+                context.setVariable("baseUrl", baseUrl);
 
-            // Générer le contenu HTML de l'email
-            String htmlContent = templateEngine.process("email/rappel-paiement", context);
+                // Générer le contenu HTML de l'email
+                String htmlContent = templateEngine.process("email/rappel-paiement", context);
 
-            // Créer et envoyer l'email
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                // Créer et envoyer l'email
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail);
-            helper.setTo(toEmail);
-            helper.setSubject("Rappel de paiement - Facture " + facture.getNumeroFacture());
-            helper.setText(htmlContent, true);
+                helper.setFrom(fromEmail);
+                helper.setTo(toEmail);
+                helper.setSubject("Rappel de paiement - Facture " + facture.getNumeroFacture());
+                helper.setText(htmlContent, true);
 
-            mailSender.send(message);
-            log.info("Email de rappel de paiement envoyé avec succès à {}", toEmail);
+                mailSender.send(message);
+                log.info("Email de rappel de paiement envoyé avec succès à {}", toEmail);
 
-        } catch (MessagingException e) {
-            log.error("Erreur lors de l'envoi de l'email de rappel à {}: {}", toEmail, e.getMessage(), e);
-            throw new RuntimeException("Erreur lors de l'envoi de l'email de rappel", e);
-        }
+            } catch (MessagingException e) {
+                log.error("Erreur lors de l'envoi de l'email de rappel à {}: {}", toEmail, e.getMessage(), e);
+                throw new RuntimeException("Erreur lors de l'envoi de l'email de rappel", e);
+            }
+        }).subscribeOn(Schedulers.boundedElastic()).then();
     }
 
     /**
      * Envoie un email de confirmation de paiement reçu
      */
-    public void sendPaiementRecuEmail(Paiement paiement, Facture facture, String toEmail, byte[] recuPdf) {
-        log.info("Envoi de l'email de paiement reçu pour {} à {}", paiement.getIdPaiement(), toEmail);
+    public Mono<Void> sendPaiementRecuEmail(Paiement paiement, Facture facture, String toEmail, byte[] recuPdf) {
+        return Mono.fromRunnable(() -> {
+            log.info("Envoi de l'email de paiement reçu pour {} à {}", paiement.getIdPaiement(), toEmail);
 
-        try {
-            // Préparer le contexte Thymeleaf
-            Context context = new Context(Locale.FRENCH);
-            context.setVariable("client", facture.getNomClient());
-            context.setVariable("numeroFacture", facture.getNumeroFacture());
-            context.setVariable("montantPaye", paiement.getMontant());
-            context.setVariable("datePaiement", paiement.getDate());
-            context.setVariable("modePaiement", paiement.getModePaiement());
-            context.setVariable("montantRestant", facture.getMontantRestant());
-            context.setVariable("paiement", paiement);
-            context.setVariable("facture", facture);
-            context.setVariable("baseUrl", baseUrl);
+            try {
+                // Préparer le contexte Thymeleaf
+                Context context = new Context(Locale.FRENCH);
+                context.setVariable("client", facture.getNomClient());
+                context.setVariable("numeroFacture", facture.getNumeroFacture());
+                context.setVariable("montantPaye", paiement.getMontant());
+                context.setVariable("datePaiement", paiement.getDate());
+                context.setVariable("modePaiement", paiement.getModePaiement());
+                context.setVariable("montantRestant", facture.getMontantRestant());
+                context.setVariable("paiement", paiement);
+                context.setVariable("facture", facture);
+                context.setVariable("baseUrl", baseUrl);
 
-            // Générer le contenu HTML de l'email
-            String htmlContent = templateEngine.process("email/paiement-recu", context);
+                // Générer le contenu HTML de l'email
+                String htmlContent = templateEngine.process("email/paiement-recu", context);
 
-            // Créer et envoyer l'email
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                // Créer et envoyer l'email
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail);
-            helper.setTo(toEmail);
-            helper.setSubject("Paiement reçu - Facture " + facture.getNumeroFacture());
-            helper.setText(htmlContent, true);
+                helper.setFrom(fromEmail);
+                helper.setTo(toEmail);
+                helper.setSubject("Paiement reçu - Facture " + facture.getNumeroFacture());
+                helper.setText(htmlContent, true);
 
-            // Attacher le reçu PDF si fourni
-            if (recuPdf != null && recuPdf.length > 0) {
-                String filename = "Recu_Paiement_" + paiement.getIdPaiement() + ".pdf";
-                helper.addAttachment(filename, new ByteArrayResource(recuPdf));
+                // Attacher le reçu PDF si fourni
+                if (recuPdf != null && recuPdf.length > 0) {
+                    String filename = "Recu_Paiement_" + paiement.getIdPaiement() + ".pdf";
+                    helper.addAttachment(filename, new ByteArrayResource(recuPdf));
+                }
+
+                mailSender.send(message);
+                log.info("Email de paiement reçu envoyé avec succès à {}", toEmail);
+
+            } catch (MessagingException e) {
+                log.error("Erreur lors de l'envoi de l'email de paiement reçu à {}: {}", toEmail, e.getMessage(), e);
+                throw new RuntimeException("Erreur lors de l'envoi de l'email de paiement reçu", e);
             }
-
-            mailSender.send(message);
-            log.info("Email de paiement reçu envoyé avec succès à {}", toEmail);
-
-        } catch (MessagingException e) {
-            log.error("Erreur lors de l'envoi de l'email de paiement reçu à {}: {}", toEmail, e.getMessage(), e);
-            throw new RuntimeException("Erreur lors de l'envoi de l'email de paiement reçu", e);
-        }
+        }).subscribeOn(Schedulers.boundedElastic()).then();
     }
 
     /**
      * Envoie un email simple (générique)
      */
-    public void sendSimpleEmail(String to, String subject, String text) {
-        log.info("Envoi d'un email simple à {}", to);
+    public Mono<Void> sendSimpleEmail(String to, String subject, String text) {
+        return Mono.fromRunnable(() -> {
+            log.info("Envoi d'un email simple à {}", to);
 
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
+            try {
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
 
-            helper.setFrom(fromEmail);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(text, false);
+                helper.setFrom(fromEmail);
+                helper.setTo(to);
+                helper.setSubject(subject);
+                helper.setText(text, false);
 
-            mailSender.send(message);
-            log.info("Email simple envoyé avec succès à {}", to);
+                mailSender.send(message);
+                log.info("Email simple envoyé avec succès à {}", to);
 
-        } catch (MessagingException e) {
-            log.error("Erreur lors de l'envoi de l'email à {}: {}", to, e.getMessage(), e);
-            throw new RuntimeException("Erreur lors de l'envoi de l'email", e);
-        }
+            } catch (MessagingException e) {
+                log.error("Erreur lors de l'envoi de l'email à {}: {}", to, e.getMessage(), e);
+                throw new RuntimeException("Erreur lors de l'envoi de l'email", e);
+            }
+        }).subscribeOn(Schedulers.boundedElastic()).then();
     }
 }

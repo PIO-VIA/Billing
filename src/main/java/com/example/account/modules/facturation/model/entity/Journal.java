@@ -4,42 +4,43 @@ import com.example.account.modules.core.model.entity.OrganizationScoped;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Journal entity representing an accounting journal.
+ */
+@Table("journals")
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Entity
-@Table(
-    name = "journals",
-    indexes = {
-        @Index(name = "idx_journal_org", columnList = "organization_id"),
-        @Index(name = "idx_journal_org_nomjournal", columnList = "organization_id, nom_journal")
-    }
-)
 public class Journal extends OrganizationScoped {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id_journal")
+    @Column("id_journal")
     private UUID idJournal;
 
-    @NotBlank(message = "Le nom du journal est obligatoire")
-    @Column(name = "nom_journal")
+    @Column("nom_journal")
     private String nomJournal;
 
-    @NotBlank(message = "Le type est obligatoire")
-    @Column(name = "type")
+    @Column("type")
     private String type;
 
-    @Column(name = "created_at")
+    @CreatedDate
+    @Column("created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @LastModifiedDate
+    @Column("updated_at")
     private LocalDateTime updatedAt;
 }

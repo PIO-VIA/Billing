@@ -1,65 +1,69 @@
 package com.example.account.modules.core.repository;
 
 import com.example.account.modules.core.model.entity.User;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository for User entity operations.
+ * Reactive repository for User entity operations.
  */
 @Repository
-public interface UserRepository extends JpaRepository<User, UUID> {
+public interface UserRepository extends R2dbcRepository<User, UUID> {
 
     /**
      * Find user by username.
      */
-    Optional<User> findByUsername(String username);
+    Mono<User> findByUsername(String username);
 
     /**
      * Find user by email.
      */
-    Optional<User> findByEmail(String email);
+    Mono<User> findByEmail(String email);
 
     /**
      * Find user by username or email.
+     * Note: In R2DBC, we use SQL instead of JPQL.
      */
-    @Query("SELECT u FROM User u WHERE u.username = :identifier OR u.email = :identifier")
-    Optional<User> findByUsernameOrEmail(@Param("identifier") String identifier);
+    @Query("SELECT * FROM users WHERE username = :identifier OR email = :identifier")
+    Mono<User> findByUsernameOrEmail(String identifier);
 
     /**
      * Check if username exists.
      */
-    boolean existsByUsername(String username);
+    Mono<Boolean> existsByUsername(String username);
 
     /**
      * Check if email exists.
      */
-    boolean existsByEmail(String email);
+    Mono<Boolean> existsByEmail(String email);
 
     /**
      * Find active user by username.
      */
-    Optional<User> findByUsernameAndIsActiveTrue(String username);
+    Mono<User> findByUsernameAndIsActiveTrue(String username);
 
     /**
      * Find active user by email.
      */
-    Optional<User> findByEmailAndIsActiveTrue(String email);
+    Mono<User> findByEmailAndIsActiveTrue(String email);
 
     /**
-     * Find user with organizations eagerly loaded.
+     * Find user by ID.
+     * Note: In R2DBC, relationships are not eagerly loaded.
+     * UserOrganizations should be loaded separately via UserOrganizationRepository.
      */
-    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.userOrganizations uo LEFT JOIN FETCH uo.organization WHERE u.id = :userId")
-    Optional<User> findByIdWithOrganizations(@Param("userId") UUID userId);
+    @Query("SELECT * FROM users WHERE id = :userId")
+    Mono<User> findByIdWithOrganizations(UUID userId);
 
     /**
-     * Find user by username with organizations eagerly loaded.
+     * Find user by username.
+     * Note: In R2DBC, relationships are not eagerly loaded.
+     * UserOrganizations should be loaded separately via UserOrganizationRepository.
      */
-    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.userOrganizations uo LEFT JOIN FETCH uo.organization WHERE u.username = :username")
-    Optional<User> findByUsernameWithOrganizations(@Param("username") String username);
+    @Query("SELECT * FROM users WHERE username = :username")
+    Mono<User> findByUsernameWithOrganizations(String username);
 }

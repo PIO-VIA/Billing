@@ -17,7 +17,7 @@ public class LigneBonAchat{
    
     
     
-    private String productId; 
+    private UUID productId; 
     private String productCode;
     private String productName;
     private String uom;

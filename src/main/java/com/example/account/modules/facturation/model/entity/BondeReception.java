@@ -3,99 +3,68 @@ package com.example.account.modules.facturation.model.entity;
 import com.example.account.modules.core.model.entity.OrganizationScoped;
 import com.example.account.modules.facturation.model.entity.Lines.LineBonReception;
 import com.example.account.modules.facturation.model.enums.StatusBonReception;
-import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.type.SqlTypes;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-@Entity
-@Table(
-    name = "goods_receipt_notes",
-    indexes = {
-        @Index(name = "idx_grn_org", columnList = "organization_id"),
-        @Index(name = "idx_grn_org_number", columnList = "organization_id, grn_number"),
-        @Index(name = "idx_grn_org_supplier", columnList = "organization_id, supplier_id")
-    }
-)
-@Getter @Setter 
-@NoArgsConstructor @AllArgsConstructor 
+@Table("bons_reception")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
+@EqualsAndHashCode(callSuper = true)
 public class BondeReception extends OrganizationScoped {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column("id_grn")
     private UUID idGRN;
 
-    @Column(name = "grn_number", unique = true)
-    private String grnNumber;
+    @Column("numero_reception")
+    private String numeroReception;
 
-    // Mapping to Tier (Supplier)
-    @Column(name = "supplier_id")
-    private UUID supplierId;
-    
-    @Column(name = "supplier_name")
-    private String supplierName;
+    @Column("id_fournisseur")
+    private UUID idFournisseur;
 
-    @Column(name = "transporter_company_name")
-    private String transporterCompanyName;
-    
-    @Column(name = "vehicle_number")
-    private String vehicleNumber;
+    @Column("nom_fournisseur")
+    private String nomFournisseur;
 
-    // Mapping to Purchase Order
-    @Column(name = "purchase_order_id")
-    private UUID purchaseOrderId;
-    
-    @Column(name = "purchase_order_number")
-    private String purchaseOrderNumber;
-
-    @Column(name = "receipt_date")
-    private LocalDate receiptDate;   // Actual date goods received
-    
-    @Column(name = "document_date")
-    private LocalDate documentDate;  // GRN creation date
-    
-    @Column(name = "system_date")
-    private LocalDateTime systemDate;
-
-    @Enumerated(EnumType.STRING)
-    private StatusBonReception status;
-
-    /**
-     * Storing lines as a JSON column in the database.
-     */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "lines", columnDefinition = "jsonb") 
+    @Column("lines")
     private List<LineBonReception> lines;
 
-    @Column(name = "prepared_by")
-    private UUID preparedBy;
-    
-    @Column(name = "inspected_by")
-    private UUID inspectedBy;
-    
-    @Column(name = "approved_by")
-    private UUID approvedBy;
+    @Column("montant_ht")
+    private BigDecimal montantHT;
 
-    @Column(name = "remarks", columnDefinition = "TEXT")
-    private String remarks;
+    @Column("montant_tva")
+    private BigDecimal montantTVA;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("montant_ttc")
+    private BigDecimal montantTTC;
+
+    @Column("date_reception")
+    private LocalDateTime dateReception;
+
+    @Column("statut")
+    private StatusBonReception statut;
+
+    @Column("notes")
+    private String notes;
+
+    @Column("created_by")
+    private UUID createdBy;
+
+    @CreatedDate
+    @Column("created_at")
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @LastModifiedDate
+    @Column("updated_at")
     private LocalDateTime updatedAt;
-
-    @Version
-    @Builder.Default
-    private Long version = 0L;
 }

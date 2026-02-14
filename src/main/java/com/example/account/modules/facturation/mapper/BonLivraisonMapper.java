@@ -22,10 +22,10 @@ public interface BonLivraisonMapper {
     @Mapping(target = "updatedAt", ignore = true)
     BonLivraison toEntity(BonLivraisonRequest request);
 
-    @Mapping(target = "totalAmount", source = "montantTotal")
-    @Mapping(target = "termsAndConditions", source = "conditionsGenerales")
-    @Mapping(target = "purchaseOrderNumber", source = "numeroCommande")
-    @Mapping(target = "lines", source = "lignes")
+    @Mapping(target = "totalAmount", source = "montantTTC")
+    @Mapping(target = "termsAndConditions", source = "notes")
+    @Mapping(target = "purchaseOrderNumber", source = "numeroLivraison")
+    @Mapping(target = "lines", source = "lignesBonLivraison")
     BonLivraisonResponse toResponse(BonLivraison entity);
 
     @Mapping(target = "lignes", source = "lines")

@@ -1,5 +1,7 @@
 package com.example.account.modules.facturation.service;
 
+import reactor.core.publisher.Mono;
+
 import com.example.account.modules.facturation.dto.response.TableauDeBordResponse;
 import com.example.account.modules.facturation.model.enums.StatutFacture;
 import com.example.account.modules.facturation.repository.DevisRepository;
@@ -24,36 +26,31 @@ public class TableauDeBordService {
     private final ClientRepository clientRepository;
 
     @Transactional(readOnly = true)
-    public TableauDeBordResponse getTableauDeBord() {
+    public Mono<TableauDeBordResponse> getTableauDeBord() {
         log.info("Calcul des indicateurs du tableau de bord");
 
         LocalDate now = LocalDate.now();
         LocalDate debutMois = now.withDayOfMonth(1);
         LocalDate debutAnnee = now.withDayOfYear(1);
 
-        // Chiffre d'affaires
-        BigDecimal caMois = factureRepository.sumMontantByDateBetween(debutMois, now);
-        BigDecimal caAnnee = factureRepository.sumMontantByDateBetween(debutAnnee, now);
-
-        // Factures
-        Long nbFacturesEmises = factureRepository.count();
-        Long nbFacturesPayees = factureRepository.countByEtat(StatutFacture.PAYE);
-        Long nbFacturesEnAttente = factureRepository.countByEtat(StatutFacture.EN_ATTENTE);
-        
-        // Clients
-        Long nbClients = clientRepository.count();
-
-        return TableauDeBordResponse.builder()
-                .chiffreAffairesMois(caMois != null ? caMois : BigDecimal.ZERO)
-                .chiffreAffairesAnnee(caAnnee != null ? caAnnee : BigDecimal.ZERO)
-                .nombreFacturesEmises(nbFacturesEmises)
-                .nombreFacturesPayees(nbFacturesPayees)
-                .nombreFacturesEnAttente(nbFacturesEnAttente)
-                .nombreClients(nbClients)
+        return Mono.zip(
+                factureRepository.sumMontantByDateBetween(debutMois, now).defaultIfEmpty(BigDecimal.ZERO),
+                factureRepository.sumMontantByDateBetween(debutAnnee, now).defaultIfEmpty(BigDecimal.ZERO),
+                factureRepository.count(),
+                factureRepository.countByEtat(StatutFacture.PAYE),
+                factureRepository.countByEtat(StatutFacture.EN_ATTENTE),
+                clientRepository.count()
+        ).map(tuple -> TableauDeBordResponse.builder()
+                .chiffreAffairesMois(tuple.getT1())
+                .chiffreAffairesAnnee(tuple.getT2())
+                .nombreFacturesEmises(tuple.getT3())
+                .nombreFacturesPayees(tuple.getT4())
+                .nombreFacturesEnAttente(tuple.getT5())
+                .nombreClients(tuple.getT6())
                 .topProduits(new ArrayList<>())
                 .topClients(new ArrayList<>())
                 .evolutionCA12Mois(new ArrayList<>())
                 .dateGeneration(now)
-                .build();
+                .build());
     }
 }

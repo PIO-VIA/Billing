@@ -12,21 +12,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
- * REST controller for organization management.
- *
- * Endpoints:
- * - POST /api/organizations/create - Create new organization
- * - GET /api/organizations/{id} - Get organization by ID
- * - GET /api/organizations/user/{userId} - Get user's organizations
- *
- * Note: This controller demonstrates organization management.
- * Authentication integration required for production use.
+ * REST controller for organization management adapted for WebFlux.
  */
 @RestController
 @RequestMapping("/api/organizations")
@@ -39,24 +31,18 @@ public class OrganizationController {
 
     /**
      * Creates a new organization.
-     * The creator is automatically assigned as OWNER.
-     *
-     * @param request organization data
-     * @param creatorUserId ID of the user creating the organization (from JWT when auth is implemented)
-     * @return created organization
      */
     @PostMapping("/create")
     @Operation(summary = "Create new organization", description = "Creates a new organization and assigns creator as OWNER")
-    public ResponseEntity<OrganizationResponse> createOrganization(
+    public Mono<ResponseEntity<OrganizationResponse>> createOrganization(
             @Valid @RequestBody OrganizationCreateRequest request,
-            @RequestParam UUID creatorUserId) {  // TODO: Extract from JWT token when auth is implemented
+            @RequestParam UUID creatorUserId) {
 
         log.info("Creating organization: code={}, creator={}", request.getCode(), creatorUserId);
 
         Organization organization = mapToEntity(request);
-        Organization created = organizationService.createOrganization(organization, creatorUserId);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponse(created));
+        return organizationService.createOrganization(organization, creatorUserId)
+                .map(created -> ResponseEntity.status(HttpStatus.CREATED).body(mapToResponse(created)));
     }
 
     /**
@@ -64,9 +50,9 @@ public class OrganizationController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "Get organization by ID")
-    public ResponseEntity<OrganizationResponse> getOrganization(@PathVariable UUID id) {
-        Organization organization = organizationService.getOrganizationById(id);
-        return ResponseEntity.ok(mapToResponse(organization));
+    public Mono<ResponseEntity<OrganizationResponse>> getOrganization(@PathVariable UUID id) {
+        return organizationService.getOrganizationById(id)
+                .map(organization -> ResponseEntity.ok(mapToResponse(organization)));
     }
 
     /**
@@ -74,15 +60,12 @@ public class OrganizationController {
      */
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get user's organizations", description = "Retrieves all organizations the user is a member of")
-    public ResponseEntity<List<OrganizationResponse>> getUserOrganizations(@PathVariable UUID userId) {
-        List<Organization> organizations = organizationService.getUserOrganizations(userId);
-        List<OrganizationResponse> responses = organizations.stream()
-            .map(this::mapToResponse)
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(responses);
+    public Flux<OrganizationResponse> getUserOrganizations(@PathVariable UUID userId) {
+        return organizationService.getUserOrganizations(userId)
+                .map(this::mapToResponse);
     }
 
-    // Mapping methods (consider using MapStruct in production)
+    // Mapping methods
     private Organization mapToEntity(OrganizationCreateRequest request) {
         Organization org = new Organization();
         org.setCode(request.getCode());

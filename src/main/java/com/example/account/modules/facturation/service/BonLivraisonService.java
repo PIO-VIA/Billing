@@ -1,5 +1,8 @@
 package com.example.account.modules.facturation.service;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import com.example.account.modules.facturation.dto.request.BonLivraisonRequest;
 import com.example.account.modules.facturation.dto.response.BonLivraisonResponse;
 import com.example.account.modules.facturation.mapper.BonLivraisonMapper;
@@ -26,82 +29,95 @@ public class BonLivraisonService {
     private final BonLivraisonMapper bonLivraisonMapper;
 
     @Transactional
-    public BonLivraisonResponse createBonLivraison(BonLivraisonRequest request) {
+    public Mono<BonLivraisonResponse> createBonLivraison(BonLivraisonRequest request) {
         log.info("Création d'un nouveau bon de livraison pour le client: {}", request.getIdClient());
 
         BonLivraison bonLivraison = bonLivraisonMapper.toEntity(request);
-        
+        if (bonLivraison.getIdBonLivraison() == null) {
+            bonLivraison.setIdBonLivraison(UUID.randomUUID());
+        }
 
-        BonLivraison savedBonLivraison = bonLivraisonRepository.save(bonLivraison);
-        return bonLivraisonMapper.toResponse(savedBonLivraison);
+        return bonLivraisonRepository.save(bonLivraison)
+                .map(bonLivraisonMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public BonLivraisonResponse getBonLivraisonById(UUID id) {
+    public Mono<BonLivraisonResponse> getBonLivraisonById(UUID id) {
         log.info("Récupération du bon de livraison: {}", id);
-        BonLivraison bonLivraison = bonLivraisonRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Bon de livraison non trouvé: " + id));
-        return bonLivraisonMapper.toResponse(bonLivraison);
+        return bonLivraisonRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de livraison non trouvé: " + id)))
+                .map(bonLivraisonMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<BonLivraisonResponse> getAllBonLivraisons() {
-        return bonLivraisonMapper.toResponseList(bonLivraisonRepository.findAll());
+    public Flux<BonLivraisonResponse> getAllBonLivraisons() {
+        log.info("Récupération de tous les bons de livraison");
+        return bonLivraisonRepository.findAll()
+                .map(bonLivraisonMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<BonLivraisonResponse> getBonLivraisonsByClient(UUID idClient) {
-        return bonLivraisonMapper.toResponseList(bonLivraisonRepository.findByIdClient(idClient));
+    public Flux<BonLivraisonResponse> getBonLivraisonsByClient(UUID idClient) {
+        log.info("Récupération des bons de livraison du client: {}", idClient);
+        return bonLivraisonRepository.findByIdClient(idClient)
+                .map(bonLivraisonMapper::toResponse);
     }
 
     @Transactional
-    public void deleteBonLivraison(UUID id) {
-        if (!bonLivraisonRepository.existsById(id)) {
-            throw new IllegalArgumentException("Bon de livraison non trouvé: " + id);
-        }
-        bonLivraisonRepository.deleteById(id);
+    public Mono<Void> deleteBonLivraison(UUID id) {
+        log.info("Suppression du bon de livraison: {}", id);
+        return bonLivraisonRepository.existsById(id)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new IllegalArgumentException("Bon de livraison non trouvé: " + id));
+                    }
+                    return bonLivraisonRepository.deleteById(id);
+                });
     }
 
     @Transactional
-    public BonLivraisonResponse marquerCommeEffectuee(UUID id) {
+    public Mono<BonLivraisonResponse> marquerCommeEffectuee(UUID id) {
         log.info("Marquage du bon de livraison {} comme effectuée", id);
-        BonLivraison bonLivraison = bonLivraisonRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Bon de livraison non trouvé: " + id));
+        return bonLivraisonRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de livraison non trouvé: " + id)))
+                .flatMap(bonLivraison -> {
+                    if (Boolean.TRUE.equals(bonLivraison.getLivraisonEffectuee())) {
+                        return Mono.error(new IllegalStateException("La livraison a déjà été effectuée"));
+                    }
 
-        if (bonLivraison.getLivraisonEffectuee()) {
-            throw new IllegalStateException("La livraison a déjà été effectuée");
-        }
+                    bonLivraison.setLivraisonEffectuee(true);
+                    bonLivraison.setDateLivraisonEffective(LocalDateTime.now());
+                    bonLivraison.setStatut(StatutBonLivraison.LIVRE);
+                    bonLivraison.setUpdatedAt(LocalDateTime.now());
 
-        bonLivraison.setLivraisonEffectuee(true);
-        bonLivraison.setDateLivraisonEffective(LocalDateTime.now());
-        bonLivraison.setStatut(StatutBonLivraison.LIVRE);
-        bonLivraison.setUpdatedAt(LocalDateTime.now());
-
-        return bonLivraisonMapper.toResponse(bonLivraisonRepository.save(bonLivraison));
+                    return bonLivraisonRepository.save(bonLivraison);
+                })
+                .map(bonLivraisonMapper::toResponse);
     }
 
     @Transactional
-    public BonLivraisonResponse updateStatut(UUID id, StatutBonLivraison nouveauStatut) {
+    public Mono<BonLivraisonResponse> updateStatut(UUID id, StatutBonLivraison nouveauStatut) {
         log.info("Mise à jour du statut du bon de livraison {} vers {}", id, nouveauStatut);
-        BonLivraison bonLivraison = bonLivraisonRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Bon de livraison non trouvé: " + id));
-
-        bonLivraison.setStatut(nouveauStatut);
-        bonLivraison.setUpdatedAt(LocalDateTime.now());
-
-        return bonLivraisonMapper.toResponse(bonLivraisonRepository.save(bonLivraison));
+        return bonLivraisonRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de livraison non trouvé: " + id)))
+                .flatMap(bonLivraison -> {
+                    bonLivraison.setStatut(nouveauStatut);
+                    bonLivraison.setUpdatedAt(LocalDateTime.now());
+                    return bonLivraisonRepository.save(bonLivraison);
+                })
+                .map(bonLivraisonMapper::toResponse);
     }
 
-     @Transactional
-    public BonLivraisonResponse update(UUID id,BonLivraisonRequest request) {
-        log.info("Mise à jour du  bon de livraison {} vers {}", id);
-        BonLivraison bonLivraison = bonLivraisonRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Bon de livraison non trouvé: " + id));
-
-        bonLivraisonMapper.updateEntityFromDTO(request, bonLivraison);
-        
-        bonLivraison.setUpdatedAt(LocalDateTime.now());
-
-        return bonLivraisonMapper.toResponse(bonLivraisonRepository.save(bonLivraison));
+    @Transactional
+    public Mono<BonLivraisonResponse> update(UUID id, BonLivraisonRequest request) {
+        log.info("Mise à jour du bon de livraison {}", id);
+        return bonLivraisonRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de livraison non trouvé: " + id)))
+                .flatMap(bonLivraison -> {
+                    bonLivraisonMapper.updateEntityFromDTO(request, bonLivraison);
+                    bonLivraison.setUpdatedAt(LocalDateTime.now());
+                    return bonLivraisonRepository.save(bonLivraison);
+                })
+                .map(bonLivraisonMapper::toResponse);
     }
 }

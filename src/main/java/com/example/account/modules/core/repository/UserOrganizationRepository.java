@@ -1,117 +1,32 @@
 package com.example.account.modules.core.repository;
 
 import com.example.account.modules.core.model.entity.UserOrganization;
-import com.example.account.modules.core.model.enums.OrganizationRole;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository for UserOrganization association entity.
+ * Reactive repository for UserOrganization entity operations.
  */
 @Repository
-public interface UserOrganizationRepository extends JpaRepository<UserOrganization, UUID> {
-
-    /**
-     * Find user's membership in a specific organization.
-     */
-    @Query("SELECT uo FROM UserOrganization uo " +
-           "WHERE uo.user.id = :userId AND uo.organization.id = :organizationId")
-    Optional<UserOrganization> findByUserIdAndOrganizationId(
-        @Param("userId") UUID userId,
-        @Param("organizationId") UUID organizationId
-    );
-
-    /**
-     * Find active membership.
-     */
-    @Query("SELECT uo FROM UserOrganization uo " +
-           "WHERE uo.user.id = :userId AND uo.organization.id = :organizationId " +
-           "AND uo.isActive = true AND uo.leftAt IS NULL")
-    Optional<UserOrganization> findActiveByUserIdAndOrganizationId(
-        @Param("userId") UUID userId,
-        @Param("organizationId") UUID organizationId
-    );
-
-    /**
-     * Find user's default organization.
-     */
-    @Query("SELECT uo FROM UserOrganization uo " +
-           "WHERE uo.user.id = :userId AND uo.isDefault = true " +
-           "AND uo.isActive = true AND uo.leftAt IS NULL")
-    Optional<UserOrganization> findDefaultByUserId(@Param("userId") UUID userId);
-
-    /**
-     * Find all active memberships for a user.
-     */
-    @Query("SELECT uo FROM UserOrganization uo " +
-           "LEFT JOIN FETCH uo.organization " +
-           "WHERE uo.user.id = :userId AND uo.isActive = true AND uo.leftAt IS NULL")
-    List<UserOrganization> findActiveByUserId(@Param("userId") UUID userId);
-
-    /**
-     * Find all active members of an organization.
-     */
-    @Query("SELECT uo FROM UserOrganization uo " +
-           "LEFT JOIN FETCH uo.user " +
-           "WHERE uo.organization.id = :organizationId " +
-           "AND uo.isActive = true AND uo.leftAt IS NULL")
-    List<UserOrganization> findActiveByOrganizationId(@Param("organizationId") UUID organizationId);
-
-    /**
-     * Check if user has access to organization.
-     */
-    @Query("SELECT COUNT(uo) > 0 FROM UserOrganization uo " +
-           "WHERE uo.user.id = :userId AND uo.organization.id = :organizationId " +
-           "AND uo.isActive = true AND uo.leftAt IS NULL")
-    boolean existsActiveByUserIdAndOrganizationId(
-        @Param("userId") UUID userId,
-        @Param("organizationId") UUID organizationId
-    );
-
-    /**
-     * Check if user has at least the specified role in organization.
-     */
-    @Query("SELECT uo FROM UserOrganization uo " +
-           "WHERE uo.user.id = :userId AND uo.organization.id = :organizationId " +
-           "AND uo.isActive = true AND uo.leftAt IS NULL")
-    Optional<UserOrganization> findActiveRoleByUserIdAndOrganizationId(
-        @Param("userId") UUID userId,
-        @Param("organizationId") UUID organizationId
-    );
-
-    /**
-     * Find organization owners.
-     */
-    @Query("SELECT uo FROM UserOrganization uo " +
-           "LEFT JOIN FETCH uo.user " +
-           "WHERE uo.organization.id = :organizationId " +
-           "AND uo.role = 'OWNER' " +
-           "AND uo.isActive = true AND uo.leftAt IS NULL")
-    List<UserOrganization> findOwnersByOrganizationId(@Param("organizationId") UUID organizationId);
-
-    /**
-     * Count active members of an organization.
-     */
-    @Query("SELECT COUNT(uo) FROM UserOrganization uo " +
-           "WHERE uo.organization.id = :organizationId " +
-           "AND uo.isActive = true AND uo.leftAt IS NULL")
-    long countActiveByOrganizationId(@Param("organizationId") UUID organizationId);
-
-    /**
-     * Find all users with a specific role in an organization.
-     */
-    @Query("SELECT uo FROM UserOrganization uo " +
-           "LEFT JOIN FETCH uo.user " +
-           "WHERE uo.organization.id = :organizationId " +
-           "AND uo.role = :role")
-    List<UserOrganization> findByOrganizationIdAndRole(
-        @Param("organizationId") UUID organizationId,
-        @Param("role") OrganizationRole role
-    );
+public interface UserOrganizationRepository extends R2dbcRepository<UserOrganization, UUID> {
+    
+    Flux<UserOrganization> findByUserId(UUID userId);
+    
+    Flux<UserOrganization> findByOrganizationId(UUID organizationId);
+    
+    @Query("SELECT * FROM user_organizations WHERE user_id = :userId AND organization_id = :organizationId")
+    Mono<UserOrganization> findByUserIdAndOrganizationId(UUID userId, UUID organizationId);
+    
+    @Query("SELECT * FROM user_organizations WHERE user_id = :userId AND is_active = true")
+    Flux<UserOrganization> findActiveByUserId(UUID userId);
+    
+    @Query("SELECT * FROM user_organizations WHERE user_id = :userId AND is_default = true")
+    Mono<UserOrganization> findDefaultByUserId(UUID userId);
+    
+    Mono<Boolean> existsByUserIdAndOrganizationId(UUID userId, UUID organizationId);
 }

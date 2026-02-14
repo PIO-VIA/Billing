@@ -1,17 +1,23 @@
 package com.example.account.modules.core.model.entity;
 
 import com.example.account.modules.core.model.enums.Permission;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
-@Table(name = "user_organization_permissions")
+/**
+ * Permission entity for fine-grained access control.
+ * In R2DBC, the UserOrganization relationship is represented by userOrganizationId.
+ */
+@Table("user_organization_permissions")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,25 +25,26 @@ import java.util.UUID;
 public class UserOrganizationPermission {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column("id")
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_organization_id", nullable = false)
-    private UserOrganization userOrganization;
+    /**
+     * Reference to the UserOrganization.
+     * Load UserOrganization separately via UserOrganizationRepository.
+     */
+    @Column("user_organization_id")
+    private UUID userOrganizationId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "permission", nullable = false)
+    @Column("permission")
     private Permission permission;
 
     /**
      * Optional expiration date for the permission.
      */
-    @Column(name = "expiry_date")
+    @Column("expiry_date")
     private LocalDateTime expiryDate;
 
-    @Column(name = "is_active", nullable = false)
+    @Column("is_active")
     @Builder.Default
     private boolean isActive = true;
 
