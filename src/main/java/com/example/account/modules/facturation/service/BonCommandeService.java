@@ -1,5 +1,8 @@
 package com.example.account.modules.facturation.service;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import com.example.account.modules.facturation.dto.request.BonCommandeCreateRequest;
 import com.example.account.modules.facturation.dto.request.BonCommandeUpdateRequest;
 import com.example.account.modules.facturation.dto.response.BonCommandeResponse;
@@ -31,96 +34,105 @@ public class BonCommandeService {
     private final BonCommandeMapper bonCommandeMapper;
 
     @Transactional
-    public BonCommandeResponse createBonCommande(BonCommandeCreateRequest request) {
+    public Mono<BonCommandeResponse> createBonCommande(BonCommandeCreateRequest request) {
         log.info("Création d'un nouveau bon de commande: {}", request.getNumeroCommande());
 
-        
-
-        // Créer et sauvegarder le bon de commande
         BonCommande bonCommande = bonCommandeMapper.toEntity(request);
-        BonCommande savedBonCommande = bonCommandeRepository.save(bonCommande);
-        BonCommandeResponse response = bonCommandeMapper.toResponse(savedBonCommande);
+        if (bonCommande.getIdBonCommande() == null) {
+            bonCommande.setIdBonCommande(UUID.randomUUID());
+        }
 
-        // Publier l'événement
-        bonCommandeEventProducer.publishBonCommandeCreated(response);
-
-        log.info("Bon de commande créé avec succès: {}", savedBonCommande.getIdBonCommande());
-        return response;
+        return bonCommandeRepository.save(bonCommande)
+                .map(savedBonCommande -> {
+                    BonCommandeResponse response = bonCommandeMapper.toResponse(savedBonCommande);
+                    bonCommandeEventProducer.publishBonCommandeCreated(response);
+                    log.info("Bon de commande créé avec succès: {}", savedBonCommande.getIdBonCommande());
+                    return response;
+                });
     }
 
     @Transactional
-    public BonCommandeResponse updateBonCommande(UUID bonCommandeId, BonCommandeCreateRequest request) {
+    public Mono<BonCommandeResponse> updateBonCommande(UUID bonCommandeId, BonCommandeCreateRequest request) {
         log.info("Mise à jour du bon de commande: {}", bonCommandeId);
 
-        BonCommande bonCommande = bonCommandeRepository.findById(bonCommandeId)
-                .orElseThrow(() -> new IllegalArgumentException("Bon de commande non trouvé: " + bonCommandeId));
-
-        // Mise à jour
-        bonCommandeMapper.updateEntityFromRequest(request, bonCommande);
-        BonCommande updatedBonCommande = bonCommandeRepository.save(bonCommande);
-        BonCommandeResponse response = bonCommandeMapper.toResponse(updatedBonCommande);
-
-        // Publier l'événement
-        bonCommandeEventProducer.publishBonCommandeUpdated(response);
-
-        log.info("Bon de commande mis à jour avec succès: {}", bonCommandeId);
-        return response;
+        return bonCommandeRepository.findById(bonCommandeId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de commande non trouvé: " + bonCommandeId)))
+                .flatMap(bonCommande -> {
+                    bonCommandeMapper.updateEntityFromRequest(request, bonCommande);
+                    return bonCommandeRepository.save(bonCommande);
+                })
+                .map(updatedBonCommande -> {
+                    BonCommandeResponse response = bonCommandeMapper.toResponse(updatedBonCommande);
+                    bonCommandeEventProducer.publishBonCommandeUpdated(response);
+                    log.info("Bon de commande mis à jour avec succès: {}", bonCommandeId);
+                    return response;
+                });
     }
 
     @Transactional(readOnly = true)
-    public BonCommandeResponse getBonCommandeById(UUID bonCommandeId) {
+    public Mono<BonCommandeResponse> getBonCommandeById(UUID bonCommandeId) {
         log.info("Récupération du bon de commande: {}", bonCommandeId);
 
-        BonCommande bonCommande = bonCommandeRepository.findById(bonCommandeId)
-                .orElseThrow(() -> new IllegalArgumentException("Bon de commande non trouvé: " + bonCommandeId));
-
-        return bonCommandeMapper.toResponse(bonCommande);
+        return bonCommandeRepository.findById(bonCommandeId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de commande non trouvé: " + bonCommandeId)))
+                .map(bonCommandeMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public BonCommandeResponse getBonCommandeByNumero(String numeroCommande) {
+    public Mono<BonCommandeResponse> getBonCommandeByNumero(String numeroCommande) {
         log.info("Récupération du bon de commande par numéro: {}", numeroCommande);
 
-        BonCommande bonCommande = bonCommandeRepository.findByNumeroCommande(numeroCommande)
-                .orElseThrow(() -> new IllegalArgumentException("Bon de commande non trouvé avec numéro: " + numeroCommande));
-
-        return bonCommandeMapper.toResponse(bonCommande);
+        return bonCommandeRepository.findByNumeroCommande(numeroCommande)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de commande non trouvé avec numéro: " + numeroCommande)))
+                .map(bonCommandeMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<BonCommandeResponse> getAllBonCommandes() {
+    public Flux<BonCommandeResponse> getAllBonCommandes() {
         log.info("Récupération de tous les bons de commande");
-        List<BonCommande> bonCommandes = bonCommandeRepository.findAll();
-        return bonCommandeMapper.toResponseList(bonCommandes);
+        return bonCommandeRepository.findAll()
+                .map(bonCommandeMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public Page<BonCommandeResponse> getAllBonCommandes(Pageable pageable) {
+    public Flux<BonCommandeResponse> getAllBonCommandes(Pageable pageable) {
         log.info("Récupération de tous les bons de commande avec pagination");
-        return bonCommandeRepository.findAll(pageable).map(bonCommandeMapper::toResponse);
+        return bonCommandeRepository.findAll()
+                .skip(pageable.getOffset())
+                .take(pageable.getPageSize())
+                .map(bonCommandeMapper::toResponse);
     }
-
-   
 
     @Transactional
-    public BonCommandeResponse updateStatut(UUID bonCommandeId, StatusBonCommande nouveauStatut) {
+    public Mono<BonCommandeResponse> updateStatut(UUID bonCommandeId, StatusBonCommande nouveauStatut) {
         log.info("Mise à jour du statut du bon de commande {} vers {}", bonCommandeId, nouveauStatut);
 
-        BonCommande bonCommande = bonCommandeRepository.findById(bonCommandeId)
-                .orElseThrow(() -> new IllegalArgumentException("Bon de commande non trouvé: " + bonCommandeId));
-
-        bonCommande.setStatut(nouveauStatut);
-        bonCommande.setUpdatedAt(LocalDateTime.now());
-
-        BonCommande updatedBonCommande = bonCommandeRepository.save(bonCommande);
-        BonCommandeResponse response = bonCommandeMapper.toResponse(updatedBonCommande);
-
-        // Publier l'événement
-        bonCommandeEventProducer.publishBonCommandeUpdated(response);
-
-        log.info("Statut du bon de commande mis à jour avec succès: {}", bonCommandeId);
-        return response;
+        return bonCommandeRepository.findById(bonCommandeId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de commande non trouvé: " + bonCommandeId)))
+                .flatMap(bonCommande -> {
+                    bonCommande.setStatut(nouveauStatut);
+                    bonCommande.setUpdatedAt(LocalDateTime.now());
+                    return bonCommandeRepository.save(bonCommande);
+                })
+                .map(updatedBonCommande -> {
+                    BonCommandeResponse response = bonCommandeMapper.toResponse(updatedBonCommande);
+                    bonCommandeEventProducer.publishBonCommandeUpdated(response);
+                    log.info("Statut du bon de commande mis à jour avec succès: {}", bonCommandeId);
+                    return response;
+                });
     }
 
-    
+    @Transactional
+    public Mono<Void> deleteBonCommande(UUID bonCommandeId) {
+        log.info("Suppression du bon de commande: {}", bonCommandeId);
+        return bonCommandeRepository.existsById(bonCommandeId)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new IllegalArgumentException("Bon de commande non trouvé: " + bonCommandeId));
+                    }
+                    return bonCommandeRepository.deleteById(bonCommandeId)
+                            .then(Mono.fromRunnable(() -> bonCommandeEventProducer.publishBonCommandeDeleted(bonCommandeId)));
+                })
+                .then();
+    }
 }

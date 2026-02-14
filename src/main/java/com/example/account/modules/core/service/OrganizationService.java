@@ -1,7 +1,6 @@
 package com.example.account.modules.core.service;
 
 import com.example.account.modules.core.model.entity.Organization;
-import com.example.account.modules.core.model.entity.User;
 import com.example.account.modules.core.model.entity.UserOrganization;
 import com.example.account.modules.core.model.enums.OrganizationRole;
 import com.example.account.modules.core.repository.OrganizationRepository;
@@ -11,11 +10,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,100 +26,116 @@ public class OrganizationService {
     private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
-    public List<Organization> getAllOrganizations() {
+    public Flux<Organization> getAllOrganizations() {
         log.info("Récupération de toutes les organisations");
         return organizationRepository.findAll();
     }
 
     @Transactional(readOnly = true)
-    public Organization getOrganizationById(UUID id) {
+    public Mono<Organization> getOrganizationById(UUID id) {
         log.info("Récupération de l'organisation avec l'ID : {}", id);
         return organizationRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec l'ID : " + id));
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Organisation non trouvée avec l'ID : " + id)));
     }
 
     @Transactional(readOnly = true)
-    public Organization getOrganizationByCode(String code) {
+    public Mono<Organization> getOrganizationByCode(String code) {
         log.info("Récupération de l'organisation avec le code : {}", code);
         return organizationRepository.findByCode(code)
-                .orElseThrow(() -> new IllegalArgumentException("Organisation non trouvée avec le code : " + code));
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Organisation non trouvée avec le code : " + code)));
     }
 
     @Transactional(readOnly = true)
-    public List<Organization> getUserOrganizations(UUID userId) {
+    public Flux<Organization> getUserOrganizations(UUID userId) {
         log.info("Récupération des organisations pour l'utilisateur : {}", userId);
-        return userOrganizationRepository.findActiveByUserId(userId).stream()
-                .map(UserOrganization::getOrganization)
-                .collect(Collectors.toList());
+        return userOrganizationRepository.findActiveByUserId(userId)
+                .flatMap(uo -> organizationRepository.findById(uo.getOrganizationId()));
     }
 
     @Transactional
-    public Organization createOrganization(Organization organization, UUID creatorUserId) {
+    public Mono<Organization> createOrganization(Organization organization, UUID creatorUserId) {
         log.info("Création d'une nouvelle organisation : {} par l'utilisateur : {}", organization.getShortName(), creatorUserId);
         
-        if (organizationRepository.existsByCode(organization.getCode())) {
-            throw new IllegalStateException("Une organisation avec le code " + organization.getCode() + " existe déjà");
-        }
-        
-        Organization savedOrganization = organizationRepository.save(organization);
-        
-        User creator = userRepository.findById(creatorUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Utilisateur créateur non trouvé avec l'ID : " + creatorUserId));
-        
-        UserOrganization userOrganization = new UserOrganization();
-        userOrganization.setUser(creator);
-        userOrganization.setOrganization(savedOrganization);
-        userOrganization.setRole(OrganizationRole.OWNER);
-        userOrganization.setIsDefault(true); // First org is default
-        userOrganization.setIsActive(true);
-        
-        userOrganizationRepository.save(userOrganization);
-        
-        return savedOrganization;
+        return organizationRepository.existsByCode(organization.getCode())
+                .flatMap(exists -> {
+                    if (exists) {
+                        return Mono.error(new IllegalStateException("Une organisation avec le code " + organization.getCode() + " existe déjà"));
+                    }
+                    
+                    if (organization.getId() == null) {
+                        organization.setId(UUID.randomUUID());
+                    }
+                    
+                    return organizationRepository.save(organization);
+                })
+                .flatMap(savedOrganization -> {
+                    if (creatorUserId == null) {
+                        return Mono.just(savedOrganization);
+                    }
+                    
+                    return userRepository.findById(creatorUserId)
+                            .switchIfEmpty(Mono.error(new IllegalArgumentException("Utilisateur créateur non trouvé avec l'ID : " + creatorUserId)))
+                            .flatMap(creator -> {
+                                UserOrganization userOrganization = new UserOrganization();
+                                userOrganization.setId(UUID.randomUUID());
+                                userOrganization.setUserId(creator.getId());
+                                userOrganization.setOrganizationId(savedOrganization.getId());
+                                userOrganization.setRole(OrganizationRole.OWNER);
+                                userOrganization.setIsDefault(true);
+                                userOrganization.setIsActive(true);
+                                userOrganization.setJoinedAt(LocalDateTime.now());
+                                
+                                return userOrganizationRepository.save(userOrganization)
+                                        .thenReturn(savedOrganization);
+                            });
+                });
     }
 
     @Transactional
-    public Organization createOrganization(Organization organization) {
-        // Legacy method or internal creation without specific user
-        return createOrganization(organization, null); // CAUTION: Logic might need adjustment if creator is mandatory
+    public Mono<Organization> createOrganization(Organization organization) {
+        return createOrganization(organization, null);
     }
 
     @Transactional
-    public Organization updateOrganization(UUID id, Organization organizationDetails) {
+    public Mono<Organization> updateOrganization(UUID id, Organization organizationDetails) {
         log.info("Mise à jour de l'organisation avec l'ID : {}", id);
         
-        Organization organization = getOrganizationById(id);
-        
-        organization.setShortName(organizationDetails.getShortName());
-        organization.setLongName(organizationDetails.getLongName());
-        organization.setDescription(organizationDetails.getDescription());
-        organization.setLogo(organizationDetails.getLogo());
-        organization.setIsActive(organizationDetails.getIsActive());
-        organization.setIsIndividual(organizationDetails.getIsIndividual());
-        organization.setIsPublic(organizationDetails.getIsPublic());
-        organization.setIsBusiness(organizationDetails.getIsBusiness());
-        organization.setCountry(organizationDetails.getCountry());
-        organization.setCity(organizationDetails.getCity());
-        organization.setAddress(organizationDetails.getAddress());
-        organization.setLocalization(organizationDetails.getLocalization());
-        organization.setOpenTime(organizationDetails.getOpenTime());
-        organization.setCloseTime(organizationDetails.getCloseTime());
-        organization.setEmail(organizationDetails.getEmail());
-        organization.setPhone(organizationDetails.getPhone());
-        organization.setWhatsapp(organizationDetails.getWhatsapp());
-        organization.setSocialNetworks(organizationDetails.getSocialNetworks());
-        organization.setCapitalShare(organizationDetails.getCapitalShare());
-        organization.setTaxNumber(organizationDetails.getTaxNumber());
-        
-        return organizationRepository.save(organization);
+        return getOrganizationById(id)
+                .map(organization -> {
+                    organization.setShortName(organizationDetails.getShortName());
+                    organization.setLongName(organizationDetails.getLongName());
+                    organization.setDescription(organizationDetails.getDescription());
+                    organization.setLogo(organizationDetails.getLogo());
+                    organization.setIsActive(organizationDetails.getIsActive());
+                    organization.setIsIndividual(organizationDetails.getIsIndividual());
+                    organization.setIsPublic(organizationDetails.getIsPublic());
+                    organization.setIsBusiness(organizationDetails.getIsBusiness());
+                    organization.setCountry(organizationDetails.getCountry());
+                    organization.setCity(organizationDetails.getCity());
+                    organization.setAddress(organizationDetails.getAddress());
+                    organization.setLocalization(organizationDetails.getLocalization());
+                    organization.setOpenTime(organizationDetails.getOpenTime());
+                    organization.setCloseTime(organizationDetails.getCloseTime());
+                    organization.setEmail(organizationDetails.getEmail());
+                    organization.setPhone(organizationDetails.getPhone());
+                    organization.setWhatsapp(organizationDetails.getWhatsapp());
+                    organization.setSocialNetworks(organizationDetails.getSocialNetworks());
+                    organization.setCapitalShare(organizationDetails.getCapitalShare());
+                    organization.setTaxNumber(organizationDetails.getTaxNumber());
+                    return organization;
+                })
+                .flatMap(organizationRepository::save);
     }
 
     @Transactional
-    public void deleteOrganization(UUID id) {
+    public Mono<Void> deleteOrganization(UUID id) {
         log.info("Suppression (soft delete) de l'organisation avec l'ID : {}", id);
-        Organization organization = getOrganizationById(id);
-        organization.setDeletedAt(LocalDateTime.now());
-        organization.setIsActive(false);
-        organizationRepository.save(organization);
+        return getOrganizationById(id)
+                .flatMap(organization -> {
+                    organization.setDeletedAt(LocalDateTime.now());
+                    organization.setIsActive(false);
+                    return organizationRepository.save(organization);
+                })
+                .then();
     }
 }

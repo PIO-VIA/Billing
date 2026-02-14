@@ -1,9 +1,13 @@
 package com.example.account.modules.facturation.service;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.account.modules.facturation.dto.request.FactureFournisseurCreateRequest;
@@ -13,27 +17,52 @@ import com.example.account.modules.facturation.model.entity.FactureFournisseur;
 import com.example.account.modules.facturation.repository.FactureFournisseurRepository;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class FactureFournisseurService {
     
-    @Autowired
-    private FactureFournisseurRepository factureFournisseurRepository;
-    @Autowired
-    private FactureFournisseurMapper factureFournisseurMapper;
+    private final FactureFournisseurRepository factureFournisseurRepository;
+    private final FactureFournisseurMapper factureFournisseurMapper;
 
-    public FactureFournisseurResponse createFacture(FactureFournisseurCreateRequest dto){
+    @Transactional
+    public Mono<FactureFournisseurResponse> createFacture(FactureFournisseurCreateRequest dto) {
+        log.info("Création d'une nouvelle facture fournisseur");
         FactureFournisseur factureFournisseur = factureFournisseurMapper.toEntity(dto);
-        return factureFournisseurMapper.toDto(factureFournisseurRepository.save(factureFournisseur));
+        if (factureFournisseur.getIdFactureFournisseur() == null) {
+            factureFournisseur.setIdFactureFournisseur(UUID.randomUUID());
+        }
+        return factureFournisseurRepository.save(factureFournisseur)
+                .map(factureFournisseurMapper::toDto);
     }
 
-    public List<FactureFournisseurResponse> getAllFactures(){
-        List<FactureFournisseur> factures = factureFournisseurRepository.findAll();
-        return factureFournisseurMapper.toDtoList(factures);
+    @Transactional(readOnly = true)
+    public Flux<FactureFournisseurResponse> getAllFactures() {
+        log.info("Récupération de toutes les factures fournisseur");
+        return factureFournisseurRepository.findAll()
+                .map(factureFournisseurMapper::toDto);
     }
 
-    public FactureFournisseurResponse updateFacture(UUID id, FactureFournisseurResponse dto) throws Exception{
-        FactureFournisseur factureFournisseur = factureFournisseurRepository.findById(id).orElseThrow(()->new Exception("Facture Fournisseur does not exists"));
-        factureFournisseurMapper.updateEntityFromDto(dto, factureFournisseur);
-        factureFournisseurRepository.save(factureFournisseur);
-        return factureFournisseurMapper.toDto(factureFournisseur);
+    @Transactional
+    public Mono<FactureFournisseurResponse> updateFacture(UUID id, FactureFournisseurResponse dto) {
+        log.info("Mise à jour de la facture fournisseur: {}", id);
+        return factureFournisseurRepository.findById(id)
+                .switchIfEmpty(Mono.error(new Exception("Facture Fournisseur does not exists")))
+                .flatMap(factureFournisseur -> {
+                    factureFournisseurMapper.updateEntityFromDto(dto, factureFournisseur);
+                    return factureFournisseurRepository.save(factureFournisseur);
+                })
+                .map(factureFournisseurMapper::toDto);
+    }
+
+    @Transactional
+    public Mono<Void> deleteFacture(UUID id) {
+        log.info("Suppression de la facture fournisseur: {}", id);
+        return factureFournisseurRepository.existsById(id)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new IllegalArgumentException("Facture fournisseur non trouvée: " + id));
+                    }
+                    return factureFournisseurRepository.deleteById(id);
+                });
     }
 }

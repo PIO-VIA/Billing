@@ -1,25 +1,25 @@
 package com.example.account.modules.core.service;
 
-import com.example.account.modules.core.context.OrganizationContext;
-import com.example.account.modules.core.model.entity.Organization;
+import com.example.account.modules.core.context.ReactiveOrganizationContext;
 import com.example.account.modules.core.model.entity.OrganizationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
 /**
  * Helper class to automatically inject organization_id into entities before saving.
- *
+ * 
  * Usage in services:
  * <pre>
  * @Autowired
  * private EntityOrganizationHelper organizationHelper;
- *
- * public Client createClient(Client client) {
- *     organizationHelper.setOrganizationId(client);  // Auto-inject org ID
- *     return clientRepository.save(client);
+ * 
+ * public Mono<Client> createClient(Client client) {
+ *     return organizationHelper.setOrganizationId(client)
+ *             .flatMap(clientRepository::save);
  * }
  * </pre>
  */
@@ -28,18 +28,35 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class EntityOrganizationHelper {
 
-    private final jakarta.persistence.EntityManager entityManager;
-
     /**
-     * Sets the organization on an entity from the current context.
-     * Throws exception if organization context is not set.
-     *
+     * Sets the organization on an entity from the current reactive context.
+     * 
      * @param entity the entity extending OrganizationScoped
      * @param <T> entity type
-     * @return the entity with organization set
+     * @return a Mono containing the entity with organization set
      */
-    /*
-    
-    
-    */
+    public <T extends OrganizationScoped> Mono<T> setOrganizationId(T entity) {
+        return ReactiveOrganizationContext.getOrganizationId()
+                .map(orgId -> {
+                    entity.setOrganizationId(orgId);
+                    log.debug("Organization ID {} injected into entity", orgId);
+                    return entity;
+                });
+    }
+
+    /**
+     * Sets the organization on an entity from the current reactive context, or continues if not found.
+     * 
+     * @param entity the entity extending OrganizationScoped
+     * @param <T> entity type
+     * @return a Mono containing the entity
+     */
+    public <T extends OrganizationScoped> Mono<T> setOrganizationIdIfPresent(T entity) {
+        return ReactiveOrganizationContext.getOrganizationIdOrEmpty()
+                .map(orgId -> {
+                    entity.setOrganizationId(orgId);
+                    return entity;
+                })
+                .defaultIfEmpty(entity);
+    }
 }

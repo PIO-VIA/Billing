@@ -2,98 +2,129 @@ package com.example.account.modules.facturation.model.entity;
 
 import com.example.account.modules.core.model.entity.OrganizationScoped;
 import com.example.account.modules.facturation.model.entity.Lines.LineBonCommande;
-import com.example.account.modules.facturation.model.enums.StatusBonCommande; // Adaptez selon votre enum
-
-
-import jakarta.persistence.*;
+import com.example.account.modules.facturation.model.enums.StatusBonCommande;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Table("bons_commande")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(callSuper = true)
-@Entity
-@Table(name = "bons_commande")
 public class BonCommande extends OrganizationScoped {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column("id_bon_commande")
     private UUID idBonCommande;
 
-    @Column(name = "numero_commande", unique = true)
+    @Column("numero_commande")
     private String numeroCommande;
 
-    // --- Client Info (Billing) ---
+    @Column("id_client")
     private UUID idClient;
+
+    @Column("nom_client")
     private String nomClient;
+
+    @Column("adresse_client")
     private String adresseClient;
+
+    @Column("email_client")
     private String emailClient;
+
+    @Column("telephone_client")
     private String telephoneClient;
 
-    // --- Recipient Info (Shipping) ---
+    @Column("recipient_name")
     private String recipientName;
+
+    @Column("recipient_phone")
     private String recipientPhone;
+
+    @Column("recipient_address")
     private String recipientAddress;
+
+    @Column("recipient_city")
     private String recipientCity;
 
-    // --- Source Reference ---
+    @Column("id_devis_origine")
     private UUID idDevisOrigine;
+
+    @Column("numero_devis_origine")
     private String numeroDevisOrigine;
+
+    @Column("nos_ref")
     private String nosRef;
+
+    @Column("vos_ref")
     private String vosRef;
 
-    // --- Dates ---
+    @Column("date_commande")
     private LocalDateTime dateCommande;
+
+    @Column("date_systeme")
     private LocalDateTime dateSysteme;
+
+    @Column("date_livraison_prevue")
     private LocalDateTime dateLivraisonPrevue;
 
-    // --- Lines (JSON) ---
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "lines", columnDefinition = "jsonb")
+    @Column("lines")
     private List<LineBonCommande> lines;
 
-    // --- Financials ---
+    @Column("montant_ht")
     private BigDecimal montantHT;
+
+    @Column("montant_tva")
     private BigDecimal montantTVA;
+
+    @Column("montant_ttc")
     private BigDecimal montantTTC;
+
+    @Column("devise")
     private String devise;
+
+    @Column("apply_vat")
     private Boolean applyVat;
 
-    // --- Logistics ---
-    private String transportMethod; // Ou Enum
+    @Column("transport_method")
+    private String transportMethod;
+
+    @Column("id_agency")
     private UUID idAgency;
+
+    @Column("mode_reglement")
     private String modeReglement;
 
-    // --- Status ---
-    @Enumerated(value = EnumType.STRING)
-    private StatusBonCommande statut; // Ou Enum SalesOrderStatus
+    @Column("statut")
+    private StatusBonCommande statut;
 
-    // --- Metadata & Audit ---
-    @Column(length = 1000)
+    @Column("notes")
     private String notes;
+
+    @Column("created_by")
     private UUID createdBy;
+
+    @Column("validated_by")
     private UUID validatedBy;
 
-    @Column(name = "created_at", updatable = false)
+    @CreatedDate
+    @Column("created_at")
     private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    @Column("updated_at")
     private LocalDateTime updatedAt;
+
+    @Column("validated_at")
     private LocalDateTime validatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 }

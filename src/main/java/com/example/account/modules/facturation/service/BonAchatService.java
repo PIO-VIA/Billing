@@ -1,5 +1,8 @@
 package com.example.account.modules.facturation.service;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import com.example.account.modules.facturation.dto.request.BonAchatRequest;
 import com.example.account.modules.facturation.dto.response.BonAchatResponse;
 import com.example.account.modules.facturation.mapper.BonAchatMapper;
@@ -25,58 +28,62 @@ public class BonAchatService {
      * POST - Créer un nouveau bon d'achat
      */
     @Transactional
-    public BonAchatResponse createBonAchat(BonAchatRequest request) {
+    public Mono<BonAchatResponse> createBonAchat(BonAchatRequest request) {
         log.info("Création d'un nouveau bon d'achat, numéro: {}", request.getNumeroBonAchat());
 
         BonAchat bonAchat = bonAchatMapper.toEntity(request);
+        if (bonAchat.getIdBonAchat() == null) {
+            bonAchat.setIdBonAchat(UUID.randomUUID());
+        }
         
-        // Les lignes sont automatiquement mappées et seront persistées en JSON via @JdbcTypeCode
-        BonAchat savedBonAchat = bonAchatRepository.save(bonAchat);
-        
-        log.debug("Bon d'achat sauvegardé avec succès: {}", savedBonAchat.getIdBonAchat());
-        return bonAchatMapper.toResponse(savedBonAchat);
+        return bonAchatRepository.save(bonAchat)
+                .map(savedBonAchat -> {
+                    log.debug("Bon d'achat sauvegardé avec succès: {}", savedBonAchat.getIdBonAchat());
+                    return bonAchatMapper.toResponse(savedBonAchat);
+                });
     }
 
     /**
      * PUT - Mettre à jour un bon d'achat existant
      */
     @Transactional
-    public BonAchatResponse updateBonAchat(UUID id, BonAchatRequest request) {
+    public Mono<BonAchatResponse> updateBonAchat(UUID id, BonAchatRequest request) {
         log.info("Mise à jour du bon d'achat ID: {}", id);
 
-        BonAchat existingBonAchat = bonAchatRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Bon d'achat non trouvé avec l'ID: " + id));
-
-        // Mise à jour des champs via le mapper (MapStruct gère souvent mieux cela avec @MappingTarget)
-        // Ici on utilise une approche manuelle pour plus de clarté sur la logique JSON
-        bonAchatMapper.updateEntityFromRequest(request, existingBonAchat);
-
-        // Si des recalculs de totaux sont nécessaires avant la sauvegarde, ils se font ici
-        
-        BonAchat updatedBonAchat = bonAchatRepository.save(existingBonAchat);
-        return bonAchatMapper.toResponse(updatedBonAchat);
+        return bonAchatRepository.findById(id)
+                .switchIfEmpty(Mono.error(new RuntimeException("Bon d'achat non trouvé avec l'ID: " + id)))
+                .flatMap(existingBonAchat -> {
+                    bonAchatMapper.updateEntityFromRequest(request, existingBonAchat);
+                    return bonAchatRepository.save(existingBonAchat);
+                })
+                .map(bonAchatMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public BonAchatResponse getBonAchatById(UUID id) {
+    public Mono<BonAchatResponse> getBonAchatById(UUID id) {
+        log.info("Récupération du bon d'achat ID: {}", id);
         return bonAchatRepository.findById(id)
                 .map(bonAchatMapper::toResponse)
-                .orElseThrow(() -> new IllegalArgumentException("Bon d'achat non trouvé: " + id));
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon d'achat non trouvé: " + id)));
     }
 
     @Transactional(readOnly = true)
-    public List<BonAchatResponse> getAllBonsAchat() {
-        return bonAchatMapper.toResponseList(bonAchatRepository.findAll());
+    public Flux<BonAchatResponse> getAllBonsAchat() {
+        log.info("Récupération de tous les bons d'achat");
+        return bonAchatRepository.findAll()
+                .map(bonAchatMapper::toResponse);
     }
 
-   
-
     @Transactional
-    public void deleteBonAchat(UUID id) {
-        if (!bonAchatRepository.existsById(id)) {
-            throw new IllegalArgumentException("Bon d'achat non trouvé: " + id);
-        }
-        bonAchatRepository.deleteById(id);
-        log.info("Bon d'achat ID: {} supprimé", id);
+    public Mono<Void> deleteBonAchat(UUID id) {
+        log.info("Suppression du bon d'achat ID: {}", id);
+        return bonAchatRepository.existsById(id)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new IllegalArgumentException("Bon d'achat non trouvé: " + id));
+                    }
+                    return bonAchatRepository.deleteById(id);
+                })
+                .doOnSuccess(v -> log.info("Bon d'achat ID: {} supprimé", id));
     }
 }

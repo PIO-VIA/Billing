@@ -4,17 +4,16 @@ import com.example.account.modules.facturation.dto.request.ProformaInvoiceReques
 import com.example.account.modules.facturation.dto.response.ProformaInvoiceResponse;
 import com.example.account.modules.facturation.mapper.FactureProformaMapper;
 import com.example.account.modules.facturation.model.entity.FactureProforma;
-import com.example.account.modules.facturation.model.entity.LigneFactureProforma;
 import com.example.account.modules.facturation.model.enums.StatutProforma;
 import com.example.account.modules.facturation.repository.FactureProformaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -26,79 +25,83 @@ public class FactureProformaService {
     private final FactureProformaMapper proformaMapper;
 
     @Transactional
-    public ProformaInvoiceResponse createProforma(ProformaInvoiceRequest request) {
+    public Mono<ProformaInvoiceResponse> createProforma(ProformaInvoiceRequest request) {
         log.info("Création d'une nouvelle facture proforma pour le client: {}", request.getIdClient());
 
         FactureProforma proforma = proformaMapper.toEntity(request);
-        
-     
+        if (proforma.getIdFactureProforma() == null) {
+            proforma.setIdFactureProforma(UUID.randomUUID());
+        }
         proforma.setDateCreation(LocalDateTime.now());
 
-        // Set status if not provided
         if (proforma.getStatut() == null) {
             proforma.setStatut(StatutProforma.BROUILLON);
         }
 
-        
-
-        FactureProforma savedProforma = proformaRepository.save(proforma);
-        return proformaMapper.toResponse(savedProforma);
-    }
-
-   
-
-
-    @Transactional(readOnly = true)
-    public ProformaInvoiceResponse getProformaById(UUID id) {
-        FactureProforma proforma = proformaRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Facture proforma non trouvée: " + id));
-        return proformaMapper.toResponse(proforma);
+        return proformaRepository.save(proforma)
+                .map(proformaMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<ProformaInvoiceResponse> getAllProformas() {
-        return proformaMapper.toResponseList(proformaRepository.findAll());
+    public Mono<ProformaInvoiceResponse> getProformaById(UUID id) {
+        log.info("Récupération de la facture proforma: {}", id);
+        return proformaRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Facture proforma non trouvée: " + id)))
+                .map(proformaMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<ProformaInvoiceResponse> getProformasByClient(UUID idClient) {
-        return proformaMapper.toResponseList(proformaRepository.findByIdClient(idClient));
+    public Flux<ProformaInvoiceResponse> getAllProformas() {
+        log.info("Récupération de toutes les factures proforma");
+        return proformaRepository.findAll()
+                .map(proformaMapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Flux<ProformaInvoiceResponse> getProformasByClient(UUID idClient) {
+        log.info("Récupération des factures proforma du client: {}", idClient);
+        return proformaRepository.findByIdClient(idClient)
+                .map(proformaMapper::toResponse);
     }
 
     @Transactional
-    public void deleteProforma(UUID id) {
-        if (!proformaRepository.existsById(id)) {
-            throw new IllegalArgumentException("Facture proforma non trouvée: " + id);
-        }
-        proformaRepository.deleteById(id);
+    public Mono<Void> deleteProforma(UUID id) {
+        log.info("Suppression de la facture proforma: {}", id);
+        return proformaRepository.existsById(id)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new IllegalArgumentException("Facture proforma non trouvée: " + id));
+                    }
+                    return proformaRepository.deleteById(id);
+                });
     }
 
     @Transactional
-    public ProformaInvoiceResponse updateStatut(UUID id, StatutProforma nouveauStatut) {
-        FactureProforma proforma = proformaRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Facture proforma non trouvée: " + id));
-        
-        proforma.setStatut(nouveauStatut);
-        
-        if (nouveauStatut == StatutProforma.ACCEPTE) {
-            proforma.setDateAcceptation(LocalDateTime.now());
-        } else if (nouveauStatut == StatutProforma.REFUSE) {
-            proforma.setDateRefus(LocalDateTime.now());
-        }
-        
-        return proformaMapper.toResponse(proformaRepository.save(proforma));
+    public Mono<ProformaInvoiceResponse> updateStatut(UUID id, StatutProforma nouveauStatut) {
+        log.info("Mise à jour du statut de la facture proforma: {} vers {}", id, nouveauStatut);
+        return proformaRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Facture proforma non trouvée: " + id)))
+                .flatMap(proforma -> {
+                    proforma.setStatut(nouveauStatut);
+                    if (nouveauStatut == StatutProforma.ACCEPTE) {
+                        proforma.setDateAcceptation(LocalDateTime.now());
+                    } else if (nouveauStatut == StatutProforma.REFUSE) {
+                        proforma.setDateRefus(LocalDateTime.now());
+                    }
+                    return proformaRepository.save(proforma);
+                })
+                .map(proformaMapper::toResponse);
     }
 
-
-      @Transactional
-    public ProformaInvoiceResponse updateFactureProforma(UUID id, ProformaInvoiceRequest request) {
-        FactureProforma proforma = proformaRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Facture proforma non trouvée: " + id));
-        
-        proformaMapper.updateProformaFromDTO(request, proforma);
-        
-      
-        
-        return proformaMapper.toResponse(proformaRepository.save(proforma));
+    @Transactional
+    public Mono<ProformaInvoiceResponse> updateFactureProforma(UUID id, ProformaInvoiceRequest request) {
+        log.info("Mise à jour de la facture proforma: {}", id);
+        return proformaRepository.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Facture proforma non trouvée: " + id)))
+                .flatMap(proforma -> {
+                    proformaMapper.updateProformaFromDTO(request, proforma);
+                    return proformaRepository.save(proforma);
+                })
+                .map(proformaMapper::toResponse);
     }
 }

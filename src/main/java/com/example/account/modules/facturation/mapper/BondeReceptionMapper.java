@@ -19,14 +19,12 @@ public interface BondeReceptionMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "organizationId", ignore = true)
-    @Mapping(target = "version", ignore = true)
     BondeReception toEntity(BondeReceptionResponse dto);
 
     @Mapping(target = "idGRN", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "organizationId", ignore = true)
-    @Mapping(target = "version", ignore = true)
     BondeReception toEntity(BondeReceptionCreateRequest dto);
 
     List<BondeReceptionResponse> toDtoList(List<BondeReception> entities);
@@ -35,6 +33,5 @@ public interface BondeReceptionMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "organizationId", ignore = true)
-    @Mapping(target = "version", ignore = true)
     void updateEntityFromDto(BondeReceptionResponse dto, @MappingTarget BondeReception entity);
 }

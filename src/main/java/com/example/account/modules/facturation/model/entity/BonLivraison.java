@@ -2,131 +2,83 @@ package com.example.account.modules.facturation.model.entity;
 
 import com.example.account.modules.core.model.entity.OrganizationScoped;
 import com.example.account.modules.facturation.model.enums.StatutBonLivraison;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.type.SqlTypes;
+import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Table("bons_livraison")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Entity
-@Table(
-    name = "bons_livraison",
-    indexes = {
-        @Index(name = "idx_bonlivraison_org", columnList = "organization_id"),
-        @Index(name = "idx_bonlivraison_org_numerobonlivraison", columnList = "organization_id, numero_bon_livraison")
-    }
-)
+@EqualsAndHashCode(callSuper = true)
 public class BonLivraison extends OrganizationScoped {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id_bon_livraison")
+    @Column("id_bon_livraison")
     private UUID idBonLivraison;
 
-    @NotBlank(message = "Le numéro de bon de livraison est obligatoire")
-    @Column(name = "numero_bon_livraison", unique = true)
-    private String numeroBonLivraison;
+    @Column("numero_livraison")
+    private String numeroLivraison;
 
-    @NotNull(message = "Le client est obligatoire")
-    @Column(name = "id_client")
+    @Column("id_client")
     private UUID idClient;
 
-    @Column(name = "nom_client")
+    @Column("nom_client")
     private String nomClient;
 
-    // Receiver Information
-    @Column(name = "nom_destinataire")
-    private String nomDestinataire;
+    @Column("adresse_client")
+    private String adresseClient;
 
-    @Column(name = "adresse_destinataire")
-    private String adresseDestinataire;
+    @Column("email_client")
+    private String emailClient;
 
-    @Column(name = "contact_destinataire")
-    private String contactDestinataire;
+    @Column("telephone_client")
+    private String telephoneClient;
 
-    // Agency / Pickup Address
-    @Column(name = "nom_agence")
-    private String nomAgence;
+    @Column("lignes_bon_livraison")
+    private List<LigneBonLivraison> lignesBonLivraison;
 
-    @Column(name = "adresse_agence")
-    private String adresseAgence;
+    @Column("montant_ht")
+    private BigDecimal montantHT;
 
-    @Column(name = "contact_agence")
-    private String contactAgence;
+    @Column("montant_tva")
+    private BigDecimal montantTVA;
 
-    @NotNull(message = "La date de livraison est obligatoire")
-    @Column(name = "date_livraison")
-    private LocalDate dateLivraison;
+    @Column("montant_ttc")
+    private BigDecimal montantTTC;
 
-    @Column(name = "date_echeance")
-    private LocalDate dateEcheance;
+    @Column("date_livraison")
+    private LocalDateTime dateLivraison;
 
-    @Column(name = "id_facture")
-    private UUID idFacture;
+    @Column("livraison_effectuee")
+    private Boolean livraisonEffectuee;
 
-    @Column(name = "numero_facture")
-    private String numeroFacture;
+    @Column("date_livraison_effective")
+    private LocalDateTime dateLivraisonEffective;
 
-    @Column(name = "id_bon_commande")
-    private UUID idBonCommande;
+    @Column("statut")
+    private StatutBonLivraison statut;
 
-    @Column(name = "numero_commande")
-    private String numeroCommande;
+    @Column("notes")
+    private String notes;
 
-    @Column(name = "statut")
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private StatutBonLivraison statut = StatutBonLivraison.EN_PREPARATION;
+    @Column("created_by")
+    private UUID createdBy;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "lignes", columnDefinition = "jsonb") 
-    @Builder.Default
-    private List<LigneBonLivraison> lignes = new ArrayList<>();
-
-    @Column(name = "montant_total")
-    private BigDecimal montantTotal;
-
-    @Column(name = "conditions_generales", length = 1000)
-    private String conditionsGenerales;
-
-    @Column(name = "transporteur")
-    private String transporteur;
-
-    @Column(name = "numero_suivi")
-    private String numeroSuivi;
-
-    @Column(name = "created_by")
-    private String createdBy;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @CreatedDate
+    @Column("created_at")
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @LastModifiedDate
+    @Column("updated_at")
     private LocalDateTime updatedAt;
-
-    @Column(name = "livraison_effectuee")
-    @Builder.Default
-    private Boolean livraisonEffectuee = false;
-
-    @Column(name = "date_livraison_effective")
-    private LocalDateTime dateLivraisonEffective;
 }
-

@@ -30,8 +30,8 @@ public class EnrichedDevisResponse {
     private StatutDevis statut;
     private BigDecimal montantTotal;
     
-    // Changed to String to support identifiers like 'c001' from mock
-    private String idClient;
+    // Simplified to UUID for consistency
+    private UUID idClient;
     
     private String nomClient;
     private String adresseClient;
@@ -68,7 +68,7 @@ public class EnrichedDevisResponse {
     private String nosRef;
     private String vosRef;
     private Integer nbreEcheance;
-    private String referalClientId;
+    private UUID referalClientId;
     private BigDecimal finalAmount;
 
     // Audit fields

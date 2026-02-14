@@ -1,44 +1,42 @@
 package com.example.account.modules.facturation.service.Journals;
 
+import org.springframework.stereotype.Service;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.example.account.modules.facturation.dto.response.LigneDevisResponse;
-import com.example.account.modules.facturation.dto.response.ExternalResponses.EnrichedDevis;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.EnrichedDevisResponse;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.SellerAuthResponse;
 import com.example.account.modules.facturation.model.entity.Devis;
 import com.example.account.modules.facturation.model.entity.LigneDevis;
 import com.example.account.modules.facturation.repository.DevisRepository;
 import com.example.account.modules.facturation.service.ExternalServices.SellerService;
+import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 @Service
+@RequiredArgsConstructor
 public class DevisJournalService {
-    @Autowired
-    private SellerService sellerService;
-    @Autowired
-    private DevisRepository devisRepository;  
     
+    private final SellerService sellerService;
+    private final DevisRepository devisRepository;  
     
-     public List<EnrichedDevisResponse> enrichDevis(UUID orgId){
-        List<SellerAuthResponse> sellers=sellerService.getSellersByOrganization(orgId);
-        List<Devis> devis=devisRepository.findByOrganizationId(orgId);
-        List<EnrichedDevisResponse> responses=new ArrayList<>();
-        for (Devis devis2 : devis) {
-            for (SellerAuthResponse seller: sellers) {
-                if(devis2.getCreatedBy().equals(seller.getId())){
-                    responses.add(toEnrichedResponse(devis2, seller));
-                }
-            }
-            
-        }
-        return responses;
-        
+    public Flux<EnrichedDevisResponse> enrichDevis(UUID orgId) {
+        return sellerService.getSellersByOrganization(orgId)
+                .collectList()
+                .flatMapMany(sellers -> devisRepository.findByOrganizationId(orgId)
+                        .flatMap(devis -> {
+                            SellerAuthResponse matchingSeller = sellers.stream()
+                                    .filter(s -> s.getId().equals(devis.getCreatedBy()))
+                                    .findFirst()
+                                    .orElse(null);
+                            return Mono.justOrEmpty(toEnrichedResponse(devis, matchingSeller));
+                        }));
     }
 
     public EnrichedDevisResponse toEnrichedResponse(Devis devis, SellerAuthResponse seller) {

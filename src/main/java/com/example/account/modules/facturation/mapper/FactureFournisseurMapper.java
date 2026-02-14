@@ -26,13 +26,12 @@ public interface FactureFournisseurMapper {
      */
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "dateSysteme", ignore = true)
     FactureFournisseur toEntity(FactureFournisseurResponse dto);
 
     /**
      * Convert Create Request DTO to Entity
      */
-    @Mapping(target = "idFacture", ignore = true)
+    @Mapping(target = "idFactureFournisseur", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     FactureFournisseur toEntity(FactureFournisseurCreateRequest dto);
@@ -45,9 +44,8 @@ public interface FactureFournisseurMapper {
     /**
      * Update an existing Entity from a DTO (for PUT requests)
      */
-    @Mapping(target = "idFacture", ignore = true)
+    @Mapping(target = "idFactureFournisseur", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "dateSysteme", ignore = true)
     @Mapping(target = "createdBy", ignore = true) // Protect the original creator
     void updateEntityFromDto(FactureFournisseurResponse dto, @MappingTarget FactureFournisseur entity);
 }

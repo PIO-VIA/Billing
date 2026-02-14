@@ -21,6 +21,14 @@ public interface BonAchatMapper {
     @Mapping(target = "updatedAt", ignore = true)
     BonAchat toEntity(BonAchatRequest request);
 
+    @Mapping(target = "supplierId", source = "idFournisseur")
+    @Mapping(target = "supplierName", source = "nomFournisseur")
+    @Mapping(target = "dateBonAchat", source = "dateAchat")
+    @Mapping(target = "status", source = "statut")
+    @Mapping(target = "lines", source = "lignesBonAchat")
+    @Mapping(target = "subtotalAmount", source = "montantHT")
+    @Mapping(target = "taxAmount", source = "montantTVA")
+    @Mapping(target = "grandTotal", source = "montantTTC")
     BonAchatResponse toResponse(BonAchat entity);
 
     List<BonAchatResponse> toResponseList(List<BonAchat> entities);

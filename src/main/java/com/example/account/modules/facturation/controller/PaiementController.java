@@ -11,62 +11,64 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/paiement")
 @RequiredArgsConstructor
-@Tag(name = "Paiement")
+@Tag(name = "Paiement", description = "API de gestion des paiements (WebFlux)")
 public class PaiementController {
 
     private final PaiementService paiementService;
 
     @PostMapping
     @Operation(summary = "Créer un nouveau paiement")
-    public ResponseEntity<PaiementResponse> createPaiement(@Valid @RequestBody PaiementCreateRequest request) {
-        PaiementResponse response = paiementService.createPaiement(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public Mono<ResponseEntity<PaiementResponse>> createPaiement(@Valid @RequestBody PaiementCreateRequest request) {
+        return paiementService.createPaiement(request)
+                .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Mettre à jour un paiement")
-    public ResponseEntity<PaiementResponse> updatePaiement(
+    public Mono<ResponseEntity<PaiementResponse>> updatePaiement(
             @PathVariable UUID id,
             @Valid @RequestBody PaiementUpdateRequest request) {
-        PaiementResponse response = paiementService.updatePaiement(id, request);
-        return ResponseEntity.ok(response);
+        return paiementService.updatePaiement(id, request)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping
-    @Operation(summary = "Get all paiements")
-    public ResponseEntity<List<PaiementResponse>> getAllPaiements() {
-        return ResponseEntity.ok(paiementService.getAllPaiements());
+    @Operation(summary = "Récupérer tous les paiements")
+    public Flux<PaiementResponse> getAllPaiements() {
+        return paiementService.getAllPaiements();
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get paiement by ID")
-    public ResponseEntity<PaiementResponse> getPaiementById(@PathVariable UUID id) {
-        return ResponseEntity.ok(paiementService.getPaiementById(id));
+    @Operation(summary = "Récupérer un paiement par ID")
+    public Mono<ResponseEntity<PaiementResponse>> getPaiementById(@PathVariable UUID id) {
+        return paiementService.getPaiementById(id)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping("/client/{clientId}")
     @Operation(summary = "Récupérer les paiements d'un client")
-    public ResponseEntity<List<PaiementResponse>> getPaiementsByClient(@PathVariable UUID clientId) {
-        return ResponseEntity.ok(paiementService.getPaiementsByClient(clientId));
+    public Flux<PaiementResponse> getPaiementsByClient(@PathVariable UUID clientId) {
+        return paiementService.getPaiementsByClient(clientId);
     }
 
     @GetMapping("/facture/{factureId}")
     @Operation(summary = "Récupérer les paiements d'une facture")
-    public ResponseEntity<List<PaiementResponse>> getPaiementsByFacture(@PathVariable UUID factureId) {
-        return ResponseEntity.ok(paiementService.getPaiementsByFacture(factureId));
+    public Flux<PaiementResponse> getPaiementsByFacture(@PathVariable UUID factureId) {
+        return paiementService.getPaiementsByFacture(factureId);
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete paiement")
-    public ResponseEntity<Void> deletePaiement(@PathVariable UUID id) {
-        paiementService.deletePaiement(id);
-        return ResponseEntity.noContent().build();
+    @Operation(summary = "Supprimer un paiement")
+    public Mono<ResponseEntity<Void>> deletePaiement(@PathVariable UUID id) {
+        return paiementService.deletePaiement(id)
+                .thenReturn(ResponseEntity.noContent().build());
     }
 }

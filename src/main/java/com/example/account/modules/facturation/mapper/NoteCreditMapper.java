@@ -31,7 +31,6 @@ public interface NoteCreditMapper extends BaseMapper<NoteCredit, NoteCreditReque
     @Mapping(target = "idNoteCredit", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "version", ignore = true)
     @Mapping(target = "organizationId", ignore = true)
     void updateEntityFromRequest(NoteCreditRequest updateRequest, @MappingTarget NoteCredit entity);
 

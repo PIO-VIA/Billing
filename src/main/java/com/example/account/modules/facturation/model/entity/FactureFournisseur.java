@@ -1,93 +1,94 @@
 package com.example.account.modules.facturation.model.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.type.SqlTypes;
-
+import com.example.account.modules.core.model.entity.OrganizationScoped;
 import com.example.account.modules.facturation.model.entity.Lines.LineFactureFournisseur;
 import com.example.account.modules.facturation.model.enums.StatutFactureFournisseur;
-import com.example.account.modules.facturation.model.enums.TypePaiementFactureFournisseur;
+import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@ToString @Builder
-@Entity
-@Table(name = "factures_fournisseurs")
-public class FactureFournisseur {
+@Table("factures_fournisseur")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode(callSuper = true)
+public class FactureFournisseur extends OrganizationScoped {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID idFacture;
+    @Column("id_facture_fournisseur")
+    private UUID idFactureFournisseur;
+
+    @Column("numero_facture")
     private String numeroFacture;
-    private LocalDate dateFacturation;
-    private LocalDate dateEcheance;
-    
-    @CreationTimestamp
-    private LocalDateTime dateSysteme;
 
-    @Enumerated(EnumType.STRING)
-    private StatutFactureFournisseur etat;
-    private String type;
-    
-    // Supplier Info
+    @Column("id_fournisseur")
     private UUID idFournisseur;
-    private String nomFournisseru; 
-    private String adresseFournisseur;
-    private String emailFournisseur;
-    private String telephoneFournisseur;
-    
-    // Financials
-    private Double montantHT;
-    private Double montantTVA;
-    private Double montantTTC;
-    private Double montantTotal;
-    private Double montantRestant;
-    private Double finalAmount;
-    
-    // Discounts & VAT
-    private Double remiseGlobalePourcentage;
-    private Double remiseGlobaleMontant;
-    private Boolean applyVat;
-    
-    // Currency & Payment
-    private String devise;
-    private Double tauxChange;
 
-    @Enumerated(EnumType.STRING)
-    private TypePaiementFactureFournisseur modeReglement;
-    private String conditionsPaiement;
-    private Integer nbreEcheance;
-    
-    // References
-    private String nosRef;
-    private String vosRef;
-    private String referenceCommande;
-    private UUID idGRN;
-    private String numeroGRN;
-    
-    /**
-     * Set the lines as JSONB in the database
-     */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
-    private List<LineFactureFournisseur> lignesFacture;
-    
-    @Column(columnDefinition = "TEXT")
+    @Column("nom_fournisseur")
+    private String nomFournisseur;
+
+    @Column("adresse_fournisseur")
+    private String adresseFournisseur;
+
+    @Column("email_fournisseur")
+    private String emailFournisseur;
+
+    @Column("telephone_fournisseur")
+    private String telephoneFournisseur;
+
+    @Column("lines")
+    private List<LineFactureFournisseur> lines;
+
+    @Column("montant_ht")
+    private BigDecimal montantHT;
+
+    @Column("montant_tva")
+    private BigDecimal montantTVA;
+
+    @Column("montant_ttc")
+    private BigDecimal montantTTC;
+
+    @Column("montant_total")
+    private BigDecimal montantTotal;
+
+    @Column("montant_restant")
+    private BigDecimal montantRestant;
+
+    @Column("date_facture")
+    private LocalDateTime dateFacture;
+
+    @Column("date_echeance")
+    private LocalDateTime dateEcheance;
+
+    @Column("statut")
+    private StatutFactureFournisseur statut;
+
+    @Column("devise")
+    private String devise;
+
+    @Column("notes")
     private String notes;
 
+    @Column("pdf_path")
+    private String pdfPath;
+
+    @Column("created_by")
     private UUID createdBy;
-    private UUID approvedBy;
-    
-    @CreationTimestamp
+
+    @CreatedDate
+    @Column("created_at")
     private LocalDateTime createdAt;
-    
-    @UpdateTimestamp
+
+    @LastModifiedDate
+    @Column("updated_at")
     private LocalDateTime updatedAt;
 }
