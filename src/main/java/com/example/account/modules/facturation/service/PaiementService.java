@@ -32,6 +32,7 @@ public class PaiementService {
     private final PaiementMapper paiementMapper;
     private final PaiementEventProducer paiementEventProducer;
     private final FactureService factureService;
+    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<PaiementResponse> createPaiement(PaiementCreateRequest request) {
@@ -42,7 +43,7 @@ public class PaiementService {
             paiement.setIdPaiement(UUID.randomUUID());
         }
 
-        return paiementRepository.save(paiement)
+        return entityTemplate.insert(paiement)
                 .flatMap(savedPaiement -> {
                     Mono<Void> updateFactureMono = Mono.empty();
                     if (request.getIdFacture() != null) {

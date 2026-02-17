@@ -32,6 +32,7 @@ public class BonCommandeService {
     private final BonCommandeRepository bonCommandeRepository;
     private final BonCommandeEventProducer bonCommandeEventProducer;
     private final BonCommandeMapper bonCommandeMapper;
+    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<BonCommandeResponse> createBonCommande(BonCommandeCreateRequest request) {
@@ -39,10 +40,10 @@ public class BonCommandeService {
 
         BonCommande bonCommande = bonCommandeMapper.toEntity(request);
         if (bonCommande.getIdBonCommande() == null) {
-            bonCommande.setIdBonCommande(UUID.randomUUID());
+            bonCommande.getIdBonCommande(UUID.randomUUID());
         }
 
-        return bonCommandeRepository.save(bonCommande)
+        return entityTemplate.insert(bonCommande)
                 .map(savedBonCommande -> {
                     BonCommandeResponse response = bonCommandeMapper.toResponse(savedBonCommande);
                     bonCommandeEventProducer.publishBonCommandeCreated(response);

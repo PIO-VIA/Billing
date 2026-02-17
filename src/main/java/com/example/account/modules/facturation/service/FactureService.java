@@ -41,6 +41,7 @@ public class FactureService {
     private final SellerService sellerService;
 
     private final ClientRepository clientRepository;
+    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<FactureResponse> createFacture(FactureCreateRequest request) {
@@ -51,7 +52,7 @@ public class FactureService {
             facture.setIdFacture(UUID.randomUUID());
         }
 
-        return factureRepository.save(facture)
+        return entityTemplate.insert(facture)
                 .map(savedFacture -> {
                     FactureResponse response = factureMapper.toResponse(savedFacture);
                     // Non-blocking publish

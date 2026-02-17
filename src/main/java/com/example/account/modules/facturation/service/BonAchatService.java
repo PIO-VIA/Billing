@@ -23,6 +23,7 @@ public class BonAchatService {
 
     private final BonAchatRepository bonAchatRepository;
     private final BonAchatMapper bonAchatMapper;
+    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
 
     /**
      * POST - Créer un nouveau bon d'achat
@@ -36,7 +37,7 @@ public class BonAchatService {
             bonAchat.setIdBonAchat(UUID.randomUUID());
         }
         
-        return bonAchatRepository.save(bonAchat)
+        return entityTemplate.insert(bonAchat)
                 .map(savedBonAchat -> {
                     log.debug("Bon d'achat sauvegardé avec succès: {}", savedBonAchat.getIdBonAchat());
                     return bonAchatMapper.toResponse(savedBonAchat);

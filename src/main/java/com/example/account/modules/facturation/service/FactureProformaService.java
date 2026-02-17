@@ -23,6 +23,7 @@ public class FactureProformaService {
 
     private final FactureProformaRepository proformaRepository;
     private final FactureProformaMapper proformaMapper;
+    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<ProformaInvoiceResponse> createProforma(ProformaInvoiceRequest request) {
@@ -38,7 +39,7 @@ public class FactureProformaService {
             proforma.setStatut(StatutProforma.BROUILLON);
         }
 
-        return proformaRepository.save(proforma)
+        return entityTemplate.insert(proforma)
                 .map(proformaMapper::toResponse);
     }
 
