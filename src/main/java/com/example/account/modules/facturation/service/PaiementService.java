@@ -13,6 +13,7 @@ import com.example.account.modules.facturation.repository.PaiementRepository;
 import com.example.account.modules.facturation.service.producer.PaiementEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,7 +33,7 @@ public class PaiementService {
     private final PaiementMapper paiementMapper;
     private final PaiementEventProducer paiementEventProducer;
     private final FactureService factureService;
-    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
+    private final R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<PaiementResponse> createPaiement(PaiementCreateRequest request) {

@@ -11,6 +11,7 @@ import com.example.account.modules.facturation.service.ExternalServices.SellerSe
 import com.example.account.modules.facturation.service.producer.DevisEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +31,7 @@ public class DevisService {
     private final DevisMapper devisMapper;
     private final DevisEventProducer devisEventProducer;
     private final SellerService sellerService;
-    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
+    private final R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<DevisResponse> createDevis(DevisCreateRequest request) {
