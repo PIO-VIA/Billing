@@ -29,6 +29,7 @@ public class JournalService {
     private final JournalRepository journalRepository;
     private final JournalEventProducer journalEventProducer;
     private final JournalMapper journalMapper;
+    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<JournalResponse> createJournal(JournalCreateRequest request) {
@@ -43,7 +44,7 @@ public class JournalService {
                     if (journal.getIdJournal() == null) {
                         journal.setIdJournal(UUID.randomUUID());
                     }
-                    return journalRepository.save(journal);
+                    return entityTemplate.insert(journal);
                 })
                 .map(savedJournal -> {
                     JournalResponse response = journalMapper.toResponse(savedJournal);

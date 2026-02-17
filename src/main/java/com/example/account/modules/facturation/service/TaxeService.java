@@ -27,6 +27,7 @@ public class TaxeService {
     private final TaxesRepository taxesRepository;
     private final TaxeMapper taxeMapper;
     private final TaxeEventProducer taxeEventProducer;
+    private final R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<TaxeResponse> createTaxe(TaxeCreateRequest request) {

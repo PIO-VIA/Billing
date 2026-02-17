@@ -27,6 +27,7 @@ public class BonLivraisonService {
 
     private final BonLivraisonRepository bonLivraisonRepository;
     private final BonLivraisonMapper bonLivraisonMapper;
+    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<BonLivraisonResponse> createBonLivraison(BonLivraisonRequest request) {
@@ -37,7 +38,7 @@ public class BonLivraisonService {
             bonLivraison.setIdBonLivraison(UUID.randomUUID());
         }
 
-        return bonLivraisonRepository.save(bonLivraison)
+        return entityTemplate.insert(bonLivraison)
                 .map(bonLivraisonMapper::toResponse);
     }
 

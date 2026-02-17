@@ -23,6 +23,7 @@ public class BonReceptionService {
 
     private final BonReceptionRepository bonReceptionRepository;
     private final BondeReceptionMapper bondeReceptionMapper;
+    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<BondeReceptionResponse> createBondeReception(BondeReceptionCreateRequest dto) {
@@ -31,7 +32,7 @@ public class BonReceptionService {
         if (bondeReception.getIdGRN() == null) {
             bondeReception.setIdGRN(UUID.randomUUID());
         }
-        return bonReceptionRepository.save(bondeReception)
+        return entityTemplate.insert(bondeReception)
                 .map(bondeReceptionMapper::toDto);
     }
 

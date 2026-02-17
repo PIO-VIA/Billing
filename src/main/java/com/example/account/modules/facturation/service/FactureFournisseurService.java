@@ -23,6 +23,7 @@ public class FactureFournisseurService {
     
     private final FactureFournisseurRepository factureFournisseurRepository;
     private final FactureFournisseurMapper factureFournisseurMapper;
+    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<FactureFournisseurResponse> createFacture(FactureFournisseurCreateRequest dto) {
@@ -31,7 +32,7 @@ public class FactureFournisseurService {
         if (factureFournisseur.getIdFactureFournisseur() == null) {
             factureFournisseur.setIdFactureFournisseur(UUID.randomUUID());
         }
-        return factureFournisseurRepository.save(factureFournisseur)
+        return entityTemplate.insert(factureFournisseur)
                 .map(factureFournisseurMapper::toDto);
     }
 
