@@ -12,6 +12,7 @@ import com.example.account.modules.facturation.model.entity.BonAchat;
 import com.example.account.modules.facturation.repository.BonAchatRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +26,7 @@ public class BonAchatService {
 
     private final BonAchatRepository bonAchatRepository;
     private final BonAchatMapper bonAchatMapper;
-    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
+    private final R2dbcEntityTemplate entityTemplate;
 
     /**
      * POST - Créer un nouveau bon d'achat

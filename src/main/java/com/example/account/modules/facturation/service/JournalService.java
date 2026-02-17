@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +30,7 @@ public class JournalService {
     private final JournalRepository journalRepository;
     private final JournalEventProducer journalEventProducer;
     private final JournalMapper journalMapper;
-    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
+    private final R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<JournalResponse> createJournal(JournalCreateRequest request) {

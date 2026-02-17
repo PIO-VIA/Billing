@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.account.modules.facturation.dto.request.FactureFournisseurCreateRequest;
 import com.example.account.modules.facturation.dto.response.FactureFournisseurResponse;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import com.example.account.modules.facturation.mapper.FactureFournisseurMapper;
 import com.example.account.modules.facturation.model.entity.FactureFournisseur;
 import com.example.account.modules.facturation.repository.FactureFournisseurRepository;
@@ -23,7 +24,7 @@ public class FactureFournisseurService {
     
     private final FactureFournisseurRepository factureFournisseurRepository;
     private final FactureFournisseurMapper factureFournisseurMapper;
-    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
+    private final R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<FactureFournisseurResponse> createFacture(FactureFournisseurCreateRequest dto) {

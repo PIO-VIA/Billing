@@ -10,6 +10,7 @@ import com.example.account.modules.facturation.model.entity.BonLivraison;
 import com.example.account.modules.facturation.model.entity.LigneBonLivraison;
 import com.example.account.modules.facturation.model.enums.StatutBonLivraison;
 import com.example.account.modules.facturation.repository.BonLivraisonRepository;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,7 @@ public class BonLivraisonService {
 
     private final BonLivraisonRepository bonLivraisonRepository;
     private final BonLivraisonMapper bonLivraisonMapper;
-    private final org.springframework.data.r2dbc.core.R2dbcEntityTemplate entityTemplate;
+    private final R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<BonLivraisonResponse> createBonLivraison(BonLivraisonRequest request) {

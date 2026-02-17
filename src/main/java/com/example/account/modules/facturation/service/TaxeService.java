@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -42,7 +43,7 @@ public class TaxeService {
                     if (taxe.getIdTaxe() == null) {
                         taxe.setIdTaxe(UUID.randomUUID());
                     }
-                    return taxesRepository.save(taxe);
+                    return entityTemplate.insert(taxe);
                 })
                 .map(savedTaxe -> {
                     TaxeResponse response = taxeMapper.toResponse(savedTaxe);
