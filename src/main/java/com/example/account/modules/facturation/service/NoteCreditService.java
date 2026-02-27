@@ -10,6 +10,7 @@ import com.example.account.modules.facturation.model.entity.LigneNoteCredit;
 import com.example.account.modules.facturation.model.entity.NoteCredit;
 import com.example.account.modules.facturation.model.enums.StatutNoteCredit;
 import com.example.account.modules.facturation.repository.NoteCreditRepository;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class NoteCreditService {
 
     private final NoteCreditRepository noteCreditRepository;
     private final NoteCreditMapper noteCreditMapper;
+    private final R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<NoteCreditResponse> createNoteCredit(NoteCreditRequest request) {
@@ -34,7 +36,7 @@ public class NoteCreditService {
         if (entity.getIdNoteCredit() == null) {
             entity.setIdNoteCredit(UUID.randomUUID());
         }
-        return noteCreditRepository.save(entity)
+        return entityTemplate.insert(entity)
                 .map(noteCreditMapper::toResponse);
     }
 

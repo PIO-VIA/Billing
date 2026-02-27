@@ -8,6 +8,7 @@ import com.example.account.modules.facturation.model.enums.StatutProforma;
 import com.example.account.modules.facturation.repository.FactureProformaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -23,6 +24,7 @@ public class FactureProformaService {
 
     private final FactureProformaRepository proformaRepository;
     private final FactureProformaMapper proformaMapper;
+    private final R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<ProformaInvoiceResponse> createProforma(ProformaInvoiceRequest request) {
@@ -38,7 +40,7 @@ public class FactureProformaService {
             proforma.setStatut(StatutProforma.BROUILLON);
         }
 
-        return proformaRepository.save(proforma)
+        return entityTemplate.insert(proforma)
                 .map(proformaMapper::toResponse);
     }
 

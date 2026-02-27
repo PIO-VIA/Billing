@@ -15,6 +15,7 @@ import com.example.account.modules.facturation.service.ExternalServices.SellerSe
 import com.example.account.modules.facturation.service.producer.FactureEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,7 @@ public class FactureService {
     private final SellerService sellerService;
 
     private final ClientRepository clientRepository;
+    private final R2dbcEntityTemplate entityTemplate;
 
     @Transactional
     public Mono<FactureResponse> createFacture(FactureCreateRequest request) {
@@ -51,7 +53,7 @@ public class FactureService {
             facture.setIdFacture(UUID.randomUUID());
         }
 
-        return factureRepository.save(facture)
+        return entityTemplate.insert(facture)
                 .map(savedFacture -> {
                     FactureResponse response = factureMapper.toResponse(savedFacture);
                     // Non-blocking publish
