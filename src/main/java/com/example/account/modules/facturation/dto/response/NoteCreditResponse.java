@@ -1,5 +1,6 @@
 package com.example.account.modules.facturation.dto.response;
 
+import com.example.account.modules.facturation.model.entity.LigneNoteCredit;
 import com.example.account.modules.facturation.model.enums.ModeReglementNoteCredit;
 import com.example.account.modules.facturation.model.enums.StatutNoteCredit;
 import lombok.AllArgsConstructor;
@@ -17,43 +18,42 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class NoteCreditResponse {
-    private UUID idCNoteCredit;
+    private UUID idNoteCredit;
     private String numeroNoteCredit;
-    private String numeroFacture;
-    private LocalDateTime dateFacturation;
-    private LocalDateTime dateEcheance;
-    private LocalDateTime dateSysteme;
-    private StatutNoteCredit etat;
-    private String type; 
-    private String idClient;
+
+    private UUID idClient;
     private String nomClient;
     private String adresseClient;
     private String emailClient;
     private String telephoneClient;
-    private BigDecimal montantHT;      
-    private BigDecimal montantTVA;     
+
+    private UUID idFactureOrigine;
+    private String numeroFactureOrigine;
+
+    private List<LigneNoteCredit> lignesNoteCredit;
+
+    private BigDecimal montantHT;
+    private BigDecimal montantTVA;
     private BigDecimal montantTTC;
     private BigDecimal montantTotal;
-    private BigDecimal montantRestant;
-    private BigDecimal finalAmount;
-    private BigDecimal remiseGlobalePourcentage;
-    private BigDecimal remiseGlobaleMontant;
-    private Boolean applyVat;
-    private String devise;
-    private BigDecimal tauxChange;
+
+    private LocalDateTime dateEmission;
+    private LocalDateTime dateSysteme;
+
     private ModeReglementNoteCredit modeReglement;
-    private String conditionsPaiement;
-    private Integer nbreEcheance;
-    private String nosRef;
-    private String vosRef;
-    private String referenceCommande;
-    private UUID idDevisOrigine;
-    private List<LigneFactureResponse> lignesFacture; 
+    private StatutNoteCredit statut;
+    private String motif;
+
     private String notes;
+    private String devise;
     private String pdfPath;
-    private Boolean envoyeParEmail;
-    private LocalDateTime dateEnvoiEmail;
+
+    private UUID createdBy;
+    private UUID validatedBy;
+    private LocalDateTime validatedAt;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private String referalClientId;
+
+    private UUID organizationId;
 }

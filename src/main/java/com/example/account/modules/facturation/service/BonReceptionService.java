@@ -30,8 +30,8 @@ public class BonReceptionService {
     public Mono<BondeReceptionResponse> createBondeReception(BondeReceptionCreateRequest dto) {
         log.info("Création d'un nouveau Bon de Réception");
         BondeReception bondeReception = bondeReceptionMapper.toEntity(dto);
-        if (bondeReception.getIdGRN() == null) {
-            bondeReception.setIdGRN(UUID.randomUUID());
+        if (bondeReception.getIdBonReception() == null) {
+            bondeReception.setIdBonReception(UUID.randomUUID());
         }
         return entityTemplate.insert(bondeReception)
                 .map(bondeReceptionMapper::toDto);
@@ -59,6 +59,8 @@ public class BonReceptionService {
         return bonReceptionRepository.findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de Réception non trouvé")))
                 .flatMap(bondeReception -> {
+
+                    System.out.println(bondeReception);
                     bondeReceptionMapper.updateEntityFromDto(dto, bondeReception);
                     return bonReceptionRepository.save(bondeReception);
                 })

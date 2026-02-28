@@ -1,6 +1,8 @@
 package com.example.account.modules.facturation.model.entity;
 
 import com.example.account.modules.core.model.entity.OrganizationScoped;
+import com.example.account.modules.facturation.model.enums.ModeReglement;
+import com.example.account.modules.facturation.model.enums.ModeReglementNoteCredit;
 import com.example.account.modules.facturation.model.enums.StatutNoteCredit;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -67,6 +69,11 @@ public class NoteCredit extends OrganizationScoped {
 
     @Column("date_emission")
     private LocalDateTime dateEmission;
+
+    @Column("date_systeme")
+    private LocalDateTime dateSysteme;
+    @Column("mode_reglement")
+    private ModeReglementNoteCredit modeReglement;
 
     @Column("statut")
     private StatutNoteCredit statut;

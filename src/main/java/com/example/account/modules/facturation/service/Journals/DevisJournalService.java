@@ -48,7 +48,7 @@ public class DevisJournalService {
             .numeroDevis(devis.getNumeroDevis())
             .dateCreation(devis.getDateCreation())
             .dateValidite(devis.getDateValidite())
-            .type(devis.getType())
+            
             .statut(devis.getStatut())
             
             // --- Client Info ---
@@ -77,7 +77,7 @@ public class DevisJournalService {
             .conditionsPaiement(devis.getConditionsPaiement())
             .notes(devis.getNotes())
             .referenceExterne(devis.getReferenceExterne())
-            .pdfPath(devis.getPdfPath())
+     
             .envoyeParEmail(devis.getEnvoyeParEmail())
             .dateEnvoiEmail(devis.getDateEnvoiEmail())
             .dateAcceptation(devis.getDateAcceptation())
@@ -91,7 +91,7 @@ public class DevisJournalService {
             .vosRef(devis.getVosRef())
             .nbreEcheance(devis.getNbreEcheance())
             .referalClientId(devis.getReferalClientId())
-            .createdAt(devis.getCreatedAt())
+            
             .updatedAt(devis.getUpdatedAt())
 
             // --- Enriched Data from SellerAuthResponse ---

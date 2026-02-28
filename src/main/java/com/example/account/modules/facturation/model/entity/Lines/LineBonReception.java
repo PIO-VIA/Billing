@@ -27,6 +27,6 @@ public class LineBonReception {
     private Double excessQuantity;
 
     private Double rate;
-    private Double discount;
+  
     private Double lineAmount;
 }

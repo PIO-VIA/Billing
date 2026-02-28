@@ -2,7 +2,7 @@ package com.example.account.modules.facturation.dto.request;
 
 import com.example.account.modules.facturation.model.enums.StatutDevis;
 import com.example.account.modules.facturation.model.enums.TypePaiementDevis;
-import com.example.account.modules.facturation.model.enums.TypePaiementDevis;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,12 +23,13 @@ import java.util.UUID;
 @Builder
 public class DevisCreateRequest {
 
+    @JsonAlias({"devisNumber","numero","numeroDevis","number"})
     private String numeroDevis; // Often auto-generated, but included if client specifies
 
-    @NotNull(message = "La date de création est obligatoire")
+    @JsonAlias({"creation_date", "creationDate","date_creation"})
     private LocalDateTime dateCreation;
 
-    @NotNull(message = "La date de validité est obligatoire")
+    @JsonAlias({"validity_date", "validityDate", "dateValidite","date_validite"})
     private LocalDateTime dateValidite;
 
     private String type;
@@ -36,14 +37,20 @@ public class DevisCreateRequest {
     private StatutDevis statut;
 
     @NotNull(message = "L'ID client est obligatoire")
-    private String idClient; // String to match TS Mock 'c001' or UUID strings
+    @JsonAlias({"clientId","id_client","idClient"})
+    private UUID idClient;
 
+    @JsonAlias({"clientName","nom_client","nomClient"})
     private String nomClient;
+    @JsonAlias({"clientAddress","adresse_client","adresseClient"})
     private String adresseClient;
+    @JsonAlias({"clientEmail","email_client","emailClient"})
     private String emailClient;
+    @JsonAlias({"clientPhone","telephone_client","telephoneClient"})
     private String telephoneClient;
 
     @Valid
+    @JsonAlias({"lines","ligneDevis","lignes","devisLines"})
     private List<LigneDevisCreateRequest> lignesDevis;
 
     // Financial Summary Fields
@@ -86,7 +93,7 @@ public class DevisCreateRequest {
 
     private Integer nbreEcheance;
 
-    private String referalClientId;
+    private UUID referalClientId;
     
     private String pdfPath;
    

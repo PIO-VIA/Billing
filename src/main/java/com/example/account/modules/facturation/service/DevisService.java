@@ -41,7 +41,7 @@ public class DevisService {
         if (devis.getIdDevis() == null) {
             devis.setIdDevis(UUID.randomUUID());
         }
-        devis.setCreatedAt(LocalDateTime.now());
+        
         devis.setUpdatedAt(LocalDateTime.now());
 
         return entityTemplate.insert(devis)
