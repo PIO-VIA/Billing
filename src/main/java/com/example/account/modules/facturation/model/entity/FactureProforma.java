@@ -18,11 +18,10 @@ import java.util.UUID;
 
 @Table("factures_proforma")
 @Data
-@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FactureProforma extends OrganizationScoped {
+public class FactureProforma  {
 
     @Id
     @Column("id_facture_proforma")
@@ -148,4 +147,9 @@ public class FactureProforma extends OrganizationScoped {
     @LastModifiedDate
     @Column("updated_at")
     private LocalDateTime updatedAt;
+
+    @Column("organization_id")
+    private UUID organizationId;
+        @Column("created_by")
+       private UUID createdBy; 
 }

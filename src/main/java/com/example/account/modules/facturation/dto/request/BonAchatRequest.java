@@ -14,6 +14,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.relational.core.mapping.Column;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -60,6 +62,11 @@ public class BonAchatRequest {
     private UUID preparedBy;
     private UUID approvedBy;
     private String remarks;
+    private UUID organizationId;
+
+
+    
+    private UUID createdBy;
 
     // --- Lignes ---
     @Valid

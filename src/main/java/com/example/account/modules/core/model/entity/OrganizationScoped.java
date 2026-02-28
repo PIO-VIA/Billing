@@ -1,9 +1,13 @@
 package com.example.account.modules.core.model.entity;
 
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.UUID;
+
+import org.springframework.data.relational.core.mapping.Column;
 
 /**
  * Base class for all entities that belong to an organization (multi-tenant entities).
@@ -15,13 +19,17 @@ import java.util.UUID;
  * - Use WHERE organization_id = :organizationId in custom queries
  */
 @Getter
+@NoArgsConstructor
 @Setter
+
+
 public abstract class OrganizationScoped {
 
     /**
      * Organization ID - tenant discriminator.
      * All queries should filter by this column for multi-tenancy.
      */
+    @Column("organization_id")
     private UUID organizationId;
 
     /**

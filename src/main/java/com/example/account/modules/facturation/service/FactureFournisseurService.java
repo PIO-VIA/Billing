@@ -45,12 +45,12 @@ public class FactureFournisseurService {
     }
 
     @Transactional
-    public Mono<FactureFournisseurResponse> updateFacture(UUID id, FactureFournisseurResponse dto) {
+    public Mono<FactureFournisseurResponse> updateFacture(UUID id, FactureFournisseurCreateRequest dto) {
         log.info("Mise à jour de la facture fournisseur: {}", id);
         return factureFournisseurRepository.findById(id)
                 .switchIfEmpty(Mono.error(new Exception("Facture Fournisseur does not exists")))
                 .flatMap(factureFournisseur -> {
-                    factureFournisseurMapper.updateEntityFromDto(dto, factureFournisseur);
+                    factureFournisseurMapper.updateEntityFromRequest(dto, factureFournisseur);
                     return factureFournisseurRepository.save(factureFournisseur);
                 })
                 .map(factureFournisseurMapper::toDto);

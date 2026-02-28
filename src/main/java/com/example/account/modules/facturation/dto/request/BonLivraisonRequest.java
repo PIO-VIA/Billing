@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,34 +18,47 @@ import java.util.UUID;
 @Builder
 public class BonLivraisonRequest {
 
+    // Simple identifier for client-facing usage
     private String numeroBonLivraison;
 
     @NotNull(message = "L'ID client est obligatoire")
     private UUID idClient;
 
     private String nomClient;
-    private String nomDestinataire;
-    private String adresseDestinataire;
-    private String contactDestinataire;
+    private String adresseClient;
+    private String emailClient;
+    private String telephoneClient;
 
     private String nomAgence;
     private String adresseAgence;
     private String contactAgence;
 
     @NotNull(message = "La date de livraison est obligatoire")
-    private LocalDate dateLivraison;
+    private LocalDateTime dateLivraison;
 
-    private LocalDate dateEcheance;
+    private LocalDateTime dateEcheance;
     private UUID idFacture;
     private String numeroFacture;
     private UUID idBonCommande;
     private String numeroCommande;
     private StatutBonLivraison statut;
 
+    @NotNull(message = "Les lignes de livraison ne peuvent pas être vides")
+    @com.fasterxml.jackson.annotation.JsonAlias({"lines","lignes"})
     private List<LigneBonLivraisonRequest> lignes;
 
-    private BigDecimal montantTotal;
-    private String conditionsGenerales;
+    // Amounts (match entity)
+    private BigDecimal montantHT;
+    private BigDecimal montantTVA;
+    private BigDecimal montantTTC;
+
+    
+
+    private String notes;
     private String transporteur;
     private String numeroSuivi;
+
+     private UUID createdBy;
+    private LocalDateTime dateSysteme;
+    private UUID organizationId;
 }

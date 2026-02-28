@@ -20,12 +20,12 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(callSuper = true)
-public class BondeReception extends OrganizationScoped {
+
+public class BondeReception {
 
     @Id
-    @Column("id_grn")
-    private UUID idGRN;
+    @Column("id_bon_reception")
+    private UUID idBonReception;
 
     @Column("numero_reception")
     private String numeroReception;
@@ -39,14 +39,7 @@ public class BondeReception extends OrganizationScoped {
     @Column("lines")
     private List<LineBonReception> lines;
 
-    @Column("montant_ht")
-    private BigDecimal montantHT;
-
-    @Column("montant_tva")
-    private BigDecimal montantTVA;
-
-    @Column("montant_ttc")
-    private BigDecimal montantTTC;
+  
 
     @Column("date_reception")
     private LocalDateTime dateReception;
@@ -60,11 +53,25 @@ public class BondeReception extends OrganizationScoped {
     @Column("created_by")
     private UUID createdBy;
 
-    @CreatedDate
-    @Column("created_at")
-    private LocalDateTime createdAt;
+  
 
     @LastModifiedDate
     @Column("updated_at")
     private LocalDateTime updatedAt;
+    
+    @Column("date_systeme")
+    private LocalDateTime dateSysteme;
+
+    @Column("numero_bon_achat")
+    private String numeroBonAchat;
+    @Column("idBonAchat")
+    private UUID idBonAchat;
+
+    @Column("agence_de_transport")
+    private String agenceDeTransport;
+
+    @Column("organization_id")
+    private UUID organizationId;
+
+
 }

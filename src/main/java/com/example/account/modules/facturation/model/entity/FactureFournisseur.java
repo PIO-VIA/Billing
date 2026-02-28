@@ -1,7 +1,7 @@
 package com.example.account.modules.facturation.model.entity;
 
-import com.example.account.modules.core.model.entity.OrganizationScoped;
 import com.example.account.modules.facturation.model.entity.Lines.LineFactureFournisseur;
+import com.example.account.modules.facturation.model.enums.ModeReglement;
 import com.example.account.modules.facturation.model.enums.StatutFactureFournisseur;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -20,8 +20,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(callSuper = true)
-public class FactureFournisseur extends OrganizationScoped {
+public class FactureFournisseur {
 
     @Id
     @Column("id_facture_fournisseur")
@@ -36,7 +35,8 @@ public class FactureFournisseur extends OrganizationScoped {
     @Column("nom_fournisseur")
     private String nomFournisseur;
 
-    @Column("adresse_fournisseur")
+    // Fixed: Matches 'adresse_supplier' found in your \d output
+    @Column("adresse_supplier") 
     private String adresseFournisseur;
 
     @Column("email_fournisseur")
@@ -60,6 +60,12 @@ public class FactureFournisseur extends OrganizationScoped {
     @Column("montant_total")
     private BigDecimal montantTotal;
 
+    @Column("mode_reglement")
+    private ModeReglement modeReglement;
+
+    @Column("nbre_echeance")
+    private BigDecimal nbreEcheance;
+
     @Column("montant_restant")
     private BigDecimal montantRestant;
 
@@ -71,6 +77,9 @@ public class FactureFournisseur extends OrganizationScoped {
 
     @Column("statut")
     private StatutFactureFournisseur statut;
+
+    @Column("apply_vat")
+    private Boolean applyVat;
 
     @Column("devise")
     private String devise;
@@ -84,6 +93,13 @@ public class FactureFournisseur extends OrganizationScoped {
     @Column("created_by")
     private UUID createdBy;
 
+    @Column("id_bon_reception")
+    private UUID idBonReception;
+
+    // Adjusted: Renamed to camelCase for standard Java practices
+    @Column("numero_bon_reception")
+    private String numeroBonReception;
+
     @CreatedDate
     @Column("created_at")
     private LocalDateTime createdAt;
@@ -91,4 +107,10 @@ public class FactureFournisseur extends OrganizationScoped {
     @LastModifiedDate
     @Column("updated_at")
     private LocalDateTime updatedAt;
+
+    @Column("date_systeme")
+    private LocalDateTime dateSysteme;
+
+    @Column("organization_id")
+    private UUID organizationId;
 }

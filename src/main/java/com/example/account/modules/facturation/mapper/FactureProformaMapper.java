@@ -22,7 +22,7 @@ public interface FactureProformaMapper {
     @Mapping(target = "lignesFactureProforma", source = "lignes")
     FactureProforma toEntity(ProformaInvoiceRequest request);
 
-    @Mapping(target = "lignes", source = "lignesFactureProforma")
+    
     ProformaInvoiceResponse toResponse(FactureProforma entity);
 
     List<ProformaInvoiceResponse> toResponseList(List<FactureProforma> entities);

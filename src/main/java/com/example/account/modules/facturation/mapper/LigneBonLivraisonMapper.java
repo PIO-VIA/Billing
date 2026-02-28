@@ -15,15 +15,21 @@ import java.util.List;
 )
 public interface LigneBonLivraisonMapper {
 
-  
-
-    @Mapping(target = "productId", source = "idProduit")
-    @Mapping(target = "quantity", source = "quantite")
-    @Mapping(target = "unitPrice", source = "prixUnitaire")
-    @Mapping(target = "amount", source = "montant")
-    LigneBonLivraisonResponse toResponse(LigneBonLivraison entity);
+    @Mapping(target = "idProduit", source = "idProduit")
+    @Mapping(target = "description", source = "description")
+    @Mapping(target = "quantite", source = "quantite")
+    @Mapping(target = "prixUnitaire", source = "prixUnitaire")
+    @Mapping(target = "montant", source = "montant")
+    LigneBonLivraison toEntity(LigneBonLivraisonRequest request);
 
     List<LigneBonLivraison> toEntityList(List<LigneBonLivraisonRequest> requests);
+
+    @Mapping(target = "idProduit", source = "idProduit")
+    @Mapping(target = "description", source = "description")
+    @Mapping(target = "quantite", source = "quantite")
+    @Mapping(target = "prixUnitaire", source = "prixUnitaire")
+    @Mapping(target = "montant", source = "montant")
+    LigneBonLivraisonResponse toResponse(LigneBonLivraison entity);
 
     List<LigneBonLivraisonResponse> toResponseList(List<LigneBonLivraison> entities);
 }

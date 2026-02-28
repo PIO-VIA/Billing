@@ -18,11 +18,11 @@ import java.util.UUID;
 
 @Table("devis")
 @Data
-@EqualsAndHashCode(callSuper = true)
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Devis extends OrganizationScoped {
+public class Devis  {
 
     @Id
     @Column("id_devis")
@@ -37,8 +37,7 @@ public class Devis extends OrganizationScoped {
     @Column("date_validite")
     private LocalDateTime dateValidite;
 
-    @Column("type")
-    private String type;
+    
 
     @Column("statut")
     private StatutDevis statut;
@@ -69,7 +68,7 @@ public class Devis extends OrganizationScoped {
 
     @Column("montant_tva")
     private BigDecimal montantTVA;
-
+   
     @Column("montant_ttc")
     private BigDecimal montantTTC;
 
@@ -89,8 +88,7 @@ public class Devis extends OrganizationScoped {
     @Column("reference_externe")
     private String referenceExterne;
 
-    @Column("pdf_path")
-    private String pdfPath;
+    
 
     @Column("envoye_par_email")
     @Builder.Default
@@ -151,14 +149,13 @@ public class Devis extends OrganizationScoped {
     @Column("created_by")
     private UUID createdBy;
 
-    @CreatedDate
-    @Column("created_at")
-    private LocalDateTime createdAt;
 
     @LastModifiedDate
     @Column("updated_at")
     private LocalDateTime updatedAt;
-
+      
+    @Column("organization_id")
+    private UUID organizationId;
     @Version
     @Column("version")
     @Builder.Default

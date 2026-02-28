@@ -20,11 +20,11 @@ public interface NoteCreditMapper extends BaseMapper<NoteCredit, NoteCreditReque
 
     @Override
     @Mapping(target = "idNoteCredit", ignore = true)
-    
+    @Mapping(target = "lignesNoteCredit", source = "lignesNoteCredit")
     NoteCredit toEntity(NoteCreditRequest createRequest);
 
     @Override
-   
+    @Mapping(target = "lignesNoteCredit", source = "lignesNoteCredit")
     NoteCreditResponse toResponse(NoteCredit entity);
 
     @Override

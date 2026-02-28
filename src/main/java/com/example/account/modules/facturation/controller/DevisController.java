@@ -33,7 +33,8 @@ public class DevisController {
 
     @PostMapping
     @Operation(summary = "Créer un nouveau devis")
-    public Mono<ResponseEntity<DevisResponse>> createDevis(@Valid @RequestBody DevisCreateRequest request) {
+    public Mono<ResponseEntity<DevisResponse>> createDevis( @RequestBody DevisCreateRequest request) {
+        System.out.println("Creating Devis \n\n");
         log.info("Requête de création de devis pour le client: {}", request.getIdClient());
         return devisService.createDevis(request)
                 .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));

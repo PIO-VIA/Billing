@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS user_organizations (
     id UUID PRIMARY KEY,
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    user_id UUID,
+    organization_id UUID,
     role VARCHAR(50),
     is_default BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS user_organizations (
 
 CREATE TABLE IF NOT EXISTS user_organization_permissions (
     id UUID PRIMARY KEY,
-    user_organization_id UUID REFERENCES user_organizations(id) ON DELETE CASCADE,
+    user_organization_id UUID,
     permission VARCHAR(50) NOT NULL,
     granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     granted_by UUID,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS user_organization_permissions (
 -- 2. Core Modules
 CREATE TABLE IF NOT EXISTS agencies (
     id UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
+    organization_id UUID,
     code VARCHAR(100),
     name VARCHAR(255),
     location VARCHAR(255),
@@ -112,14 +112,14 @@ CREATE TABLE IF NOT EXISTS pos_terminals (
     id UUID PRIMARY KEY,
     code VARCHAR(100),
     status VARCHAR(50),
-    agency_id UUID REFERENCES agencies(id),
+    agency_id UUID,
     is_active BOOLEAN DEFAULT TRUE
 );
 
 -- 3. Tiers (Partners)
 CREATE TABLE IF NOT EXISTS clients (
     id_client UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
+    organization_id UUID,
     username VARCHAR(100),
     categorie VARCHAR(100),
     site_web VARCHAR(255),
@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS clients (
 
 CREATE TABLE IF NOT EXISTS fournisseurs (
     id_fournisseur UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
+    organization_id UUID \,
     username VARCHAR(100),
     categorie VARCHAR(100),
     site_web VARCHAR(255),
@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS fournisseurs (
 -- 4. Invoicing & Logistics
 CREATE TABLE IF NOT EXISTS taxes (
     id_taxe UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
+    organization_id UUID,
     nom_taxe VARCHAR(100),
     calcul_taxe NUMERIC(15,2),
     actif BOOLEAN DEFAULT TRUE,
@@ -176,23 +176,38 @@ CREATE TABLE IF NOT EXISTS taxes (
 
 CREATE TABLE IF NOT EXISTS journals (
     id_journal UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
+    organization_id UUID,
     nom_journal VARCHAR(100),
     type VARCHAR(50),
     created_at TIMESTAMP,
     updated_at TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS paiements (
+    id_paiement UUID PRIMARY KEY,
+    organization_id UUID,
+    id_client UUID,
+    montant NUMERIC(15,2),
+    date DATE,
+    journal VARCHAR(100),
+    mode_paiement VARCHAR(50),
+    compte_bancaire_f VARCHAR(100),
+    memo TEXT,
+    id_facture UUID,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS factures (
     id_facture UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
+    organization_id UUID ,
     numero_facture VARCHAR(100),
     date_facturation TIMESTAMP,
     date_echeance TIMESTAMP,
     date_systeme TIMESTAMP,
     type VARCHAR(50),
     etat VARCHAR(50),
-    id_client UUID REFERENCES clients(id_client),
+    id_client UUID,
     nom_client VARCHAR(255),
     adresse_client VARCHAR(500),
     email_client VARCHAR(255),
@@ -231,7 +246,7 @@ CREATE TABLE IF NOT EXISTS factures (
 
 CREATE TABLE IF NOT EXISTS devis (
     id_devis UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
+    organization_id UUID ,
     numero_devis VARCHAR(100),
     date_creation TIMESTAMP,
     date_validite TIMESTAMP,
@@ -239,7 +254,7 @@ CREATE TABLE IF NOT EXISTS devis (
     statut VARCHAR(50),
     lignes_devis JSONB,
     montant_total NUMERIC(15,2),
-    id_client UUID REFERENCES clients(id_client),
+    id_client UUID,
     nom_client VARCHAR(255),
     adresse_client VARCHAR(500),
     email_client VARCHAR(255),
@@ -276,26 +291,13 @@ CREATE TABLE IF NOT EXISTS devis (
     version BIGINT DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS paiements (
-    id_paiement UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
-    id_client UUID REFERENCES clients(id_client),
-    montant NUMERIC(15,2),
-    date DATE,
-    journal VARCHAR(100),
-    mode_paiement VARCHAR(50),
-    compte_bancaire_f VARCHAR(100),
-    memo TEXT,
-    id_facture UUID REFERENCES factures(id_facture),
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
-);
+
 
 CREATE TABLE IF NOT EXISTS bons_commande (
     id_bon_commande UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
+    organization_id UUID ,
     numero_commande VARCHAR(100),
-    id_client UUID REFERENCES clients(id_client),
+    id_client UUID ,
     nom_client VARCHAR(255),
     adresse_client VARCHAR(500),
     email_client VARCHAR(255),
@@ -330,51 +332,96 @@ CREATE TABLE IF NOT EXISTS bons_commande (
 );
 
 CREATE TABLE IF NOT EXISTS bons_achat (
+    -- Primary and Foreign Keys
     id_bon_achat UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
+    organization_id UUID NOT NULL,
+    
+    -- Document Reference
     numero_bon_achat VARCHAR(100),
-    id_fournisseur UUID REFERENCES fournisseurs(id_fournisseur),
+    
+    -- Supplier Information (Fournisseur)
+    id_fournisseur UUID,
     nom_fournisseur VARCHAR(255),
-    lignes_bon_achat JSONB,
-    montant_ht NUMERIC(15,2),
-    montant_tva NUMERIC(15,2),
-    montant_ttc NUMERIC(15,2),
+    supplier_code VARCHAR(100),
+    supplier_email VARCHAR(255),
+    supplier_contact VARCHAR(100),
+    supplier_address TEXT,
+
+    -- Delivery Information (Livraison)
+    delivery_name VARCHAR(255),
+    delivery_address TEXT,
+    delivery_email VARCHAR(255),
+    delivery_contact VARCHAR(100),
+
+    -- Logistics and Dates
     date_achat TIMESTAMP,
+    date_systeme TIMESTAMP,
+    date_livraison_prevue TIMESTAMP,
+    transport_method VARCHAR(100),
+    instructions_livraison TEXT,
+
+    -- Items and Financials
+    lignes_bon_achat JSONB, -- Stores the List<LigneBonAchat>
+    montant_ht NUMERIC(15, 2),
+    montant_tva NUMERIC(15, 2),
+    montant_ttc NUMERIC(15, 2),
+
+    -- Workflow and Audit
     statut VARCHAR(50),
-    notes TEXT,
+    notes TEXT, -- Maps to 'remarks' in DTO
+    prepared_by UUID,
+    approved_by UUID,
     created_by UUID,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Index for performance on organization lookups
+CREATE INDEX IF NOT EXISTS idx_bons_achat_org ON bons_achat(organization_id);
+
 CREATE TABLE IF NOT EXISTS bons_livraison (
-    id_bon_livraison UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
-    numero_livraison VARCHAR(100),
-    id_client UUID REFERENCES clients(id_client),
+    -- Primary Key
+    id_bon_livraison UUID PRIMARY KEY ,
+    
+    -- Business Information
+    numero_livraison VARCHAR(50) NOT NULL UNIQUE,
+    date_livraison TIMESTAMP WITHOUT TIME ZONE,
+    statut VARCHAR(30) NOT NULL, -- Corresponds to StatutBonLivraison enum
+    
+    -- Client Information
+    id_client UUID NOT NULL,
     nom_client VARCHAR(255),
-    adresse_client VARCHAR(500),
+    adresse_client TEXT,
     email_client VARCHAR(255),
-    telephone_client VARCHAR(100),
+    telephone_client VARCHAR(50),
+    
+    -- Financials
+    montant_ht DECIMAL(19, 4) DEFAULT 0.0000,
+    montant_tva DECIMAL(19, 4) DEFAULT 0.0000,
+    montant_ttc DECIMAL(19, 4) DEFAULT 0.0000,
+    
+    -- Complex Data (Stored as JSONB for the List<LigneBonLivraison>)
     lignes_bon_livraison JSONB,
-    montant_ht NUMERIC(15,2),
-    montant_tva NUMERIC(15,2),
-    montant_ttc NUMERIC(15,2),
-    date_livraison TIMESTAMP,
-    livraison_effectuee BOOLEAN DEFAULT FALSE,
-    date_livraison_effective TIMESTAMP,
-    statut VARCHAR(50),
+    
+    -- Metadata & Auditing
     notes TEXT,
+    organization_id UUID NOT NULL,
     created_by UUID,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    date_systeme TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Indexes for performance
+CREATE INDEX idx_bl_organization ON bons_livraison(organization_id);
+
+
 
 CREATE TABLE IF NOT EXISTS bons_reception (
     id_grn UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
+    organization_id UUID,
     numero_reception VARCHAR(100),
-    id_fournisseur UUID REFERENCES fournisseurs(id_fournisseur),
+    id_fournisseur UUID,
     nom_fournisseur VARCHAR(255),
     lines JSONB,
     montant_ht NUMERIC(15,2),
@@ -390,9 +437,9 @@ CREATE TABLE IF NOT EXISTS bons_reception (
 
 CREATE TABLE IF NOT EXISTS factures_fournisseur (
     id_facture_fournisseur UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
+    organization_id UUID,
     numero_facture VARCHAR(100),
-    id_fournisseur UUID REFERENCES fournisseurs(id_fournisseur),
+    id_fournisseur UUID,
     nom_fournisseur VARCHAR(255),
     adresse_fournisseur VARCHAR(500),
     email_fournisseur VARCHAR(255),
@@ -416,13 +463,13 @@ CREATE TABLE IF NOT EXISTS factures_fournisseur (
 
 CREATE TABLE IF NOT EXISTS notes_credit (
     id_note_credit UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
-    id_client UUID REFERENCES clients(id_client),
+    organization_id UUID,
+    id_client UUID,
     nom_client VARCHAR(255),
     adresse_client VARCHAR(500),
     email_client VARCHAR(255),
     telephone_client VARCHAR(100),
-    id_facture_origine UUID REFERENCES factures(id_facture),
+    id_facture_origine UUID,
     numero_facture_origine VARCHAR(100),
     lignes_note_credit JSONB,
     montant_ht NUMERIC(15,2),
@@ -444,13 +491,13 @@ CREATE TABLE IF NOT EXISTS notes_credit (
 
 CREATE TABLE IF NOT EXISTS factures_proforma (
     id_facture_proforma UUID PRIMARY KEY,
-    organization_id UUID REFERENCES organizations(id),
+    organization_id UUID,
     numero_proforma_invoice VARCHAR(100),
     date_creation TIMESTAMP,
     type VARCHAR(50),
     statut VARCHAR(50),
     montant_total NUMERIC(15,2),
-    id_client UUID REFERENCES clients(id_client),
+    id_client UUID,
     nom_client VARCHAR(255),
     adresse_client VARCHAR(500),
     email_client VARCHAR(255),

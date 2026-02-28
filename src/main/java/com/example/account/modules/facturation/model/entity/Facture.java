@@ -25,8 +25,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(callSuper = true)
-public class Facture extends OrganizationScoped {
+public class Facture  {
 
     @Id
     @Column("id_facture")
@@ -161,6 +160,9 @@ public class Facture extends OrganizationScoped {
     @LastModifiedDate
     @Column("updated_at")
     private LocalDateTime updatedAt;
+
+    @Column("organization_id")
+    private UUID organizationId;
 
     @Version
     @Column("version")

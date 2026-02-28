@@ -27,6 +27,7 @@ public class LigneProformaRequest {
     private Integer quantite;
 
     private BigDecimal prixUnitaire;
+     private BigDecimal montantTotal;
     private BigDecimal remisePourcentage;
     private BigDecimal remiseMontant;
     private BigDecimal tauxTva;
