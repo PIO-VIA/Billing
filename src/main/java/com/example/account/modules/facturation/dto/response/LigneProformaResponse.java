@@ -13,7 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class LigneProformaResponse {
-    private UUID idLigneProforma;
+   
     private UUID idProduit;
     private String nomProduit;
     private String description;

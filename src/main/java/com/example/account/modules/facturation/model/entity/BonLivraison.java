@@ -19,8 +19,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(callSuper = true)
-public class BonLivraison extends OrganizationScoped {
+
+public class BonLivraison  {
 
     @Id
     @Column("id_bon_livraison")
@@ -59,11 +59,6 @@ public class BonLivraison extends OrganizationScoped {
     @Column("date_livraison")
     private LocalDateTime dateLivraison;
 
-    @Column("livraison_effectuee")
-    private Boolean livraisonEffectuee;
-
-    @Column("date_livraison_effective")
-    private LocalDateTime dateLivraisonEffective;
 
     @Column("statut")
     private StatutBonLivraison statut;
@@ -81,4 +76,9 @@ public class BonLivraison extends OrganizationScoped {
     @LastModifiedDate
     @Column("updated_at")
     private LocalDateTime updatedAt;
+
+     @Column("date_systeme")
+    private LocalDateTime dateSysteme;
+    @Column("organization_id")
+    private UUID organizationId;
 }

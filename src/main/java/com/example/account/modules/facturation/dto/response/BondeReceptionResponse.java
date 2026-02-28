@@ -15,23 +15,22 @@ import java.util.UUID;
 @Builder
 public class BondeReceptionResponse {
 
-    private UUID idGRN;
-    private String grnNumber;
-    private UUID supplierId;
-    private String supplierName;
-    private String transporterCompanyName;
-    private String vehicleNumber;
-    private UUID purchaseOrderId;
-    private String purchaseOrderNumber;
-    private LocalDate receiptDate;
-    private LocalDate documentDate;
-    private LocalDateTime systemDate;
-    private StatusBonReception status;
+ 
+
+    // Fields aligned with entity `BondeReception`
+    private UUID idBonReception;
+    private String numeroReception;
+    private UUID idFournisseur;
+    private String nomFournisseur;
     private List<LineBonReception> lines;
-    private UUID preparedBy;
-    private UUID inspectedBy;
-    private UUID approvedBy;
-    private String remarks;
-    private LocalDateTime createdAt;
+    private LocalDateTime dateReception;
+    private StatusBonReception statut;
+    private String notes;
+    private UUID createdBy;
     private LocalDateTime updatedAt;
+    private LocalDateTime dateSysteme;
+    private String numeroBonAchat;
+    private UUID idBonAchat;
+    private String agenceDeTransport;
+    private UUID organizationId;
 }

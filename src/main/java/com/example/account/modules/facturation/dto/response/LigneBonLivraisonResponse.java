@@ -14,9 +14,9 @@ import java.util.UUID;
 @Builder
 public class LigneBonLivraisonResponse {
 
-    private UUID productId;
+    private UUID idProduit;
     private String description;
-    private Integer quantity;
-    private BigDecimal unitPrice;
-    private BigDecimal amount;
+    private Integer quantite;
+    private BigDecimal prixUnitaire;
+    private BigDecimal montant;
 }

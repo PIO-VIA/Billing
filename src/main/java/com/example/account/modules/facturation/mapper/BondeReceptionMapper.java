@@ -13,25 +13,17 @@ import java.util.List;
     builder = @Builder(disableBuilder = true)
 )
 public interface BondeReceptionMapper {
-
+    // DTOs now use the same field names as the entity, so MapStruct can map directly.
     BondeReceptionResponse toDto(BondeReception entity);
 
-    @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "organizationId", ignore = true)
     BondeReception toEntity(BondeReceptionResponse dto);
 
-    @Mapping(target = "idGRN", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "organizationId", ignore = true)
     BondeReception toEntity(BondeReceptionCreateRequest dto);
 
     List<BondeReceptionResponse> toDtoList(List<BondeReception> entities);
 
-    @Mapping(target = "idGRN", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "organizationId", ignore = true)
     void updateEntityFromDto(BondeReceptionResponse dto, @MappingTarget BondeReception entity);
 }

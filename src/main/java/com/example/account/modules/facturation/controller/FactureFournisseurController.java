@@ -35,7 +35,7 @@ public class FactureFournisseurController {
     @PutMapping("/{id}")
     public Mono<ResponseEntity<FactureFournisseurResponse>> updateFacture(
         @PathVariable UUID id, 
-        @RequestBody FactureFournisseurResponse updatedData) {
+        @RequestBody FactureFournisseurCreateRequest updatedData) {
     
         return factureFournisseurService.updateFacture(id, updatedData)
                 .map(ResponseEntity::ok)

@@ -1,5 +1,16 @@
 package com.example.account.modules.core.config;
 
+import com.example.account.modules.facturation.model.entity.BonAchat;
+import com.example.account.modules.facturation.model.entity.BonCommande;
+import com.example.account.modules.facturation.model.entity.Devis;
+import com.example.account.modules.facturation.model.entity.Facture;
+import com.example.account.modules.facturation.model.entity.LigneBonAchat;
+import com.example.account.modules.facturation.model.entity.LigneBonLivraison;
+import com.example.account.modules.facturation.model.entity.LigneDevis;
+import com.example.account.modules.facturation.model.entity.LigneFacture;
+import com.example.account.modules.facturation.model.entity.Lines.LineBonCommande;
+import com.example.account.modules.facturation.model.entity.Lines.LineBonReception;
+import com.example.account.modules.facturation.model.entity.Lines.LineFactureFournisseur;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
@@ -8,8 +19,12 @@ import io.r2dbc.spi.ConnectionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.TypeDescriptor;
+import org.springframework.core.convert.converter.ConditionalGenericConverter;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.convert.ReadingConverter;
+import java.util.Collections;
+import java.util.Set;
 import org.springframework.data.convert.WritingConverter;
 import org.springframework.data.r2dbc.config.AbstractR2dbcConfiguration;
 import org.springframework.data.r2dbc.config.EnableR2dbcAuditing;
@@ -68,44 +83,88 @@ public class R2dbcConfig extends AbstractR2dbcConfiguration {
      * Custom converters for handling JSONB types and other PostgreSQL-specific types.
      */
     @Override
-    protected List<Object> getCustomConverters() {
-        List<Object> converters = new ArrayList<>();
-        converters.add(new JsonbToListConverter());
-        converters.add(new ListToJsonbConverter());
-        return converters;
-    }
+protected List<Object> getCustomConverters() {
+    List<Object> converters = new ArrayList<>();
 
-    /**
-     * Converter to read JSONB from PostgreSQL to Java List.
-     */
-    @ReadingConverter
-    public static class JsonbToListConverter implements Converter<Json, List> {
-        private final ObjectMapper objectMapper = new ObjectMapper();
+    // 1. Generic Writing Converter (One works for all Lists)
+    converters.add(new GenericListWritingConverter());
 
-        @Override
-        public List convert(Json json) {
-            try {
-                return objectMapper.readValue(json.asString(), List.class);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to convert JSONB to List", e);
-            }
+    // 2. Specific Reading Converters (Conditional - match by generic element type)
+    converters.add(new GenericListReadingConverter(com.example.account.modules.facturation.model.entity.Lines.LineFactureFournisseur.class));
+    converters.add(new GenericListReadingConverter(com.example.account.modules.facturation.model.entity.LigneFactureProforma.class));
+    converters.add(new GenericListReadingConverter(com.example.account.modules.facturation.model.entity.LigneNoteCredit.class));
+
+    converters.add(new GenericListReadingConverter(LigneDevis.class));
+    converters.add(new GenericListReadingConverter(LigneFacture.class));
+    converters.add(new GenericListReadingConverter(LigneBonAchat.class));
+    converters.add(new GenericListReadingConverter(LigneBonLivraison.class));
+    converters.add(new GenericListReadingConverter(LineBonCommande.class));
+    converters.add(new GenericListReadingConverter(LineBonReception.class));
+      
+
+
+
+    return converters;
+}
+
+private static final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
+
+/**
+ * Truly Generic Writing Converter
+ */
+@WritingConverter
+public static class GenericListWritingConverter implements Converter<List<?>, Json> {
+    @Override
+    public Json convert(List<?> source) {
+        try {
+            return Json.of(mapper.writeValueAsString(source));
+        } catch (Exception e) {
+            return Json.of("[]");
         }
     }
+}
 
-    /**
-     * Converter to write Java List to JSONB for PostgreSQL.
-     */
-    @WritingConverter
-    public static class ListToJsonbConverter implements Converter<List, Json> {
-        private final ObjectMapper objectMapper = new ObjectMapper();
+/**
+ * Type-Safe Generic Reading Converter 
+ * This solves the LinkedHashMap issue by passing the specific Class type.
+ */
+@ReadingConverter
+public static class GenericListReadingConverter implements ConditionalGenericConverter {
+    private final Class<?> elementType;
 
-        @Override
-        public Json convert(List list) {
-            try {
-                return Json.of(objectMapper.writeValueAsString(list));
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to convert List to JSONB", e);
-            }
+    public GenericListReadingConverter(Class<?> elementType) {
+        this.elementType = elementType;
+    }
+
+    @Override
+    public Set<ConvertiblePair> getConvertibleTypes() {
+        return Collections.singleton(new ConvertiblePair(Json.class, List.class));
+    }
+
+    @Override
+    public boolean matches(TypeDescriptor sourceType, TypeDescriptor targetType) {
+        if (sourceType == null || targetType == null) {
+            return false;
+        }
+        if (!Json.class.isAssignableFrom(sourceType.getType())) {
+            return false;
+        }
+        TypeDescriptor elementDesc = targetType.getElementTypeDescriptor();
+        if (elementDesc == null) {
+            return false;
+        }
+        return elementDesc.getType().equals(this.elementType);
+    }
+
+    @Override
+    public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
+        Json json = (Json) source;
+        try {
+            return mapper.readValue(json.asString(),
+                    mapper.getTypeFactory().constructCollectionType(List.class, this.elementType));
+        } catch (Exception e) {
+            return new ArrayList<>();
         }
     }
+}
 }

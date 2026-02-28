@@ -32,8 +32,10 @@ public class BonAchatService {
     @Transactional
     public Mono<BonAchatResponse> createBonAchat(BonAchatRequest request) {
         log.info("Création d'un nouveau bon d'achat, numéro: {}", request.getNumeroBonAchat());
-
+        System.out.println(request);
         BonAchat bonAchat = bonAchatMapper.toEntity(request);
+        bonAchat.setOrganizationId(request.getOrganizationId());
+        System.out.println(bonAchat);
         if (bonAchat.getIdBonAchat() == null) {
             bonAchat.setIdBonAchat(UUID.randomUUID());
         }

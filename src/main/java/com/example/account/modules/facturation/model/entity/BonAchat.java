@@ -19,8 +19,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(callSuper = true)
-public class BonAchat extends OrganizationScoped {
+
+public class BonAchat  {
 
     @Id
     @Column("id_bon_achat")
@@ -29,12 +29,58 @@ public class BonAchat extends OrganizationScoped {
     @Column("numero_bon_achat")
     private String numeroBonAchat;
 
+    // --- Informations Fournisseur ---
     @Column("id_fournisseur")
     private UUID idFournisseur;
 
     @Column("nom_fournisseur")
     private String nomFournisseur;
 
+    @Column("supplier_code")
+    private String supplierCode;
+
+    @Column("supplier_email")
+    private String supplierEmail;
+
+    @Column("supplier_contact")
+    private String supplierContact;
+
+    @Column("supplier_address")
+    private String supplierAddress;
+
+    // --- Informations de Livraison ---
+    @Column("delivery_name")
+    private String deliveryName;
+
+    @Column("delivery_address")
+    private String deliveryAddress;
+
+    @Column("delivery_email")
+    private String deliveryEmail;
+
+    @Column("delivery_contact")
+    private String deliveryContact;
+
+    // --- Dates & Transport ---
+    @Column("date_achat")
+    private LocalDateTime dateAchat;
+
+    @Column("date_systeme")
+    private LocalDateTime dateSysteme;
+
+    @Column("date_livraison_prevue")
+    private LocalDateTime dateLivraisonPrevue;
+
+    @Column("transport_method")
+    private String transportMethod;
+
+    @Column("instructions_livraison")
+    private String instructionsLivraison;
+
+    @Column("statut")
+    private StatutBonAchat statut;
+
+    // --- Lignes et Montants ---
     @Column("lignes_bon_achat")
     private List<LigneBonAchat> lignesBonAchat;
 
@@ -47,18 +93,23 @@ public class BonAchat extends OrganizationScoped {
     @Column("montant_ttc")
     private BigDecimal montantTTC;
 
-    @Column("date_achat")
-    private LocalDateTime dateAchat;
-
-    @Column("statut")
-    private StatutBonAchat statut;
-
+    // --- Audit & Remarques ---
     @Column("notes")
     private String notes;
+
+    @Column("prepared_by")
+    private UUID preparedBy;
+
+    @Column("approved_by")
+    private UUID approvedBy;
 
     @Column("created_by")
     private UUID createdBy;
 
+    @Column("organization_id")
+    private UUID organizationId;
+
+    
     @CreatedDate
     @Column("created_at")
     private LocalDateTime createdAt;

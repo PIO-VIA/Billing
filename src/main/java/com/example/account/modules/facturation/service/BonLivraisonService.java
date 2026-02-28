@@ -15,10 +15,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -29,18 +32,22 @@ public class BonLivraisonService {
     private final BonLivraisonRepository bonLivraisonRepository;
     private final BonLivraisonMapper bonLivraisonMapper;
     private final R2dbcEntityTemplate entityTemplate;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public Mono<BonLivraisonResponse> createBonLivraison(BonLivraisonRequest request) {
         log.info("Création d'un nouveau bon de livraison pour le client: {}", request.getIdClient());
-
+        
         BonLivraison bonLivraison = bonLivraisonMapper.toEntity(request);
         if (bonLivraison.getIdBonLivraison() == null) {
             bonLivraison.setIdBonLivraison(UUID.randomUUID());
         }
 
         return entityTemplate.insert(bonLivraison)
-                .map(bonLivraisonMapper::toResponse);
+                .map(saved -> {
+                    deserializeJsonbLines(saved);
+                    return bonLivraisonMapper.toResponse(saved);
+                });
     }
 
     @Transactional(readOnly = true)
@@ -48,21 +55,30 @@ public class BonLivraisonService {
         log.info("Récupération du bon de livraison: {}", id);
         return bonLivraisonRepository.findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de livraison non trouvé: " + id)))
-                .map(bonLivraisonMapper::toResponse);
+                .map(bonLivraison -> {
+                    deserializeJsonbLines(bonLivraison);
+                    return bonLivraisonMapper.toResponse(bonLivraison);
+                });
     }
 
     @Transactional(readOnly = true)
     public Flux<BonLivraisonResponse> getAllBonLivraisons() {
         log.info("Récupération de tous les bons de livraison");
         return bonLivraisonRepository.findAll()
-                .map(bonLivraisonMapper::toResponse);
+                .map(bonLivraison -> {
+                    deserializeJsonbLines(bonLivraison);
+                    return bonLivraisonMapper.toResponse(bonLivraison);
+                });
     }
 
     @Transactional(readOnly = true)
     public Flux<BonLivraisonResponse> getBonLivraisonsByClient(UUID idClient) {
         log.info("Récupération des bons de livraison du client: {}", idClient);
         return bonLivraisonRepository.findByIdClient(idClient)
-                .map(bonLivraisonMapper::toResponse);
+                .map(bonLivraison -> {
+                    deserializeJsonbLines(bonLivraison);
+                    return bonLivraisonMapper.toResponse(bonLivraison);
+                });
     }
 
     @Transactional
@@ -83,18 +99,15 @@ public class BonLivraisonService {
         return bonLivraisonRepository.findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de livraison non trouvé: " + id)))
                 .flatMap(bonLivraison -> {
-                    if (Boolean.TRUE.equals(bonLivraison.getLivraisonEffectuee())) {
-                        return Mono.error(new IllegalStateException("La livraison a déjà été effectuée"));
-                    }
-
-                    bonLivraison.setLivraisonEffectuee(true);
-                    bonLivraison.setDateLivraisonEffective(LocalDateTime.now());
                     bonLivraison.setStatut(StatutBonLivraison.LIVRE);
                     bonLivraison.setUpdatedAt(LocalDateTime.now());
 
                     return bonLivraisonRepository.save(bonLivraison);
                 })
-                .map(bonLivraisonMapper::toResponse);
+                .map(bonLivraison -> {
+                    deserializeJsonbLines(bonLivraison);
+                    return bonLivraisonMapper.toResponse(bonLivraison);
+                });
     }
 
     @Transactional
@@ -107,7 +120,10 @@ public class BonLivraisonService {
                     bonLivraison.setUpdatedAt(LocalDateTime.now());
                     return bonLivraisonRepository.save(bonLivraison);
                 })
-                .map(bonLivraisonMapper::toResponse);
+                .map(bonLivraison -> {
+                    deserializeJsonbLines(bonLivraison);
+                    return bonLivraisonMapper.toResponse(bonLivraison);
+                });
     }
 
     @Transactional
@@ -116,10 +132,37 @@ public class BonLivraisonService {
         return bonLivraisonRepository.findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon de livraison non trouvé: " + id)))
                 .flatMap(bonLivraison -> {
+                    System.out.println(request);
+                    System.out.println(request.getLignes());
+                    System.out.println(bonLivraison);
                     bonLivraisonMapper.updateEntityFromDTO(request, bonLivraison);
+                   
+                    System.out.println(bonLivraison.getLignesBonLivraison());
                     bonLivraison.setUpdatedAt(LocalDateTime.now());
                     return bonLivraisonRepository.save(bonLivraison);
                 })
-                .map(bonLivraisonMapper::toResponse);
+                .map(bonLivraison -> {
+                    deserializeJsonbLines(bonLivraison);
+                    return bonLivraisonMapper.toResponse(bonLivraison);
+                });
+    }
+
+    /**
+     * Convert LinkedHashMap items (from JSONB deserialization) to LigneBonLivraison objects
+     */
+    private void deserializeJsonbLines(BonLivraison bonLivraison) {
+        if (bonLivraison.getLignesBonLivraison() == null) {
+            return;
+        }
+        List<LigneBonLivraison> deserializedLines = new ArrayList<>();
+        for (Object item : bonLivraison.getLignesBonLivraison()) {
+            if (item instanceof Map) {
+                LigneBonLivraison ligne = objectMapper.convertValue(item, LigneBonLivraison.class);
+                deserializedLines.add(ligne);
+            } else if (item instanceof LigneBonLivraison) {
+                deserializedLines.add((LigneBonLivraison) item);
+            }
+        }
+        bonLivraison.setLignesBonLivraison(deserializedLines);
     }
 }

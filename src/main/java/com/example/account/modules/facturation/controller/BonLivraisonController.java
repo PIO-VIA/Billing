@@ -41,6 +41,7 @@ public class BonLivraisonController {
     @PutMapping("/{id}")
     @Operation(summary = "Mettre à jour un bon de livraison par ID")
     public Mono<ResponseEntity<BonLivraisonResponse>> updatedLivraison(@PathVariable UUID id, @RequestBody BonLivraisonRequest request) {
+        System.out.println(request);
         return bonLivraisonService.update(id, request)
                 .map(ResponseEntity::ok);
     }
