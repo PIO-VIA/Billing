@@ -11,6 +11,9 @@ import com.example.account.modules.facturation.model.entity.LigneFacture;
 import com.example.account.modules.facturation.model.entity.Lines.LineBonCommande;
 import com.example.account.modules.facturation.model.entity.Lines.LineBonReception;
 import com.example.account.modules.facturation.model.entity.Lines.LineFactureFournisseur;
+import com.example.account.modules.facturation.service.ExternalServices.entity.JsonToClientSaleSizeConverter;
+import com.example.account.modules.facturation.service.ExternalServices.entity.JsonToPromotionConverter;
+import com.example.account.modules.facturation.service.ExternalServices.entity.ObjectListToJsonConverter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
@@ -79,6 +82,27 @@ public class R2dbcConfig extends AbstractR2dbcConfiguration {
         return new R2dbcTransactionManager(connectionFactory);
     }
 
+
+
+
+
+    @WritingConverter
+public static class StringToJsonConverter implements Converter<String, Json> {
+    @Override
+    public Json convert(String source) {
+        return Json.of(source);
+    }
+}
+
+@ReadingConverter
+public static class JsonToStringConverter implements Converter<Json, String> {
+    @Override
+    public String convert(Json source) {
+        return source.asString();
+    }
+}
+
+
     /**
      * Custom converters for handling JSONB types and other PostgreSQL-specific types.
      */
@@ -100,8 +124,12 @@ protected List<Object> getCustomConverters() {
     converters.add(new GenericListReadingConverter(LigneBonLivraison.class));
     converters.add(new GenericListReadingConverter(LineBonCommande.class));
     converters.add(new GenericListReadingConverter(LineBonReception.class));
-      
-
+    
+      converters.add(new GenericListReadingConverter(com.example.account.modules.facturation.dto.response.ExternalResponses.ProductResponse.ClientSaleSize.class));
+    converters.add(new GenericListReadingConverter(com.example.account.modules.facturation.dto.response.ExternalResponses.ProductResponse.SaleSizePromotion.class));
+    converters.add(new ObjectListToJsonConverter());
+    converters.add(new JsonToClientSaleSizeConverter());
+    converters.add(new JsonToPromotionConverter());
 
 
     return converters;

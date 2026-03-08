@@ -153,39 +153,4 @@ public class FactureController {
                 .map(ResponseEntity::ok);
     }
 
-    @GetMapping("/{factureId}/pdf")
-    @Operation(summary = "Télécharger le PDF d'une facture")
-    public Mono<ResponseEntity<byte[]>> downloadFacturePdf(@PathVariable UUID factureId) {
-        log.info("Requête de téléchargement du PDF de la facture: {}", factureId);
-
-        return factureService.genererPdfFacture(factureId)
-                .map(pdfBytes -> ResponseEntity.ok()
-                        .header("Content-Type", "application/pdf")
-                        .header("Content-Disposition", "attachment; filename=facture_" + factureId + ".pdf")
-                        .body(pdfBytes));
-    }
-
-    @PostMapping("/{factureId}/envoyer-email")
-    @Operation(summary = "Envoyer la facture par email au client")
-    public Mono<ResponseEntity<Void>> envoyerFactureParEmail(@PathVariable UUID factureId) {
-        log.info("Requête d'envoi de la facture {} par email", factureId);
-        return factureService.envoyerFactureParEmail(factureId)
-                .thenReturn(ResponseEntity.ok().build());
-    }
-
-    @PostMapping("/{factureId}/rappel-paiement")
-    @Operation(summary = "Envoyer un rappel de paiement pour la facture")
-    public Mono<ResponseEntity<Void>> envoyerRappelPaiement(@PathVariable UUID factureId) {
-        log.info("Requête d'envoi d'un rappel de paiement pour la facture: {}", factureId);
-        return factureService.envoyerRappelPaiement(factureId)
-                .thenReturn(ResponseEntity.ok().build());
-    }
-
-    @PostMapping("/{factureId}/generer-pdf")
-    @Operation(summary = "Générer et sauvegarder le PDF de la facture")
-    public Mono<ResponseEntity<String>> genererEtSauvegarderPdf(@PathVariable UUID factureId) {
-        log.info("Requête de génération et sauvegarde du PDF de la facture: {}", factureId);
-        return factureService.genererEtSauvegarderPdfFacture(factureId)
-                .map(ResponseEntity::ok);
-    }
 }

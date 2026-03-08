@@ -530,6 +530,51 @@ CREATE TABLE IF NOT EXISTS taxes (
 );
 CREATE INDEX IF NOT EXISTS idx_taxes_org ON taxes(organization_id);
 
+
+
+
+DROP TABLE IF EXISTS products;
+
+CREATE TABLE products (
+    -- Primary Key (line_id)
+    line_id BIGSERIAL PRIMARY KEY,
+    
+    -- Business ID (UUID)
+    id UUID NOT NULL,
+    
+    -- Basic Product Info
+    name VARCHAR(255),
+    product_type VARCHAR(100), -- Maps to @Column("product_type")
+    sale_price NUMERIC(19, 2), -- Using NUMERIC for precision with BigDecimal
+    cost NUMERIC(19, 2),
+    category VARCHAR(100),
+    reference VARCHAR(100),
+    barcode VARCHAR(100),
+    photo TEXT,
+    active BOOLEAN DEFAULT TRUE,
+    
+    -- Audit Dates
+    created_at DATE,
+    updated_at DATE,
+    
+    -- Logistics & Units
+    uom VARCHAR(50),
+    stock_quantity DOUBLE PRECISION,
+    available_quantity DOUBLE PRECISION,
+    reserved_quantity DOUBLE PRECISION,
+    
+    -- Organization context
+    organization_id UUID,
+
+    -- Complex JSON Fields (The lists of ClientSaleSize and SaleSizePromotion)
+    -- This requires the R2DBC Converters we discussed earlier
+    allowed_sale_sizes JSONB,
+    active_promotions JSONB
+);
+
+-- Optimization: Index the UUID and Organization ID for faster lookups
+CREATE INDEX idx_products_uuid ON products(id);
+CREATE INDEX idx_products_org_id ON products(organization_id);
 -- Add foreign key examples (uncomment/adjust if referenced parent tables exist):
 -- ALTER TABLE bons_reception ADD CONSTRAINT fk_bons_reception_org FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE;
 -- ALTER TABLE factures_fournisseur ADD CONSTRAINT fk_factures_fournisseur_org FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE;

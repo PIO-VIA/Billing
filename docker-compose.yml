@@ -22,8 +22,22 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # IMPORTANT: Use 'kafka' for internal docker traffic and 'localhost' for your Spring app
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  # ADDED GOTENBERG HERE
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: gotenberg
+    hostname: gotenberg
+    # ADD THESE THREE LINES:
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    ports:
+      - "8081:3000"
+    restart: always
+    shm_size: 1gb
