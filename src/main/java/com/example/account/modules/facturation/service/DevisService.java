@@ -1,6 +1,7 @@
 package com.example.account.modules.facturation.service;
 
 import com.example.account.modules.facturation.dto.request.DevisCreateRequest;
+import com.example.account.modules.facturation.dto.request.ExternalRequest.EmailRequest;
 import com.example.account.modules.facturation.dto.response.DevisResponse;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.SellerAuthResponse;
 import com.example.account.modules.facturation.mapper.DevisMapper;
@@ -32,6 +33,7 @@ public class DevisService {
     private final DevisEventProducer devisEventProducer;
     private final SellerService sellerService;
     private final R2dbcEntityTemplate entityTemplate;
+    private final EmailService emailService;
 
     @Transactional
     public Mono<DevisResponse> createDevis(DevisCreateRequest request) {
@@ -106,34 +108,23 @@ public class DevisService {
                 .map(devisMapper::toResponse);
     }
 
-    @Transactional(readOnly = true)
-    public Flux<DevisResponse> getDevisByClient(UUID clientId) {
-        log.info("Récupération des devis du client: {}", clientId);
-        return devisRepository.findByIdClient(clientId)
-                .map(devisMapper::toResponse);
+  
+        @Transactional(readOnly = true)
+    public Mono<Void> sendDevisAsEmail(EmailRequest emailRequest) {
+         log.info("inside here");
+        return devisRepository.findById(emailRequest.getId())
+            .switchIfEmpty(Mono.error(new RuntimeException("Quotation not found with ID: " + emailRequest.getId())))
+            .flatMap(devis -> {
+                // Since sendQuotation returns Mono<Void>, we flatMap into it directly
+                log.info("Found quotation and now sending");
+                return emailService.sendQuotation(devis, emailRequest.getHtmlContent());
+            })
+            // Log or handle errors at the end of the stream
+            .onErrorResume(e -> {
+                log.error("Failed to process email request: ", e);
+                return Mono.error(new RuntimeException("Email service failed: " + e.getMessage()));
+            });
     }
-
-    @Transactional(readOnly = true)
-    public Flux<DevisResponse> getDevisByStatut(StatutDevis statut) {
-        log.info("Récupération des devis par statut: {}", statut);
-        return devisRepository.findByStatut(statut)
-                .map(devisMapper::toResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public Flux<DevisResponse> getDevisExpires() {
-        log.info("Récupération des devis expirés");
-        return devisRepository.findExpiredDevis(LocalDate.now())
-                .map(devisMapper::toResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public Flux<DevisResponse> getDevisByPeriode(LocalDate dateDebut, LocalDate dateFin) {
-        log.info("Récupération des devis entre {} et {}", dateDebut, dateFin);
-        return devisRepository.findByDateCreationBetween(dateDebut, dateFin)
-                .map(devisMapper::toResponse);
-    }
-
     @Transactional
     public Mono<Void> deleteDevis(UUID devisId) {
         log.info("Suppression du devis: {}", devisId);

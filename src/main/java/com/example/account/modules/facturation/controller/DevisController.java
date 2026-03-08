@@ -1,6 +1,7 @@
 package com.example.account.modules.facturation.controller;
 
 import com.example.account.modules.facturation.dto.request.DevisCreateRequest;
+import com.example.account.modules.facturation.dto.request.ExternalRequest.EmailRequest;
 import com.example.account.modules.facturation.dto.response.DevisResponse;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.EnrichedDevisResponse;
 import com.example.account.modules.facturation.model.enums.StatutDevis;
@@ -20,6 +21,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/api/devis")
@@ -80,35 +82,22 @@ public class DevisController {
         return devisService.getAllDevis();
     }
 
-    @GetMapping("/client/{clientId}")
-    @Operation(summary = "Récupérer les devis d'un client")
-    public Flux<DevisResponse> getDevisByClient(@PathVariable UUID clientId) {
-        log.info("Requête de récupération des devis du client: {}", clientId);
-        return devisService.getDevisByClient(clientId);
-    }
+@PostMapping("/email")
+public Mono<ResponseEntity<Void>> sendQuotationEmail(@RequestBody EmailRequest request) {
+    log.info("Received request to send quotation email for ID: {}", request.getId());
+    
+    return devisService.sendDevisAsEmail(request)
+        .then(Mono.just(ResponseEntity.ok().<Void>build()))
+        .onErrorResume(e -> {
+            log.error("Failed to send email for quotation: " + request.getId(), e);
+            return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
+        });
+}
 
-    @GetMapping("/statut/{statut}")
-    @Operation(summary = "Récupérer les devis par statut")
-    public Flux<DevisResponse> getDevisByStatut(@PathVariable StatutDevis statut) {
-        log.info("Requête de récupération des devis par statut: {}", statut);
-        return devisService.getDevisByStatut(statut);
-    }
+   
 
-    @GetMapping("/expires")
-    @Operation(summary = "Récupérer les devis expirés")
-    public Flux<DevisResponse> getDevisExpires() {
-        log.info("Requête de récupération des devis expirés");
-        return devisService.getDevisExpires();
-    }
 
-    @GetMapping("/periode")
-    @Operation(summary = "Récupérer les devis par période")
-    public Flux<DevisResponse> getDevisByPeriode(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin) {
-        log.info("Requête de récupération des devis entre {} et {}", dateDebut, dateFin);
-        return devisService.getDevisByPeriode(dateDebut, dateFin);
-    }
+    
 
     @DeleteMapping("/{devisId}")
     @Operation(summary = "Supprimer un devis")
