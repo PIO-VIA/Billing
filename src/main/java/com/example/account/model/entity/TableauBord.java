@@ -1,5 +1,7 @@
 package com.example.account.model.entity;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.MapKeyColumn;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -43,13 +45,23 @@ public class TableauBord {
     @Column("type_tableau")
     private String typeTableau; // "EXECUTIF", "COMMERCIAL", "FINANCIER", "OPERATIONNEL"
 
-    @Column("layout_configuration")
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "tableau_bord_id")
+    private List<Widget> widgets;
+
+    @ElementCollection
+    @CollectionTable(name = "tableau_bord_layout", joinColumns = @JoinColumn(name = "tableau_bord_id"))
+    @MapKeyColumn(name = "layout_key")
+    @Column(name = "layout_value")
     private Map<String, String> layoutConfiguration;
 
-    @Column("filtres_globaux")
+    @ElementCollection
+    @CollectionTable(name = "tableau_bord_filtres", joinColumns = @JoinColumn(name = "tableau_bord_id"))
+    @MapKeyColumn(name = "filtre_key")
+    @Column(name = "filtre_value")
     private Map<String, String> filtresGlobaux;
 
-    @Column("periode_defaut")
+    @Column(name = "periode_defaut")
     private String periodeDefaut; // "MOIS_COURANT", "TRIMESTRE", "ANNEE", etc.
 
     @Column("auto_actualisation")
@@ -64,10 +76,12 @@ public class TableauBord {
     @Builder.Default
     private Boolean partagePublic = false;
 
-    @Column("utilisateurs_autorises")
+    @ElementCollection
+    @Column(name = "utilisateurs_autorises")
     private List<UUID> utilisateursAutorises;
 
-    @Column("roles_autorises")
+    @ElementCollection
+    @Column(name = "roles_autorises")
     private List<String> rolesAutorises;
 
     @Column("actif")
@@ -88,7 +102,8 @@ public class TableauBord {
     @Column("icone")
     private String icone;
 
-    @Column("tags")
+    @ElementCollection
+    @Column(name = "tags")
     private List<String> tags;
 
     @Column("derniere_consultation")
@@ -98,7 +113,8 @@ public class TableauBord {
     @Builder.Default
     private Long nombreConsultations = 0L;
 
-    @Column("favoris_utilisateurs")
+    @ElementCollection
+    @Column(name = "favoris_utilisateurs")
     private List<UUID> favorisUtilisateurs;
 
     @Column("export_automatique")
@@ -108,7 +124,8 @@ public class TableauBord {
     @Column("format_export")
     private String formatExport; // "PDF", "EXCEL", "EMAIL"
 
-    @Column("destinataires_export")
+    @ElementCollection
+    @Column(name = "destinataires_export")
     private List<String> destinatairesExport;
 
     @Column("frequence_export")
@@ -117,14 +134,21 @@ public class TableauBord {
     @Column("derniere_actualisation")
     private LocalDateTime derniereActualisation;
 
-    @Column("cache_donnees")
+    @ElementCollection
+    @CollectionTable(name = "tableau_bord_cache", joinColumns = @JoinColumn(name = "tableau_bord_id"))
+    @MapKeyColumn(name = "cache_key")
+    @Column(name = "cache_value")
     private Map<String, String> cacheDonnees;
 
     @Column("duree_cache_minutes")
     @Builder.Default
     private Integer dureeCacheMinutes = 30;
 
-    @Column("created_at")
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "tableau_bord_id")
+    private List<AlerteTableau> alertesConfigurees;
+
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column("updated_at")
