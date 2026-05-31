@@ -1,7 +1,7 @@
 package com.example.account.modules.facturation.service;
 
-import com.example.account.modules.facturation.model.entity.Facture;
-import com.example.account.modules.facturation.model.entity.Paiement;
+import com.example.account.modules.facturation.domain.model.Facture;
+import com.example.account.modules.facturation.domain.model.Paiement;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
