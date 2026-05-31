@@ -1,7 +1,7 @@
 package com.example.account.modules.tiers.repository;
 
 import com.example.account.modules.tiers.model.entity.Client;
-import com.example.account.modules.tiers.model.enums.TypeClient;
+import com.example.account.modules.tiers.domain.model.enums.TypeClient;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;

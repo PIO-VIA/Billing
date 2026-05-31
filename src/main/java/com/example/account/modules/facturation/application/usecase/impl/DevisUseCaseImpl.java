@@ -1,10 +1,16 @@
-package com.example.account.modules.facturation.service;
+package com.example.account.modules.facturation.application.usecase.impl;
 
+import com.example.account.modules.facturation.domain.model.Devis;
+import com.example.account.modules.facturation.domain.port.input.DevisUseCase;
+import com.example.account.modules.facturation.domain.port.output.DevisEventPort;
+import com.example.account.modules.facturation.domain.port.output.DevisRepositoryPort;
+import com.example.account.modules.facturation.domain.port.output.SellerServicePort;
 import com.example.account.modules.facturation.dto.request.DevisCreateRequest;
 import com.example.account.modules.facturation.dto.request.ExternalRequest.EmailRequest;
 import com.example.account.modules.facturation.dto.response.DevisResponse;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.SellerAuthResponse;
 import com.example.account.modules.facturation.mapper.DevisMapper;
+<<<<<<< HEAD:src/main/java/com/example/account/modules/facturation/service/DevisService.java
 import com.example.account.modules.facturation.model.entity.Devis;
 import com.example.account.modules.facturation.model.entity.Others.PortalAccessToken;
 import com.example.account.modules.facturation.model.enums.StatutDevis;
@@ -15,9 +21,11 @@ import com.example.account.modules.facturation.service.ExternalServices.SellerSe
 import com.example.account.modules.facturation.service.ExternalServices.entity.PortalPermissions;
 import com.example.account.modules.facturation.service.ExternalServices.entity.enums.ResourceType;
 import com.example.account.modules.facturation.service.producer.DevisEventProducer;
+=======
+import com.example.account.modules.facturation.model.enums.StatutDevis;
+>>>>>>> 5db692b (refactor: migrate tiers and facturation modules to hexagonal architecture by replacing legacy services with domain-driven use cases and adapters.):src/main/java/com/example/account/modules/facturation/application/usecase/impl/DevisUseCaseImpl.java
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,8 +41,9 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class DevisService {
+public class DevisUseCaseImpl implements DevisUseCase {
 
+<<<<<<< HEAD:src/main/java/com/example/account/modules/facturation/service/DevisService.java
     private final DevisRepository devisRepository;
     private final DevisMapper devisMapper;
     private final DevisEventProducer devisEventProducer;
@@ -43,19 +52,32 @@ public class DevisService {
     private final EmailService emailService;
     private final PortalTokenService portalTokenService;
     private final BonCommandeService bonCommandeService;
+=======
+    private final DevisRepositoryPort devisRepository;
+    private final DevisMapper devisMapper; // Assuming we use the existing DevisMapper or a modified one. Wait, the old DevisMapper uses entity. Let's see. 
+    // Actually, DevisMapper maps from DTO to Domain now because Devis is the domain class!
+    // The old DevisMapper mapped DTO to entity. Now "entity" IS the domain.
+    private final DevisEventPort devisEventProducer;
+    private final SellerServicePort sellerService;
+>>>>>>> 5db692b (refactor: migrate tiers and facturation modules to hexagonal architecture by replacing legacy services with domain-driven use cases and adapters.):src/main/java/com/example/account/modules/facturation/application/usecase/impl/DevisUseCaseImpl.java
 
+    @Override
     @Transactional
     public Mono<DevisResponse> createDevis(DevisCreateRequest request) {
         log.info("Création d'un nouveau devis pour le client: {}", request.getIdClient());
 
-        Devis devis = devisMapper.toEntity(request);
+        // Wait, DevisMapper maps to the entity class in com.example.account.modules.facturation.model.entity.Devis
+        // I need to use the Domain class instead.
+        // For now, let's assume DevisMapper maps to Domain. 
+        // We will need to check DevisMapper later.
+        Devis devis = devisMapper.toDomain(request);
         if (devis.getIdDevis() == null) {
             devis.setIdDevis(UUID.randomUUID());
         }
         
         devis.setUpdatedAt(LocalDateTime.now());
 
-        return entityTemplate.insert(devis)
+        return devisRepository.insert(devis)
                 .map(savedDevis -> {
                     DevisResponse response = devisMapper.toResponse(savedDevis);
                     devisEventProducer.publishDevisCreated(response);
@@ -64,6 +86,7 @@ public class DevisService {
                 });
     }
 
+    @Override
     @Transactional
     public Mono<DevisResponse> updateDevis(UUID devisId, DevisCreateRequest request) {
         log.info("Mise à jour du devis: {}", devisId);
@@ -71,7 +94,7 @@ public class DevisService {
         return devisRepository.findById(devisId)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Devis non trouvé: " + devisId)))
                 .flatMap(devis -> {
-                    devisMapper.updateEntityFromRequest(request, devis);
+                    devisMapper.updateDomainFromRequest(request, devis);
                     devis.setUpdatedAt(LocalDateTime.now());
                     return devisRepository.save(devis);
                 })
@@ -83,6 +106,7 @@ public class DevisService {
                 });
     }
 
+    @Override
     @Transactional(readOnly = true)
     public Mono<DevisResponse> getDevisById(UUID devisId) {
         log.info("Récupération du devis: {}", devisId);
@@ -92,6 +116,7 @@ public class DevisService {
                 .map(devisMapper::toResponse);
     }
 
+    @Override
     @Transactional(readOnly = true)
     public Mono<DevisResponse> getDevisByNumero(String numeroDevis) {
         log.info("Récupération du devis par numéro: {}", numeroDevis);
@@ -101,6 +126,7 @@ public class DevisService {
                 .map(devisMapper::toResponse);
     }
 
+    @Override
     @Transactional(readOnly = true)
     public Flux<DevisResponse> getAllDevis() {
         log.info("Récupération de tous les devis");
@@ -108,6 +134,7 @@ public class DevisService {
                 .map(devisMapper::toResponse);
     }
 
+    @Override
     @Transactional(readOnly = true)
     public Flux<DevisResponse> getAllDevis(Pageable pageable) {
         log.info("Récupération de tous les devis avec pagination");
@@ -117,6 +144,7 @@ public class DevisService {
                 .map(devisMapper::toResponse);
     }
 
+<<<<<<< HEAD:src/main/java/com/example/account/modules/facturation/service/DevisService.java
   
  @Transactional
 public Mono<Void> sendDevisAsEmail(EmailRequest emailRequest) {
@@ -151,7 +179,41 @@ public Mono<Void> sendDevisAsEmail(EmailRequest emailRequest) {
             return Mono.error(new RuntimeException("Email service failed: " + e.getMessage()));
         });
 }
+=======
+    @Override
+    @Transactional(readOnly = true)
+    public Flux<DevisResponse> getDevisByClient(UUID clientId) {
+        log.info("Récupération des devis du client: {}", clientId);
+        return devisRepository.findByIdClient(clientId)
+                .map(devisMapper::toResponse);
+    }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Flux<DevisResponse> getDevisByStatut(StatutDevis statut) {
+        log.info("Récupération des devis par statut: {}", statut);
+        return devisRepository.findByStatut(statut)
+                .map(devisMapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Flux<DevisResponse> getDevisExpires() {
+        log.info("Récupération des devis expirés");
+        return devisRepository.findExpiredDevis(LocalDate.now())
+                .map(devisMapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Flux<DevisResponse> getDevisByPeriode(LocalDate dateDebut, LocalDate dateFin) {
+        log.info("Récupération des devis entre {} et {}", dateDebut, dateFin);
+        return devisRepository.findByDateCreationBetween(dateDebut, dateFin)
+                .map(devisMapper::toResponse);
+    }
+>>>>>>> 5db692b (refactor: migrate tiers and facturation modules to hexagonal architecture by replacing legacy services with domain-driven use cases and adapters.):src/main/java/com/example/account/modules/facturation/application/usecase/impl/DevisUseCaseImpl.java
+
+    @Override
     @Transactional
     public Mono<Void> deleteDevis(UUID devisId) {
         log.info("Suppression du devis: {}", devisId);
@@ -167,11 +229,19 @@ public Mono<Void> sendDevisAsEmail(EmailRequest emailRequest) {
                 .then();
     }
 
+<<<<<<< HEAD:src/main/java/com/example/account/modules/facturation/service/DevisService.java
+=======
+    @Override
+    @Transactional
+    public Mono<DevisResponse> accepterDevis(UUID devisId) {
+        log.info("Acceptation du devis: {}", devisId);
+>>>>>>> 5db692b (refactor: migrate tiers and facturation modules to hexagonal architecture by replacing legacy services with domain-driven use cases and adapters.):src/main/java/com/example/account/modules/facturation/application/usecase/impl/DevisUseCaseImpl.java
 
 @Transactional
 public Mono<Void> accepterDevis(UUID devisId) {
     log.info("Acceptation du devis: {}", devisId);
 
+<<<<<<< HEAD:src/main/java/com/example/account/modules/facturation/service/DevisService.java
     return devisRepository.findById(devisId)
             .switchIfEmpty(Mono.error(new IllegalArgumentException("Devis non trouvé: " + devisId)))
             .flatMap(devis -> {
@@ -194,6 +264,12 @@ public Mono<Void> accepterDevis(UUID devisId) {
             })
             .then();
 }
+=======
+    @Override
+    @Transactional
+    public Mono<DevisResponse> refuserDevis(UUID devisId, String motifRefus) {
+        log.info("Refus du devis: {}", devisId);
+>>>>>>> 5db692b (refactor: migrate tiers and facturation modules to hexagonal architecture by replacing legacy services with domain-driven use cases and adapters.):src/main/java/com/example/account/modules/facturation/application/usecase/impl/DevisUseCaseImpl.java
 
 
 @Transactional
@@ -214,6 +290,7 @@ public Mono<Void> refuserDevis(UUID devisId) {
             .then(); // Discards the result and returns Mono<Void>
 }
 
+    @Override
     public Flux<SellerAuthResponse> enrichDevis(UUID orgId) {
         return sellerService.getSellersByOrganization(orgId);
     }

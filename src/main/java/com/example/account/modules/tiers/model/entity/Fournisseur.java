@@ -1,7 +1,7 @@
 package com.example.account.modules.tiers.model.entity;
 
 import com.example.account.modules.core.model.entity.OrganizationScoped;
-import com.example.account.modules.tiers.model.enums.TypeClient;
+import com.example.account.modules.tiers.domain.model.enums.TypeClient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
