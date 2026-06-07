@@ -4,7 +4,6 @@ import com.example.account.modules.facturation.dto.request.FactureCreateRequest;
 import com.example.account.modules.facturation.dto.request.FactureUpdateRequest;
 import com.example.account.modules.facturation.dto.response.FactureResponse;
 import com.example.account.modules.facturation.domain.model.Facture;
-import com.example.account.modules.tiers.model.entity.Client;
 import com.example.account.modules.tiers.mapper.ClientMapper;
 import com.example.account.modules.core.mapper.BaseMapper;
 import org.mapstruct.Mapper;
