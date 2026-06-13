@@ -20,8 +20,8 @@ import java.util.UUID;
 /**
  * REST controller for organization management adapted for WebFlux.
  */
-@RestController
-@RequestMapping("/api/organizations")
+// @RestController
+// @RequestMapping("/api/organizations")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Organization Management", description = "Endpoints for managing organizations and memberships")
