@@ -66,6 +66,7 @@ public class FactureResponse {
     
     private UUID referalClientId;
     private UUID organizationId;
+    private UUID agencyId;
     
     private BigDecimal remiseGlobalePourcentage;
     private BigDecimal remiseGlobaleMontant;

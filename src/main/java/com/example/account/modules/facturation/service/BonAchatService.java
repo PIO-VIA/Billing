@@ -37,6 +37,7 @@ public class BonAchatService {
         System.out.println(request);
         BonAchat bonAchat = bonAchatMapper.toEntity(request);
         bonAchat.setOrganizationId(request.getOrganizationId());
+        bonAchat.setAgencyId(request.getAgencyId());
         System.out.println(bonAchat);
         if (bonAchat.getIdBonAchat() == null) {
             bonAchat.setIdBonAchat(UUID.randomUUID());
@@ -92,5 +93,19 @@ public class BonAchatService {
                 })
                 .doOnSuccess(v -> log.info("Bon d'achat ID: {} supprimé", id));
     }
+<<<<<<< HEAD
 }
 >>>>>>> 81e70d5 (adjusted bon commande and bon d'achat)
+=======
+
+    @Transactional(readOnly = true)
+    public Flux<BonAchatResponse> getByOrganizationId(UUID organizationId) {
+        return bonAchatRepository.findByOrganizationId(organizationId).map(bonAchatMapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Flux<BonAchatResponse> getByAgencyId(UUID agencyId) {
+        return bonAchatRepository.findByAgencyId(agencyId).map(bonAchatMapper::toResponse);
+    }
+}
+>>>>>>> 3df9e16 (added agencyId to all entities)

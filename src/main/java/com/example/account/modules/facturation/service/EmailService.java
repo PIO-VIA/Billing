@@ -3,11 +3,6 @@ package com.example.account.modules.facturation.service;
 <<<<<<< HEAD
 import com.example.account.modules.facturation.dto.request.ExternalRequest.EmailRequest;
 import com.example.account.modules.facturation.model.entity.Devis;
-=======
-import com.example.account.modules.facturation.domain.model.Facture;
-import com.example.account.modules.facturation.domain.model.Paiement;
-import jakarta.mail.MessagingException;
->>>>>>> 5db692b (refactor: migrate tiers and facturation modules to hexagonal architecture by replacing legacy services with domain-driven use cases and adapters.)
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
