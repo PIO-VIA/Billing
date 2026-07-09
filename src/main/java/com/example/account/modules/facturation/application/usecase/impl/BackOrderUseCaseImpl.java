@@ -1,6 +1,10 @@
 package com.example.account.modules.facturation.application.usecase.impl;
 
+import com.example.account.modules.core.util.DocumentNumberGenerator;
+import com.example.account.modules.core.util.IdempotentCreateHelper;
+import com.example.account.modules.core.util.LineIdSupport;
 import com.example.account.modules.facturation.domain.model.BackOrder;
+import com.example.account.modules.facturation.domain.model.LigneBackOrder;
 import com.example.account.modules.facturation.domain.port.input.BackOrderUseCase;
 import com.example.account.modules.facturation.domain.port.output.BackOrderRepositoryPort;
 import com.example.account.modules.facturation.dto.request.BackOrderRequest;
@@ -33,11 +37,24 @@ public class BackOrderUseCaseImpl implements BackOrderUseCase {
         if (entity.getIdBackOrder() == null) {
             entity.setIdBackOrder(UUID.randomUUID());
         }
+        if (entity.getNumeroBackOrder() == null || entity.getNumeroBackOrder().isBlank()) {
+            entity.setNumeroBackOrder(DocumentNumberGenerator.generate("BO"));
+        }
+        LineIdSupport.assignMissingIds(
+                entity.getLignes(),
+                LigneBackOrder::getIdLigne,
+                LigneBackOrder::setIdLigne);
         if (entity.getStatut() == null) {
             entity.setStatut(StatutBackOrder.EN_ATTENTE);
         }
-        return backOrderRepository.insert(entity)
-                .map(backOrderMapper::toResponse);
+        return IdempotentCreateHelper.createOrReturnExisting(
+                entity.getIdBackOrder(),
+                backOrderRepository::findById,
+                existing -> {
+                    log.info("Back-order déjà existant (idempotence): {}", existing.getIdBackOrder());
+                    return backOrderMapper.toResponse(existing);
+                },
+                () -> backOrderRepository.insert(entity).map(backOrderMapper::toResponse));
     }
 
     @Override

@@ -14,7 +14,6 @@ import java.util.List;
         unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface DevisMapper {
 
-    @Mapping(target = "idDevis", ignore = true)
     Devis toDomain(DevisCreateRequest request);
 
     DevisResponse toResponse(Devis devis);

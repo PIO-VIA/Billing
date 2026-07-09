@@ -5,6 +5,10 @@ package com.example.account.modules.facturation.service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import com.example.account.modules.core.util.DocumentNumberGenerator;
+import com.example.account.modules.core.util.IdempotentCreateHelper;
+import com.example.account.modules.core.util.LineIdSupport;
+import com.example.account.modules.facturation.model.entity.LigneBonAchat;
 import com.example.account.modules.facturation.dto.request.BonAchatRequest;
 import com.example.account.modules.facturation.dto.response.BonAchatResponse;
 import com.example.account.modules.facturation.mapper.BonAchatMapper;
@@ -34,20 +38,35 @@ public class BonAchatService {
     @Transactional
     public Mono<BonAchatResponse> createBonAchat(BonAchatRequest request) {
         log.info("Création d'un nouveau bon d'achat, numéro: {}", request.getNumeroBonAchat());
-        System.out.println(request);
+
         BonAchat bonAchat = bonAchatMapper.toEntity(request);
         bonAchat.setOrganizationId(request.getOrganizationId());
         bonAchat.setAgencyId(request.getAgencyId());
-        System.out.println(bonAchat);
         if (bonAchat.getIdBonAchat() == null) {
             bonAchat.setIdBonAchat(UUID.randomUUID());
         }
-        
-        return entityTemplate.insert(bonAchat)
-                .map(savedBonAchat -> {
-                    log.debug("Bon d'achat sauvegardé avec succès: {}", savedBonAchat.getIdBonAchat());
-                    return bonAchatMapper.toResponse(savedBonAchat);
-                });
+        if (bonAchat.getNumeroBonAchat() == null || bonAchat.getNumeroBonAchat().isBlank()) {
+            bonAchat.setNumeroBonAchat(DocumentNumberGenerator.generate("BA"));
+        }
+        LineIdSupport.assignMissingIds(
+                bonAchat.getLignesBonAchat(),
+                LigneBonAchat::getIdLigne,
+                LigneBonAchat::setIdLigne);
+
+        UUID bonAchatId = bonAchat.getIdBonAchat();
+
+        return IdempotentCreateHelper.createOrReturnExisting(
+                bonAchatId,
+                bonAchatRepository::findById,
+                existing -> {
+                    log.info("Bon d'achat déjà existant (idempotence): {}", existing.getIdBonAchat());
+                    return bonAchatMapper.toResponse(existing);
+                },
+                () -> entityTemplate.insert(bonAchat)
+                        .map(savedBonAchat -> {
+                            log.debug("Bon d'achat sauvegardé avec succès: {}", savedBonAchat.getIdBonAchat());
+                            return bonAchatMapper.toResponse(savedBonAchat);
+                        }));
     }
 
     /**

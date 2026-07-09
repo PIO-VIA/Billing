@@ -1,0 +1,13 @@
+package com.example.account.modules.core.exception;
+
+public enum ErrorCode {
+    VALIDATION_ERROR,
+    CREDIT_LIMIT_EXCEEDED,
+    INSUFFICIENT_STOCK,
+    CLIENT_INACTIVE,
+    DOCUMENT_ALREADY_VALIDATED,
+    RESOURCE_NOT_FOUND,
+    DUPLICATE_RESOURCE,
+    ORGANIZATION_HEADER_REQUIRED,
+    INTERNAL_ERROR
+}

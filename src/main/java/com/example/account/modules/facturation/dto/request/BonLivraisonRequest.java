@@ -18,6 +18,8 @@ import java.util.UUID;
 @Builder
 public class BonLivraisonRequest {
 
+    private UUID idBonLivraison;
+
     // Simple identifier for client-facing usage
     private String numeroBonLivraison;
 

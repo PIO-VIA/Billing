@@ -1,0 +1,26 @@
+\chapter{Conclusion et Perspectives}
+
+\section{Rappel de la Problématique}
+Le projet de refonte du service de facturation (\textit{Billing Service}) de l'ERP ComOps a été initié pour résoudre un problème d'intégrité et de cohérence des données. Dans l'architecture initiale, la duplication locale des données relatives aux tiers (clients et fournisseurs) au sein du module de facturation entraînait de fréquentes désynchronisations par rapport au noyau central (\textit{Kernel}), qui constitue la source unique de vérité. Ces écarts de données perturbaient l'émission des documents fiscaux et imposaient des réconciliations manuelles régulières, tout en alourdissant le code source et en violant le principe de responsabilité unique.
+
+\section{Démarche et Résultats}
+Pour répondre à cette problématique, nous avons adopté une démarche structurée autour de l'architecture hexagonale et du paradigme réactif. La persistance locale des tiers a été entièrement supprimée et remplacée par des adaptateurs secondaires effectuant des requêtes réseau non bloquantes à l'aide de Spring WebFlux et de \texttt{WebClient} vers les API du noyau central. L'isolation multi-tenant a été préservée grâce à la propagation dynamique de l'identifiant de l'organisation dans le contexte réactif de Reactor.
+
+Les résultats obtenus démontrent la réussite de cette refonte technique :
+\begin{itemize}
+    \item La centralisation complète des données de tiers élimine tout risque de désynchronisation.
+    \item Le modèle de domaine est isolé des changements structurels des API externes grâce à des mappeurs et des objets de transfert de données dédiés.
+    \item Une suite de 120 tests automatisés unitaires et d'intégration garantit l'absence de régression fonctionnelle sur les calculs de taxes, l'envoi de courriers électroniques, la publication Kafka et la facturation.
+    \item Le niveau de qualité logicielle est validé par une couverture globale de code de 89,5\% (et 94,5\% pour le domaine métier).
+\end{itemize}
+
+\section{Limites de la Solution}
+Bien que cette intégration dynamique résolve les problèmes d'intégrité, elle introduit de nouvelles limites techniques. La principale limite réside dans la dépendance directe du service de facturation vis-à-vis de la disponibilité réseau et applicative du noyau central. Une indisponibilité temporaire du Kernel bloque la création et la validation des devis et des factures, ce qui peut paralyser l'activité commerciale des utilisateurs. De plus, la multiplication des appels réseau inter-services introduit une latence supplémentaire par rapport aux requêtes SQL locales initiales.
+
+\section{Perspectives d'Évolution}
+Afin de pallier ces limitations, plusieurs perspectives d'évolution sont envisagées :
+\begin{enumerate}
+    \item \textbf{Mise en cache locale réactive} : Implémenter un cache en lecture (par exemple avec Redis ou un cache en mémoire réactif tel que Caffeine) avec une durée de vie limitée (TTL) pour stocker temporairement les fiches clients et fournisseurs. Cela réduirait le nombre d'appels réseau et offrirait un fonctionnement dégradé en cas de coupure brève du noyau central.
+    \item \textbf{Disjoncteurs et Résilience} : Intégrer la bibliothèque Resilience4j pour mettre en place des disjoncteurs (\textit{Circuit Breakers}) et des mécanismes de repli (\textit{Fallbacks}) sur les adaptateurs de sortie interrogeant le Kernel.
+    \item \textbf{Tests de résilience sous charge} : Réaliser des campagnes de tests de performance (avec des outils comme Gatling) pour évaluer le comportement de la boucle d'événements réactive sous de forts taux de latence réseau et valider la résilience du système.
+\end{enumerate}

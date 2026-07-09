@@ -18,6 +18,8 @@ import java.util.UUID;
 @Builder
 public class LigneDevisCreateRequest {
 
+    private UUID idLigne;
+
     @NotNull(message = "La quantité est obligatoire")
     @Positive(message = "La quantité doit être positive")
     @JsonAlias({"qty", "quantity"})

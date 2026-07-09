@@ -22,7 +22,8 @@ import org.springframework.data.relational.core.mapping.Column;
 @Builder
 public class BonAchatRequest {
 
-    @NotBlank(message = "Le numéro de bon d'achat est obligatoire")
+    private UUID idBonAchat;
+
     private String numeroBonAchat;
 
     // --- Informations Fournisseur ---

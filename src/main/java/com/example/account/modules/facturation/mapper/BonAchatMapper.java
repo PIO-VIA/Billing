@@ -19,7 +19,6 @@ public interface BonAchatMapper {
     /**
      * Map Request (English DTO) -> Entity (French/DB)
      */
-    @Mapping(target = "idBonAchat", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "idFournisseur", source = "supplierId")

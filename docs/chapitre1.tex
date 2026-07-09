@@ -1,0 +1,47 @@
+\chapter{Généralités et État de l'Art}
+
+\section{Généralités sur les Principes de Conception}
+
+La conception du module de facturation (\textit{Billing Service}) de l'ERP ComOps repose sur des patrons d'architecture logicielle éprouvés, choisis pour garantir la modularité, la résilience et la scalabilité du système d'information.
+
+\subsection{Architecture Hexagonale (Ports et Adaptateurs)}
+Le choix de l'architecture hexagonale découle du besoin d'isoler le cœur de métier (les règles fiscales, le calcul des taxes, et les transitions d'états de facturation) des contraintes techniques externes (la persistance en base de données ou les protocoles de communication réseau). 
+
+Dans ce modèle de conception :
+\begin{itemize}
+    \item \textbf{Le Noyau de Domaine} contient les règles fonctionnelles pures (les entités \texttt{Facture}, \texttt{Devis}, et la logique de calcul). Il est indépendant de tout framework technique.
+    \item \textbf{Les Ports} représentent les interfaces d'entrée et de sortie définies par le domaine. Ils agissent comme des contrats de communication abstraits.
+    \item \textbf{Les Adaptateurs} implémentent ou utilisent ces ports. Un adaptateur entrant (ex. API REST) convertit les requêtes utilisateurs en appels de domaine. Un adaptateur sortant (ex. client HTTP ou persistance) traduit les demandes du domaine en opérations techniques spécifiques.
+\end{itemize}
+Ce découplage garantit que l'évolution des infrastructures externes n'impacte pas le code métier du module de facturation.
+
+\subsection{Modèle d'Intégration Asynchrone et Réactivité}
+Dans un système d'information d'entreprise distribué, la réactivité du système est un critère de conception majeur. Les architectures de type \textit{Thread-per-request} posent des limites de scalabilité lorsque de multiples appels réseau inter-services sont nécessaires. 
+
+Pour y répondre, le module Billing adopte le modèle d'exécution réactif non bloquant :
+\begin{itemize}
+    \item Les opérations d'entrées-sorties (I/O) sont exécutées de manière asynchrone sur une boucle d'événements (\textit{Event Loop}).
+    \item La gestion de la contre-pression (\textit{Backpressure}) permet au système de réguler les flux de données échangés entre le service de facturation et le noyau central de l'ERP, évitant ainsi la saturation de la mémoire lors de la génération de rapports de masse.
+\end{itemize}
+
+\subsection{Persistance Non Bloquante}
+Le maintien d'un pipeline d'exécution entièrement non bloquant requiert que la couche d'accès aux données relationnelles s'affranchisse des pilotes de connexion bloquants traditionnels. La spécification R2DBC (\textit{Reactive Relational Database Connectivity}) est intégrée comme choix de conception pour assurer une communication réactive avec la base de données PostgreSQL. Cela évite le blocage des threads de la boucle d'événements lors des phases d'écriture des écritures comptables et des règlements.
+
+\subsection{Conception Multi-Tenant (Multi-Locataire)}
+L'ERP ComOps étant proposé sous forme de logiciel en tant que service (SaaS), le Billing Service est conçu pour isoler les données financières de plusieurs organisations de manière étanche :
+\begin{itemize}
+    \item \textbf{Isolation logique} : Les tables relationnelles partagent le même schéma physique mais utilisent un discriminant logique (\texttt{id\_organization}) présent sur toutes les entités transactionnelles.
+    \item \textbf{Propagation du contexte} : Dans un écosystème asynchrone, la propagation de l'identifiant multi-tenant s'effectue via le contexte réactif du flux d'exécution, permettant aux adaptateurs réseau d'injecter dynamiquement cet identifiant dans les requêtes inter-services sans compromettre la sécurité.
+\end{itemize}
+
+\section{État de l'Art et Fondements Scientifiques}
+
+Dans le domaine du génie logiciel et des architectures distribuées d'entreprise, les problématiques de cohérence de données et de découplage de domaines font l'objet de nombreuses recherches scientifiques.
+
+Les analyses systématiques de Di Francesco et al. \cite{difrancesco2019architecting} ainsi que les travaux de Alshuqayran et al. \cite{alshuqayran2016systematic} démontrent que le partage direct d'une base de données physique entre différents modules fonctionnels (monolithe partagé) engendre un fort couplage structurel et nuit à l'autonomie opérationnelle. Ces chercheurs préconisent l'isolation logique et l'échange exclusif par API pour maintenir l'indépendance de déploiement et de conception des modules métiers.
+
+Concernant les gains de performance du paradigme réactif, l'étude exhaustive de Bainomugisha et al. \cite{bainomugisha2013survey} formalise les concepts de flux de données asynchrones. De plus, Georgescu et al. \cite{georgescu2018performance} quantifient l'impact de ces architectures, prouvant que le passage d'une gestion de requêtes synchrone à une boucle d'événements asynchrone réduit l'empreinte mémoire de plus de 50\% sous haute concurrence, une contrainte cruciale pour le module Billing lors des pics de facturation mensuelle.
+
+Pour l'isolation multi-tenant, Bezemer et al. \cite{bezemer2010multi} comparent les stratégies de partitionnement. Le choix de la table partagée avec discriminant logique, bien qu'exigeant en termes de filtrage applicatif, s'avère le plus performant et le moins coûteux en infrastructures physiques par rapport aux bases de données dédiées.
+
+Enfin, les théories de structuration de systèmes complexes par Hasselbring \cite{hasselbring2018software} confirment l'efficacité de l'architecture hexagonale pour régir les relations entre contextes délimités (\textit{Bounded Contexts}), protégeant le modèle de facturation contre les instabilités des modèles externes de l'ERP.

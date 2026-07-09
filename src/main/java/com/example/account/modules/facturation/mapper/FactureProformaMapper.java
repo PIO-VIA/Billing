@@ -16,7 +16,6 @@ import java.util.List;
 )
 public interface FactureProformaMapper {
 
-    @Mapping(target = "idFactureProforma", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "lignesFactureProforma", source = "lignes")

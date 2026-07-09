@@ -1,5 +1,9 @@
 package com.example.account.modules.facturation.application.usecase.impl;
 
+import com.example.account.modules.core.util.DocumentNumberGenerator;
+import com.example.account.modules.core.util.IdempotentCreateHelper;
+import com.example.account.modules.core.util.LineIdSupport;
+import com.example.account.modules.facturation.domain.model.LigneNoteCredit;
 import com.example.account.modules.facturation.domain.model.NoteCredit;
 import com.example.account.modules.facturation.domain.port.input.NoteCreditUseCase;
 import com.example.account.modules.facturation.domain.port.output.NoteCreditRepositoryPort;
@@ -31,8 +35,22 @@ public class NoteCreditUseCaseImpl implements NoteCreditUseCase {
         if (entity.getIdNoteCredit() == null) {
             entity.setIdNoteCredit(UUID.randomUUID());
         }
-        return noteCreditRepository.insert(entity)
-                .map(noteCreditMapper::toResponse);
+        if (entity.getNumeroNoteCredit() == null || entity.getNumeroNoteCredit().isBlank()) {
+            entity.setNumeroNoteCredit(DocumentNumberGenerator.generate("NC"));
+        }
+        LineIdSupport.assignMissingIds(
+                entity.getLignesNoteCredit(),
+                LigneNoteCredit::getIdLigne,
+                LigneNoteCredit::setIdLigne);
+
+        return IdempotentCreateHelper.createOrReturnExisting(
+                entity.getIdNoteCredit(),
+                noteCreditRepository::findById,
+                existing -> {
+                    log.info("Note de crédit déjà existante (idempotence): {}", existing.getIdNoteCredit());
+                    return noteCreditMapper.toResponse(existing);
+                },
+                () -> noteCreditRepository.insert(entity).map(noteCreditMapper::toResponse));
     }
 
     @Override

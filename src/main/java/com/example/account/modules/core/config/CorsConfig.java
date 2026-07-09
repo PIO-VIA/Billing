@@ -18,11 +18,19 @@ public class CorsConfig {
         // Allow your specific frontend origin
         config.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        config.setAllowedHeaders(Arrays.asList("*"));
+        config.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "X-Organization-ID",
+                "*"
+        ));
         config.setAllowCredentials(true);
-        
-        // Essential: Allow the browser to see these headers if you use them
-        config.setExposedHeaders(Arrays.asList("Authorization", "Content-Disposition"));
+
+        config.setExposedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Disposition",
+                "X-Organization-ID"
+        ));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         // Applies to all routes including your WebSockets and API

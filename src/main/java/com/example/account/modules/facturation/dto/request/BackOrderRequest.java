@@ -18,6 +18,8 @@ import java.util.UUID;
 @Builder
 public class BackOrderRequest {
 
+    private UUID idBackOrder;
+
     private String numeroBackOrder;
 
     @NotNull(message = "L'ID du bon d'achat est obligatoire")

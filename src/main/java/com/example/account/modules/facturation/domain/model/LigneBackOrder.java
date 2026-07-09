@@ -13,6 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class LigneBackOrder {
+    private UUID idLigne;
     private UUID idProduit;
     private String referenceProduit;
     private String nomProduit;

@@ -21,6 +21,8 @@ import java.util.UUID;
 @Builder
 public class ProformaInvoiceRequest {
 
+    private UUID idFactureProforma;
+
     private String numeroProformaInvoice;
 
     @NotNull(message = "L'ID client est obligatoire")

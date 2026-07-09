@@ -17,7 +17,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 @Builder
 public class LigneBonLivraisonRequest {
 
- 
+    private UUID idLigne;
 
     @NotNull(message = "L'ID produit est obligatoire")
     @JsonAlias({"productId"})

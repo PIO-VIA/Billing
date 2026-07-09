@@ -38,8 +38,9 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.ObjectInputFilter.Status;
-import java.security.Permission;
+import com.example.account.modules.core.util.DocumentNumberGenerator;
+import com.example.account.modules.core.util.IdempotentCreateHelper;
+import com.example.account.modules.core.util.LineIdSupport;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -75,24 +76,35 @@ public class DevisUseCaseImpl implements DevisUseCase {
     public Mono<DevisResponse> createDevis(DevisCreateRequest request) {
         log.info("Création d'un nouveau devis pour le client: {}", request.getIdClient());
 
-        // Wait, DevisMapper maps to the entity class in com.example.account.modules.facturation.model.entity.Devis
-        // I need to use the Domain class instead.
-        // For now, let's assume DevisMapper maps to Domain. 
-        // We will need to check DevisMapper later.
         Devis devis = devisMapper.toDomain(request);
         if (devis.getIdDevis() == null) {
             devis.setIdDevis(UUID.randomUUID());
         }
-        
-        devis.setUpdatedAt(LocalDateTime.now());
+        if (devis.getNumeroDevis() == null || devis.getNumeroDevis().isBlank()) {
+            devis.setNumeroDevis(DocumentNumberGenerator.generate("DEV"));
+        }
+        LineIdSupport.assignMissingIds(
+                devis.getLignesDevis(),
+                com.example.account.modules.facturation.domain.model.LigneDevis::getIdLigne,
+                com.example.account.modules.facturation.domain.model.LigneDevis::setIdLigne);
 
-        return devisRepository.insert(devis)
-                .map(savedDevis -> {
-                    DevisResponse response = devisMapper.toResponse(savedDevis);
-                    devisEventProducer.publishDevisCreated(response);
-                    log.info("Devis créé avec succès: {}", savedDevis.getNumeroDevis());
-                    return response;
-                });
+        devis.setUpdatedAt(LocalDateTime.now());
+        UUID devisId = devis.getIdDevis();
+
+        return IdempotentCreateHelper.createOrReturnExisting(
+                devisId,
+                devisRepository::findById,
+                existing -> {
+                    log.info("Devis déjà existant (idempotence): {}", existing.getIdDevis());
+                    return devisMapper.toResponse(existing);
+                },
+                () -> devisRepository.insert(devis)
+                        .map(savedDevis -> {
+                            DevisResponse response = devisMapper.toResponse(savedDevis);
+                            devisEventProducer.publishDevisCreated(response);
+                            log.info("Devis créé avec succès: {}", savedDevis.getNumeroDevis());
+                            return response;
+                        }));
     }
 
     @Override

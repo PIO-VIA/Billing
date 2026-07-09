@@ -16,7 +16,8 @@ import java.util.UUID;
 @Builder
 public class BonCommandeCreateRequest {
 
-    @NotBlank(message = "Le numéro de commande est obligatoire")
+    private UUID idBonCommande;
+
     private String numeroCommande;
 
     // --- Client / Billing Info ---

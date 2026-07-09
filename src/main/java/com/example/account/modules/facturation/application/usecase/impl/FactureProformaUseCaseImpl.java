@@ -1,6 +1,10 @@
 package com.example.account.modules.facturation.application.usecase.impl;
 
+import com.example.account.modules.core.util.DocumentNumberGenerator;
+import com.example.account.modules.core.util.IdempotentCreateHelper;
+import com.example.account.modules.core.util.LineIdSupport;
 import com.example.account.modules.facturation.domain.model.FactureProforma;
+import com.example.account.modules.facturation.domain.model.LigneFactureProforma;
 import com.example.account.modules.facturation.domain.port.input.FactureProformaUseCase;
 import com.example.account.modules.facturation.domain.port.output.FactureProformaRepositoryPort;
 import com.example.account.modules.facturation.dto.request.ProformaInvoiceRequest;
@@ -35,18 +39,36 @@ public class FactureProformaUseCaseImpl implements FactureProformaUseCase {
         if (proforma.getIdFactureProforma() == null) {
             proforma.setIdFactureProforma(UUID.randomUUID());
         }
+        if (proforma.getNumeroProformaInvoice() == null || proforma.getNumeroProformaInvoice().isBlank()) {
+            proforma.setNumeroProformaInvoice(DocumentNumberGenerator.generate("PRO"));
+        }
+        LineIdSupport.assignMissingIds(
+                proforma.getLignesFactureProforma(),
+                LigneFactureProforma::getIdLigne,
+                LigneFactureProforma::setIdLigne);
         proforma.setDateCreation(LocalDateTime.now());
 
         if (proforma.getStatut() == null) {
             proforma.setStatut(StatutProforma.BROUILLON);
         }
 
-        return ReactiveOrganizationContext.getOrganizationId()
-                .flatMap(orgId -> {
-                    proforma.setOrganizationId(orgId);
-                    return proformaRepository.insert(proforma);
-                })
-                .map(proformaMapper::toResponse);
+        UUID proformaId = proforma.getIdFactureProforma();
+
+        return IdempotentCreateHelper.createOrReturnExisting(
+                proformaId,
+                proformaRepository::findById,
+                existing -> {
+                    log.info("Facture proforma déjà existante (idempotence): {}", existing.getIdFactureProforma());
+                    return proformaMapper.toResponse(existing);
+                },
+                () -> ReactiveOrganizationContext.getOrganizationId()
+                        .flatMap(orgId -> {
+                            if (proforma.getOrganizationId() == null) {
+                                proforma.setOrganizationId(orgId);
+                            }
+                            return proformaRepository.insert(proforma);
+                        })
+                        .map(proformaMapper::toResponse));
     }
 
     @Override

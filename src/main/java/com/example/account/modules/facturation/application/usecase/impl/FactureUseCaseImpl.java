@@ -1,6 +1,12 @@
 package com.example.account.modules.facturation.application.usecase.impl;
 
 import com.example.account.modules.facturation.domain.model.Facture;
+import com.example.account.modules.core.util.DocumentNumberGenerator;
+import com.example.account.modules.core.util.IdempotentCreateHelper;
+import com.example.account.modules.core.util.LineIdSupport;
+import com.example.account.modules.core.util.DocumentNumberGenerator;
+import com.example.account.modules.core.util.IdempotentCreateHelper;
+import com.example.account.modules.core.util.LineIdSupport;
 import com.example.account.modules.facturation.domain.model.LigneFacture;
 import com.example.account.modules.facturation.domain.port.input.FactureUseCase;
 import com.example.account.modules.facturation.domain.port.output.AccountingServicePort;
@@ -61,6 +67,13 @@ public class FactureUseCaseImpl implements FactureUseCase {
         if (facture.getIdFacture() == null) {
             facture.setIdFacture(UUID.randomUUID());
         }
+        if (facture.getNumeroFacture() == null || facture.getNumeroFacture().isBlank()) {
+            facture.setNumeroFacture(DocumentNumberGenerator.generate("FAC"));
+        }
+        LineIdSupport.assignMissingIds(
+                facture.getLignesFacture(),
+                LigneFacture::getIdLigne,
+                LigneFacture::setIdLigne);
 
 <<<<<<< HEAD
 =======
@@ -90,6 +103,7 @@ public class FactureUseCaseImpl implements FactureUseCase {
             facture.setMontantRestant(facture.getMontantTotal());
         }
 
+<<<<<<< HEAD
         //delete the reservations made by the creator;
         productExternalService.releaseProductsForSeller(facture.getCreatedBy());
         //save facture
@@ -100,6 +114,26 @@ public class FactureUseCaseImpl implements FactureUseCase {
                     factureEventPort.publishFactureCreated(response);
                     log.info("Facture créée avec succès: {}", savedFacture.getNumeroFacture());
                     return response;
+=======
+        UUID factureId = facture.getIdFacture();
+
+        return IdempotentCreateHelper.createOrReturnExisting(
+                factureId,
+                factureRepository::findById,
+                existing -> {
+                    log.info("Facture déjà existante (idempotence): {}", existing.getIdFacture());
+                    return factureMapper.toResponse(existing);
+                },
+                () -> {
+                    productExternalService.releaseProductsForSeller(facture.getCreatedBy());
+                    return factureRepository.insert(facture)
+                            .map(savedFacture -> {
+                                FactureResponse response = factureMapper.toResponse(savedFacture);
+                                factureEventPort.publishFactureCreated(response);
+                                log.info("Facture créée avec succès: {}", savedFacture.getNumeroFacture());
+                                return response;
+                            });
+>>>>>>> 44ce329 (feat: enhance error handling and add organization ID validation in filters)
                 });
     }
 

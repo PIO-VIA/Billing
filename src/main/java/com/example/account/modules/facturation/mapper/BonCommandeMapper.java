@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 )
 public interface BonCommandeMapper {
 
-    @Mapping(target = "idBonCommande", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(source = "agencyId", target = "idAgency")

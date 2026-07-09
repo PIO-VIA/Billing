@@ -17,7 +17,6 @@ import java.util.List;
 )
 public interface BonLivraisonMapper {
 
-    @Mapping(target = "idBonLivraison", ignore = true)
     @Mapping(target = "numeroLivraison", source = "numeroBonLivraison")
     @Mapping(target = "adresseClient", source = "adresseClient")
     @Mapping(target = "emailClient", source = "emailClient")

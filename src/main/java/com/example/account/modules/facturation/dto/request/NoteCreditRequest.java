@@ -19,6 +19,8 @@ import java.util.UUID;
 @Builder
 public class NoteCreditRequest {
     // identifiers
+    private UUID idNoteCredit;
+
     private String numeroNoteCredit;
 
     // client info

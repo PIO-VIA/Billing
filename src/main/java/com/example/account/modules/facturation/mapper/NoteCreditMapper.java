@@ -19,7 +19,6 @@ import java.util.List;
 public interface NoteCreditMapper extends BaseMapper<NoteCredit, NoteCreditRequest, NoteCreditRequest, NoteCreditResponse> {
 
     @Override
-    @Mapping(target = "idNoteCredit", ignore = true)
     @Mapping(target = "lignesNoteCredit", source = "lignesNoteCredit")
     NoteCredit toEntity(NoteCreditRequest createRequest);
 

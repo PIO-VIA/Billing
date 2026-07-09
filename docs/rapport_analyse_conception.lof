@@ -1,0 +1,14 @@
+\babel@toc {french}{}\relax 
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Diagramme de Contexte du Billing Service .}}{14}{figure.2.1}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Diagramme de Packages de l'Architecture Hexagonale .}}{14}{figure.2.2}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Diagramme de Classes d'Analyse du Domaine Métier .}}{15}{figure.2.3}%
+\contentsline {figure}{\numberline {2.4}{\ignorespaces Diagramme de Cas d'Utilisation du Module Billing .}}{16}{figure.2.4}%
+\contentsline {figure}{\numberline {2.5}{\ignorespaces Diagramme d'État-Transition UML du Cycle de Vie d'une Facture .}}{17}{figure.2.5}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Diagramme de Classes UML du Schéma de Base de Données .}}{19}{figure.3.1}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Script SQL de suppression des tables locales obsolètes .}}{19}{figure.3.2}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Diagramme de Séquence UML du Processus de Validation d'une Facture .}}{20}{figure.3.3}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Diagramme de Séquence UML de la Synchronisation Comptable avec le Kernel .}}{21}{figure.3.4}%
+\addvspace {10\p@ }

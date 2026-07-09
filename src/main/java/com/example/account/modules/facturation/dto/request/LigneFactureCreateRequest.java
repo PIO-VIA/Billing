@@ -16,6 +16,8 @@ import java.util.UUID;
 @Builder
 public class LigneFactureCreateRequest {
 
+    private UUID idLigne;
+
     @NotNull(message = "La quantité est obligatoire")
     @Positive(message = "La quantité doit être positive")
     private Integer quantite;

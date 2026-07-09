@@ -17,7 +17,6 @@ import java.util.List;
 public interface BackOrderMapper extends BaseMapper<BackOrder, BackOrderRequest, BackOrderRequest, BackOrderResponse> {
 
     @Override
-    @Mapping(target = "idBackOrder", ignore = true)
     BackOrder toEntity(BackOrderRequest request);
 
     @Override

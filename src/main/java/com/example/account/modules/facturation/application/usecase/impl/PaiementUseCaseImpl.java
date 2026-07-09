@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import com.example.account.modules.core.util.IdempotentCreateHelper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -42,25 +43,35 @@ public class PaiementUseCaseImpl implements PaiementUseCase {
             paiement.setIdPaiement(UUID.randomUUID());
         }
 
-        return paiementRepositoryPort.save(paiement)
-                .flatMap(savedPaiement -> {
-                    Mono<Void> updateFactureMono = Mono.empty();
-                    if (request.getIdFacture() != null) {
-                        updateFactureMono = factureService.enregistrerPaiement(request.getIdFacture(), request.getMontant())
-                                .then()
-                                .onErrorResume(e -> {
-                                    log.error("Erreur lors de la mise à jour de la facture: {}", e.getMessage());
-                                    return Mono.empty();
-                                });
-                    }
-                    return updateFactureMono.then(Mono.just(savedPaiement));
-                })
-                .map(savedPaiement -> {
-                    PaiementResponse response = paiementMapper.toResponse(savedPaiement);
-                    paiementEventPort.publishPaiementCreated(response);
-                    log.info("Paiement créé avec succès: {}", savedPaiement.getIdPaiement());
-                    return response;
-                });
+        UUID paiementId = paiement.getIdPaiement();
+
+        return IdempotentCreateHelper.createOrReturnExisting(
+                paiementId,
+                paiementRepositoryPort::findById,
+                existing -> {
+                    log.info("Paiement déjà existant (idempotence): {}", existing.getIdPaiement());
+                    return paiementMapper.toResponse(existing);
+                },
+                () -> paiementRepositoryPort.save(paiement)
+                        .flatMap(savedPaiement -> {
+                            Mono<Void> updateFactureMono = Mono.empty();
+                            if (request.getIdFacture() != null) {
+                                updateFactureMono = factureService.enregistrerPaiement(
+                                                request.getIdFacture(), request.getMontant())
+                                        .then()
+                                        .onErrorResume(e -> {
+                                            log.error("Erreur lors de la mise à jour de la facture: {}", e.getMessage());
+                                            return Mono.empty();
+                                        });
+                            }
+                            return updateFactureMono.then(Mono.just(savedPaiement));
+                        })
+                        .map(savedPaiement -> {
+                            PaiementResponse response = paiementMapper.toResponse(savedPaiement);
+                            paiementEventPort.publishPaiementCreated(response);
+                            log.info("Paiement créé avec succès: {}", savedPaiement.getIdPaiement());
+                            return response;
+                        }));
     }
 
     @Override

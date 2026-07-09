@@ -14,6 +14,8 @@ import java.util.UUID;
 @Builder
 public class LigneBonAchatRequest {
 
+    private UUID idLigne;
+
     private UUID productId;
     private String productCode;
     private String productName;

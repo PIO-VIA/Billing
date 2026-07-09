@@ -25,8 +25,6 @@ public interface FactureMapper extends BaseMapper<Facture, FactureCreateRequest,
    
 
    
-    @Mapping(target = "idFacture", ignore = true)
-   
     Facture toEntity(FactureCreateRequest createRequest);
 
     @Mapping(target = "idFacture", ignore = true)

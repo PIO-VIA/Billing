@@ -3,6 +3,10 @@ package com.example.account.modules.facturation.service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import com.example.account.modules.core.util.DocumentNumberGenerator;
+import com.example.account.modules.core.util.IdempotentCreateHelper;
+import com.example.account.modules.core.util.LineIdSupport;
+import com.example.account.modules.facturation.model.entity.Lines.LineBonCommande;
 import com.example.account.modules.facturation.dto.request.BonCommandeCreateRequest;
 import com.example.account.modules.facturation.dto.request.BonCommandeUpdateRequest;
 import com.example.account.modules.facturation.dto.response.BonCommandeResponse;
@@ -44,14 +48,30 @@ public class BonCommandeService {
         if (bonCommande.getIdBonCommande() == null) {
             bonCommande.setIdBonCommande(UUID.randomUUID());
         }
+        if (bonCommande.getNumeroCommande() == null || bonCommande.getNumeroCommande().isBlank()) {
+            bonCommande.setNumeroCommande(DocumentNumberGenerator.generate("BC"));
+        }
+        LineIdSupport.assignMissingIds(
+                bonCommande.getLines(),
+                LineBonCommande::getIdLigne,
+                LineBonCommande::setIdLigne);
 
-        return entityTemplate.insert(bonCommande)
-                .map(savedBonCommande -> {
-                    BonCommandeResponse response = bonCommandeMapper.toResponse(savedBonCommande);
-                    bonCommandeEventProducer.publishBonCommandeCreated(response);
-                    log.info("Bon de commande créé avec succès: {}", savedBonCommande.getIdBonCommande());
-                    return response;
-                });
+        UUID bonCommandeId = bonCommande.getIdBonCommande();
+
+        return IdempotentCreateHelper.createOrReturnExisting(
+                bonCommandeId,
+                bonCommandeRepository::findById,
+                existing -> {
+                    log.info("Bon de commande déjà existant (idempotence): {}", existing.getIdBonCommande());
+                    return bonCommandeMapper.toResponse(existing);
+                },
+                () -> entityTemplate.insert(bonCommande)
+                        .map(savedBonCommande -> {
+                            BonCommandeResponse response = bonCommandeMapper.toResponse(savedBonCommande);
+                            bonCommandeEventProducer.publishBonCommandeCreated(response);
+                            log.info("Bon de commande créé avec succès: {}", savedBonCommande.getIdBonCommande());
+                            return response;
+                        }));
     }
 
     @Transactional

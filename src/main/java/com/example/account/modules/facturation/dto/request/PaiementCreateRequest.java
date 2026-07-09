@@ -18,6 +18,8 @@ import java.util.UUID;
 @Builder
 public class PaiementCreateRequest {
 
+    private UUID idPaiement;
+
     @NotNull(message = "L'ID client est obligatoire")
     private UUID idClient;
 

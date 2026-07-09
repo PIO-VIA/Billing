@@ -1,0 +1,43 @@
+\babel@toc {french}{}\relax 
+\contentsline {chapter}{Abstract}{1}{chapter*.1}%
+\contentsline {chapter}{Résumé}{2}{chapter*.2}%
+\contentsline {chapter}{Sigles et Abréviations}{3}{chapter*.3}%
+\contentsline {chapter}{Glossaire}{4}{chapter*.4}%
+\contentsline {chapter}{Introduction}{9}{chapter*.5}%
+\contentsline {section}{\numberline {0.1}Méthodologie de Résolution}{10}{section.0.1}%
+\contentsline {section}{\numberline {0.2}Plan du Rapport}{10}{section.0.2}%
+\contentsline {chapter}{\numberline {1}Généralités et État de l'Art}{11}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Généralités sur les Principes de Conception}{11}{section.1.1}%
+\contentsline {subsection}{\numberline {1.1.1}Architecture Hexagonale (Ports et Adaptateurs)}{11}{subsection.1.1.1}%
+\contentsline {subsection}{\numberline {1.1.2}Modèle d'Intégration Asynchrone et Réactivité}{11}{subsection.1.1.2}%
+\contentsline {subsection}{\numberline {1.1.3}Persistance Non Bloquante}{12}{subsection.1.1.3}%
+\contentsline {subsection}{\numberline {1.1.4}Conception Multi-Tenant (Multi-Locataire)}{12}{subsection.1.1.4}%
+\contentsline {section}{\numberline {1.2}État de l'Art et Fondements Scientifiques}{12}{section.1.2}%
+\contentsline {chapter}{\numberline {2}Analyse du Système}{13}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Problématique}{13}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Modélisation Conceptuelle}{13}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Diagramme de Contexte}{13}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}Diagramme de Packages}{14}{subsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.2.3}Diagramme de Classes d'Analyse}{14}{subsection.2.2.3}%
+\contentsline {subsection}{\numberline {2.2.4}Diagramme de Cas d'Utilisation}{15}{subsection.2.2.4}%
+\contentsline {subsection}{\numberline {2.2.5}Diagramme d'États-Transitions}{15}{subsection.2.2.5}%
+\contentsline {chapter}{\numberline {3}Implémentation et Résultats}{18}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Conception de la Base de Données}{18}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Schéma Relationnel Physique (Diagramme de Classes de Base de Données)}{18}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Migration des Données et Liquibase}{18}{subsection.3.1.2}%
+\contentsline {section}{\numberline {3.2}Détails de l'Implémentation Technique}{18}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Design de l'Adaptateur Réseau et Propagation du Contexte}{18}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Anti-Corruption Layer (Couche Anti-Pollution)}{20}{subsection.3.2.2}%
+\contentsline {section}{\numberline {3.3}Diagrammes de Séquence des Processus Clés}{20}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Stratégie de Test et Plan de Validation}{21}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}Tests Unitaires des Invariants du Domaine}{21}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}Tests d'Intégration et Simulation des Dépendances}{21}{subsection.3.4.2}%
+\contentsline {section}{\numberline {3.5}Mesures et Résultats Métriques}{21}{section.3.5}%
+\contentsline {subsection}{\numberline {3.5.1}Résultats de l'Exécution du Plan de Validation}{22}{subsection.3.5.1}%
+\contentsline {subsection}{\numberline {3.5.2}Couverture de Code et Qualité Logicielle}{22}{subsection.3.5.2}%
+\contentsline {chapter}{\numberline {4}Conclusion et Perspectives}{23}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Rappel de la Problématique}{23}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Démarche et Résultats}{23}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Limites de la Solution}{23}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Perspectives d'Évolution}{24}{section.4.4}%
+\contentsline {chapter}{Références}{25}{chapter*.6}%

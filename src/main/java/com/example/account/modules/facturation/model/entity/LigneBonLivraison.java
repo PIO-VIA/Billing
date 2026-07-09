@@ -16,6 +16,8 @@ import java.util.UUID;
 @Builder
 public class LigneBonLivraison  {
 
+    private UUID idLigne;
+
     @NotNull(message = "L'ID produit est obligatoire")
     @Column("id_produit")
     private UUID idProduit;

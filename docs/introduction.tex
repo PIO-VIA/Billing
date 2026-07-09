@@ -1,0 +1,31 @@
+\chapter*{Introduction}
+\addcontentsline{toc}{chapter}{Introduction}
+
+\section*{Contexte de l'Étude}
+Le contexte général de cette étude s'inscrit dans la modernisation des systèmes d'information d'entreprise à travers l'adoption d'architectures distribuées en microservices. Les progiciels de gestion intégrés (ERP) modernes exigent une grande modularité et une extensibilité sans faille pour accompagner la croissance des organisations multi-sociétés. Dans cette optique, l'écosystème ComOps a été développé pour diviser les responsabilités métiers en modules autonomes et hautement spécialisés.
+
+Dans le contexte spécifique de notre projet, le service de facturation (Billing Service) est le composant central chargé de la gestion des devis, des factures, de leur validation, et de l'enregistrement des paiements. Historiquement, ce service gérait également une copie locale des données des tiers, à savoir les clients, les fournisseurs et les agents commerciaux. Cette duplication a été mise en place pour permettre des requêtes rapides en base de données locale lors de la création de documents de facturation.
+
+Sur le plan scientifique, cette étude s'intéresse à la gestion de la cohérence des données distribuées et aux performances des communications inter-services. L'intégration réactive de systèmes distribués pose des défis complexes liés au maintien de la nature non bloquante des flux de données, à la propagation transparente des contextes de sécurité et d'organisation multi-tenant, et à l'isolement du domaine métier par rapport aux API externes en constante évolution.
+
+\section*{Problématique}
+La persistance locale des données de tiers au sein du service de facturation a engendré d'importants problèmes d'intégrité et de maintenance. Dès qu'un client ou un fournisseur modifiait ses coordonnées ou son statut dans le système de gestion de la relation client centralisé, ces changements n'étaient pas répercutés en temps réel dans la base de données locale du service de facturation. Cette situation provoquait des erreurs lors de l'émission de documents fiscaux et obligeait les administrateurs à effectuer des réconciliations manuelles fastidieuses. De plus, la duplication du code nécessaire à la gestion de ces entités violait le principe de responsabilité unique, alourdissant le codebase du service et compliquant les montées de version. Il est donc devenu crucial de supprimer cette persistance locale pour migrer vers un modèle d'intégration dynamique où le noyau central de l'ERP (Kernel) devient l'unique source de vérité pour tous les tiers.
+
+\section*{Objectifs du Projet (SMART)}
+L'objectif principal du projet est de refondre le module de facturation pour le connecter dynamiquement au noyau central, selon des critères rigoureux.
+
+Premièrement, l'objectif est spécifique puisqu'il consiste à éliminer la persistance locale des tables de tiers et à implémenter des adaptateurs réseau sortants basés sur le client Web réactif de Spring WebFlux pour requêter le noyau central en temps réel.
+
+Deuxièmement, cet objectif est mesurable par la suppression effective de deux tables en base de données locale, la couverture de l'ensemble des cas d'utilisation par des appels réseau non bloquants, et la validation de la non-régression par une suite de tests unitaires et d'intégration.
+
+Troisièmement, le projet est tout à fait atteignable car le noyau central expose déjà les points d'accès requis pour récupérer les informations des tiers par identifiant ou par organisation.
+
+Quatrièmement, cet objectif est réalisable car il s'appuie sur la pile technologique existante du projet, notamment Spring Boot, Project Reactor et Liquibase pour la migration de base de données.
+
+Enfin, l'objectif est temporellement défini pour être complété et validé au terme de la présente phase de développement, garantissant une intégration propre avant les phases de déploiement en production.
+
+\section{Méthodologie de Résolution}
+Pour mener à bien cette migration, nous avons adopté une démarche méthodique structurée en quatre phases distinctes. La première phase a consisté à analyser le schéma relationnel et le codebase existants pour identifier l'ensemble des dépendances directes et indirectes envers les entités locales de tiers. Dans la deuxième phase, nous avons redéfini les ports du domaine et implémenté de nouveaux adaptateurs d'infrastructure réseau pour encapsuler les appels au noyau central. La troisième phase a permis de nettoyer la base de données locale en appliquant des scripts SQL de migration pour supprimer les tables obsolètes. Enfin, la quatrième phase s'est concentrée sur la mise en place d'une suite de tests automatisés pour valider le comportement réactif et le cloisonnement des données multi-tenant sous forte charge.
+
+\section{Plan du Rapport}
+Le présent rapport est organisé comme suit. Le premier chapitre présente les généralités théoriques et l'état de l'art scientifique associés aux architectures microservices réactives et aux patrons de conception sous-jacents. Le deuxième chapitre expose l'analyse fonctionnelle, les workflows métiers révisés et la conception technique détaillée avec les diagrammes de modélisation associés. Le troisième chapitre est dédié aux détails de l'implémentation logicielle, aux scénarios de test et aux taux de couverture de code obtenus. Enfin, le quatrième chapitre conclut le rapport en récapitulant les résultats obtenus, en identifiant les limites de la solution et en proposant des perspectives d'évolution futures.

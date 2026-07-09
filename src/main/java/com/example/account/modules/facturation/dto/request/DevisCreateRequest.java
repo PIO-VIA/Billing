@@ -23,6 +23,9 @@ import java.util.UUID;
 @Builder
 public class DevisCreateRequest {
 
+    @JsonAlias({"id_devis"})
+    private UUID idDevis;
+
     @JsonAlias({"devisNumber","numero","numeroDevis","number"})
     private String numeroDevis; // Often auto-generated, but included if client specifies
 

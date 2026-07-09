@@ -20,6 +20,8 @@ import java.util.UUID;
 @Builder
 public class FactureCreateRequest {
 
+    private UUID idFacture;
+
     private String numeroFacture;
 
     @NotNull(message = "La date de facturation est obligatoire")

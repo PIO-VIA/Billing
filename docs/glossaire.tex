@@ -1,0 +1,17 @@
+\chapter*{Glossaire}
+\addcontentsline{toc}{chapter}{Glossaire}
+
+\begin{description}
+    \item[Adaptateur] Composant d'infrastructure qui implémente un port (adaptateur sortant) ou qui interagit avec l'application en invoquant un port (adaptateur entrant) dans le cadre de l'architecture hexagonale.
+    \item[Architecture Hexagonale] Style architectural (aussi appelé Ports et Adaptateurs) qui sépare la logique métier centrale (le domaine) des dépendances externes comme la base de données, l'interface utilisateur, ou les services tiers.
+    \item[Backpressure] Mécanisme de contrôle de flux dans les flux réactifs permettant à un consommateur lent de signaler à un producteur rapide le volume de données qu'il est capable de traiter, évitant ainsi la saturation de la mémoire.
+    \item[Flux Réactif] Standard de programmation asynchrone et non bloquante qui permet de traiter des flux de données de manière asynchrone avec gestion de la contre-pression (backpressure).
+    \item[Kernel (Noyau)] Module central de l'ERP ComOps chargé de gérer les données de référence transversales telles que les profils de tiers, les catalogues de produits globaux, et la configuration organisationnelle.
+    \item[Mono / Flux] Types réactifs de Project Reactor. Un Mono représente une séquence asynchrone contenant au plus un élément (0 ou 1), tandis qu'un Flux représente une séquence asynchrone contenant de 0 à N éléments.
+    \item[Multi-tenancy (Multi-tenant)] Architecture logicielle permettant de servir plusieurs organisations ou clients (tenants) à partir d'une seule instance d'application, tout en isolant strictement leurs données et traitements.
+    \item[Non-bloquant] Mode d'exécution asynchrone où un thread n'attend pas la complétion d'une opération d'E/S (lecture base de données, appel réseau) et peut immédiatement exécuter d'autres tâches.
+    \item[Port] Interface définie au sein du domaine métier qui spécifie les contrats de communication de l'application avec le monde extérieur (ex. requêtes de données, persistance, notifications).
+    \item[R2DBC] Spécification d'API ouverte qui apporte des pilotes de bases de données relationnelles réactifs et non bloquants en Java.
+    \item[Reactor Project] Bibliothèque réactive de quatrième génération, basée sur la spécification des Reactive Streams, utilisée par Spring WebFlux pour construire des applications non bloquantes.
+    \item[WebClient] Client HTTP réactif et non bloquant fourni par Spring Framework, conçu pour remplacer le RestTemplate traditionnel dans les environnements WebFlux.
+\end{description}

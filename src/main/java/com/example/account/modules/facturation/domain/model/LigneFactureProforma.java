@@ -13,6 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class LigneFactureProforma {
+    private UUID idLigne;
     private UUID idProduit;
     private String nomProduit;
     private String description;

@@ -7,6 +7,9 @@ import com.example.account.modules.facturation.dto.request.BonLivraisonRequest;
 import com.example.account.modules.facturation.dto.response.BonLivraisonResponse;
 import com.example.account.modules.facturation.mapper.BonLivraisonMapper;
 import com.example.account.modules.facturation.model.entity.BonLivraison;
+import com.example.account.modules.core.util.DocumentNumberGenerator;
+import com.example.account.modules.core.util.IdempotentCreateHelper;
+import com.example.account.modules.core.util.LineIdSupport;
 import com.example.account.modules.facturation.model.entity.LigneBonLivraison;
 import com.example.account.modules.facturation.model.enums.StatutBonLivraison;
 import com.example.account.modules.facturation.repository.BonLivraisonRepository;
@@ -37,20 +40,37 @@ public class BonLivraisonService {
     @Transactional
     public Mono<BonLivraisonResponse> createBonLivraison(BonLivraisonRequest request) {
         log.info("Création d'un nouveau bon de livraison pour le client: {}", request.getIdClient());
-        
+
         BonLivraison bonLivraison = bonLivraisonMapper.toEntity(request);
         if (bonLivraison.getIdBonLivraison() == null) {
             bonLivraison.setIdBonLivraison(UUID.randomUUID());
         }
+        if (bonLivraison.getNumeroLivraison() == null || bonLivraison.getNumeroLivraison().isBlank()) {
+            bonLivraison.setNumeroLivraison(DocumentNumberGenerator.generate("BL"));
+        }
+        LineIdSupport.assignMissingIds(
+                bonLivraison.getLignesBonLivraison(),
+                LigneBonLivraison::getIdLigne,
+                LigneBonLivraison::setIdLigne);
         if (bonLivraison.getStatut() == null) {
             bonLivraison.setStatut(StatutBonLivraison.EN_PREPARATION);
         }
 
-        return entityTemplate.insert(bonLivraison)
-                .map(saved -> {
-                    deserializeJsonbLines(saved);
-                    return bonLivraisonMapper.toResponse(saved);
-                });
+        UUID bonLivraisonId = bonLivraison.getIdBonLivraison();
+
+        return IdempotentCreateHelper.createOrReturnExisting(
+                bonLivraisonId,
+                bonLivraisonRepository::findById,
+                existing -> {
+                    deserializeJsonbLines(existing);
+                    log.info("Bon de livraison déjà existant (idempotence): {}", existing.getIdBonLivraison());
+                    return bonLivraisonMapper.toResponse(existing);
+                },
+                () -> entityTemplate.insert(bonLivraison)
+                        .map(saved -> {
+                            deserializeJsonbLines(saved);
+                            return bonLivraisonMapper.toResponse(saved);
+                        }));
     }
 
     @Transactional(readOnly = true)
