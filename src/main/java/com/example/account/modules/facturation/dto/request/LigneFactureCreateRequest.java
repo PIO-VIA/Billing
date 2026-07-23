@@ -22,10 +22,8 @@ public class LigneFactureCreateRequest {
 
     private String description;
 
-    @NotNull(message = "Le débit est obligatoire")
     private BigDecimal debit;
 
-    @NotNull(message = "Le crédit est obligatoire")
     private BigDecimal credit;
 
     @Builder.Default
