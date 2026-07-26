@@ -20,16 +20,16 @@ public class JournalEventProducer {
 
     public void publishJournalCreated(Object journalResponse) {
         log.info("Publication de l'événement journal créé");
-        kafkaProducerService.sendMessage(JOURNAL_CREATED_TOPIC, journalResponse);
+        kafkaProducerService.sendMessage(JOURNAL_CREATED_TOPIC, journalResponse).subscribe();
     }
 
     public void publishJournalUpdated(Object journalResponse) {
         log.info("Publication de l'événement journal mis à jour");
-        kafkaProducerService.sendMessage(JOURNAL_UPDATED_TOPIC, journalResponse);
+        kafkaProducerService.sendMessage(JOURNAL_UPDATED_TOPIC, journalResponse).subscribe();
     }
 
     public void publishJournalDeleted(UUID journalId) {
         log.info("Publication de l'événement journal supprimé: {}", journalId);
-        kafkaProducerService.sendMessage(JOURNAL_DELETED_TOPIC, journalId.toString(), journalId);
+        kafkaProducerService.sendMessage(JOURNAL_DELETED_TOPIC, journalId.toString(), journalId).subscribe();
     }
 }

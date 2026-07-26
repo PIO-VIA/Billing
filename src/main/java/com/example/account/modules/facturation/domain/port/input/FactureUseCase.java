@@ -37,4 +37,5 @@ public interface FactureUseCase {
     Flux<FactureResponse> getFacturesByOrganizationId(UUID organizationId);
     Flux<FactureResponse> getFacturesByAgencyId(UUID agencyId);
     Flux<FactureResponse> getFacturesBySellerId(UUID sellerId);
+    Mono<Void> sendToPortal(UUID factureId);
 }

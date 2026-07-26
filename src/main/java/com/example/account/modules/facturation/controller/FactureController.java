@@ -138,6 +138,14 @@ public class FactureController {
                 .thenReturn(ResponseEntity.noContent().build());
     }
 
+    @PostMapping("/{factureId}/send-to-portal")
+    @Operation(summary = "Envoyer la facture au client via le portail (login requis)")
+    public Mono<ResponseEntity<Void>> sendToPortal(@PathVariable UUID factureId) {
+        log.info("Requête d'envoi de la facture vers le portail: {}", factureId);
+        return factureService.sendToPortal(factureId)
+                .thenReturn(ResponseEntity.ok().build());
+    }
+
     @PutMapping("/{factureId}/marquer-paye")
     @Operation(summary = "Marquer une facture comme payée")
     public Mono<ResponseEntity<FactureResponse>> marquerCommePaye(@PathVariable UUID factureId) {

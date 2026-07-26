@@ -34,5 +34,7 @@ public class BondeReceptionResponse {
     private String agenceDeTransport;
     private UUID organizationId;
     private UUID agencyId;
+    private Boolean envoyeParEmail;
+    private LocalDateTime dateEnvoiEmail;
     private DocPermissionResponse docPermission;
 }

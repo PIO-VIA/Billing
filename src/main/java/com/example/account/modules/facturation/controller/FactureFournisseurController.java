@@ -60,6 +60,13 @@ public class FactureFournisseurController {
         return factureFournisseurService.getBySellerId(sellerId);
     }
 
+    @PostMapping("/{id}/send-to-portal")
+    public Mono<ResponseEntity<Void>> sendToPortal(@PathVariable UUID id) {
+        log.info("Requête d'envoi de la facture fournisseur vers le portail: {}", id);
+        return factureFournisseurService.sendToPortal(id)
+                .thenReturn(ResponseEntity.ok().build());
+    }
+
     @GetMapping("/account/{id}")
     public Mono<ResponseEntity<Void>> accountFacture(@PathVariable UUID id) {
         log.info("Comptabiliser la facture fournisseur: {}", id);

@@ -29,11 +29,28 @@ public class SalesCoreWebClientConfig {
     @Value("${sales-core.base-url}")
     private String baseUrl;
 
+    @Value("${comops.kernel.client-id}")
+    private String clientId;
+
+    @Value("${comops.kernel.api-key}")
+    private String apiKey;
+
+    @Value("${comops.kernel.tenant-id}")
+    private String tenantId;
+
     @Bean
     @Qualifier("salesCoreWebClient")
     public WebClient salesCoreWebClient(WebClient.Builder builder) {
         return builder
                 .baseUrl(baseUrl)
+                // sales-core now lives inside kernel-core itself, so the same
+                // X-Client-Id/X-Api-Key/X-Tenant-Id kernel-core's edge auth filter
+                // requires on every /api/** call apply here too — sales-core's own
+                // routes happen to be exempted from it, but product-core/tp-core
+                // routes (products, fournisseurs, customers) are not.
+                .defaultHeader("X-Client-Id", clientId)
+                .defaultHeader("X-Api-Key", apiKey)
+                .defaultHeader("X-Tenant-Id", tenantId)
                 .filter(injectBearerToken())
                 .filter(injectOrganizationId())
                 .build();

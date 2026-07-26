@@ -14,6 +14,7 @@ public class KernelActorResponse {
     private UUID id;
     private UUID actorId;
     private String name;
+    private String email;
     private String code;
     private String type;
     private String role;

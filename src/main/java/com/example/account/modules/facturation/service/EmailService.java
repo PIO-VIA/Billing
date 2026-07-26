@@ -2,6 +2,7 @@ package com.example.account.modules.facturation.service;
 
 import com.example.account.modules.facturation.dto.request.ExternalRequest.EmailRequest;
 import com.example.account.modules.facturation.domain.model.Devis;
+import com.example.account.modules.notification.service.EmailSenderService;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,8 @@ import org.thymeleaf.context.Context;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -22,7 +25,10 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final SpringTemplateEngine templateEngine; // Use the Spring-specific version
     private final PdfGeneratorService pdfGeneratorService;
+    private final EmailSenderService emailSenderService;
 
+   // Stays on direct SMTP: the Kernel notification-core /deliveries endpoint has no
+   // attachment support, and this email needs the PDF quotation attached.
    public Mono<Void> sendQuotation(Devis devis, EmailRequest emailRequest,String token) {
 
     return Mono.fromCallable(() -> {
@@ -84,17 +90,11 @@ public class EmailService {
             context.setVariable("loginUrl", loginUrl);
 
             String emailContent = templateEngine.process("portal-document-notification", context);
-
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setTo(recipientEmail);
-            helper.setSubject(documentType + " " + documentRef + " — a document is ready for your review");
-            helper.setText(emailContent, true);
-
-            mailSender.send(message);
-            log.info("Portal notification sent for {} {}", documentType, documentRef);
-            return true;
-        }).subscribeOn(Schedulers.boundedElastic()).then();
+            String subject = documentType + " " + documentRef + " — a document is ready for your review";
+            return Map.entry(subject, emailContent);
+        }).subscribeOn(Schedulers.boundedElastic())
+          .flatMap(rendered -> emailSenderService.sendEmail(recipientEmail, rendered.getKey(), rendered.getValue()))
+          .doOnSuccess(v -> log.info("Portal notification sent for {} {}", documentType, documentRef));
     }
 
     /**
@@ -115,16 +115,10 @@ public class EmailService {
             context.setVariable("loginUrl", loginUrl);
 
             String emailContent = templateEngine.process("doc-permission-invite", context);
-
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setTo(recipientEmail);
-            helper.setSubject("You've been invited as " + permissionLevel + " on " + docLabel);
-            helper.setText(emailContent, true);
-
-            mailSender.send(message);
-            log.info("Doc-permission invite sent for {}", docLabel);
-            return true;
-        }).subscribeOn(Schedulers.boundedElastic()).then();
+            String subject = "You've been invited as " + permissionLevel + " on " + docLabel;
+            return Map.entry(subject, emailContent);
+        }).subscribeOn(Schedulers.boundedElastic())
+          .flatMap(rendered -> emailSenderService.sendEmail(recipientEmail, rendered.getKey(), rendered.getValue()))
+          .doOnSuccess(v -> log.info("Doc-permission invite sent for {}", docLabel));
     }
 }

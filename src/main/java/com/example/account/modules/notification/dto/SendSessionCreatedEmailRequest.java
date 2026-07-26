@@ -1,0 +1,23 @@
+package com.example.account.modules.notification.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+
+@Data
+public class SendSessionCreatedEmailRequest {
+
+    private UUID organizationId;
+
+    @NotBlank
+    private String email;
+
+    private String username;
+    private String agency;
+    private String sessionType;
+    private String status;
+    private String startTime;
+    private BigDecimal openingAmount;
+}

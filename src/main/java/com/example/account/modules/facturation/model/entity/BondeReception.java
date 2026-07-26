@@ -75,4 +75,10 @@ public class BondeReception {
 
     @Column("agency_id")
     private UUID agencyId;
+
+    @Column("envoye_par_email")
+    private Boolean envoyeParEmail;
+
+    @Column("date_envoi_email")
+    private LocalDateTime dateEnvoiEmail;
 }

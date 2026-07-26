@@ -1,17 +1,22 @@
 package com.example.account.modules.tiers.adapter.output.external;
 
 import com.example.account.modules.core.context.ReactiveOrganizationContext;
-import com.example.account.modules.shared.dto.kernel.SalesCoreClientResponse;
+import com.example.account.modules.shared.dto.kernel.KernelApiResponse;
+import com.example.account.modules.shared.dto.kernel.KernelThirdPartyResponse;
 import com.example.account.modules.tiers.domain.model.Client;
 import com.example.account.modules.tiers.domain.model.enums.TypeClient;
+import com.example.account.modules.tiers.domain.port.output.ActorContactServicePort;
 import com.example.account.modules.tiers.domain.port.output.ClientRepositoryPort;
+import com.example.account.modules.tiers.domain.port.output.ThirdPartySaleConfigServicePort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -20,9 +25,58 @@ import java.util.UUID;
 public class KernelClientAdapter implements ClientRepositoryPort {
 
     private final WebClient salesCoreWebClient;
+    private final ThirdPartySaleConfigServicePort saleConfigServicePort;
+    private final ActorContactServicePort actorContactServicePort;
 
-    public KernelClientAdapter(@Qualifier("salesCoreWebClient") WebClient salesCoreWebClient) {
+    private static final ParameterizedTypeReference<KernelApiResponse<List<KernelThirdPartyResponse>>> CLIENT_LIST_TYPE =
+            new ParameterizedTypeReference<>() {};
+    private static final ParameterizedTypeReference<KernelApiResponse<KernelThirdPartyResponse>> CLIENT_TYPE =
+            new ParameterizedTypeReference<>() {};
+
+    public KernelClientAdapter(@Qualifier("salesCoreWebClient") WebClient salesCoreWebClient,
+                               ThirdPartySaleConfigServicePort saleConfigServicePort,
+                               ActorContactServicePort actorContactServicePort) {
         this.salesCoreWebClient = salesCoreWebClient;
+        this.saleConfigServicePort = saleConfigServicePort;
+        this.actorContactServicePort = actorContactServicePort;
+    }
+
+    /**
+     * Kernel's third-party record has no concept of allowed sale sizes or VAT
+     * applicability — those live on a separate per-third-party sale-config
+     * sub-resource (GET /api/third-parties/{id}/sale-config). Missing config
+     * (never set for this third party yet) just leaves the client at its
+     * defaults rather than failing the whole lookup.
+     */
+    private Mono<Client> withSaleConfig(Client client) {
+        return saleConfigServicePort.getConfig(client.getIdClient())
+                .doOnNext(config -> {
+                    client.setAllowedSaleSizes(config.getAllowedSaleSizes());
+                    client.setNTva(config.isVatApplicable());
+                })
+                .thenReturn(client)
+                .onErrorReturn(client);
+    }
+
+    /**
+     * Same idea as withSaleConfig, but for email: Kernel's third-party record
+     * has none, so this looks it up from the underlying actor's own address
+     * book (see ActorContactServicePort) using partyId — the actor id, not
+     * the third-party record's own id. Left blank (not an error) if the
+     * actor has no contact on file yet.
+     */
+    private Mono<Client> withContactEmail(Client client, UUID actorId) {
+        if (actorId == null) {
+            return Mono.just(client);
+        }
+        return actorContactServicePort.getPrimaryEmail(actorId)
+                .doOnNext(email -> {
+                    if (!email.isBlank()) {
+                        client.setEmail(email);
+                    }
+                })
+                .thenReturn(client)
+                .onErrorReturn(client);
     }
 
     private Mono<UUID> getOrganizationId() {
@@ -41,8 +95,10 @@ public class KernelClientAdapter implements ClientRepositoryPort {
                 .get()
                 .uri("/api/customers/{id}", id)
                 .retrieve()
-                .bodyToMono(SalesCoreClientResponse.class)
-                .map(this::mapToClient);
+                .bodyToMono(CLIENT_TYPE)
+                .map(KernelApiResponse::getData)
+                .flatMap(c -> withContactEmail(mapToClient(c), c.getPartyId()))
+                .flatMap(this::withSaleConfig);
     }
 
     @Override
@@ -84,16 +140,30 @@ public class KernelClientAdapter implements ClientRepositoryPort {
         return findByEmail(email).map(c -> true).onErrorReturn(false);
     }
 
+    // Each client here needs two extra Kernel round-trips (contact email,
+    // sale-config) — flatMap's default concurrency (256) fired every one of
+    // those at once for the whole list, bursting 15-20+ brand-new HTTPS
+    // connections to kernel-core simultaneously. Kernel-core resets some of
+    // them under that burst ("connection observed an error" / "Connection
+    // reset by peer" in the logs), which is what made the client/fournisseur
+    // list intermittently hang or come back empty. Capping concurrency
+    // trades a bit of latency for not tripping whatever's rejecting bursts
+    // on Kernel's side.
+    private static final int ENRICHMENT_CONCURRENCY = 3;
+
     @Override
     public Flux<Client> findAllActiveClients() {
         return getOrganizationId().flatMapMany(orgId ->
                 salesCoreWebClient
                         .get()
-                        .uri("/api/customers")
+                        .uri(uriBuilder -> uriBuilder.path("/api/customers").queryParam("organizationId", orgId).build())
                         .header("X-Organization-Id", orgId.toString())
                         .retrieve()
-                        .bodyToFlux(SalesCoreClientResponse.class)
-                        .map(c -> mapToClient(c, orgId))
+                        .bodyToMono(CLIENT_LIST_TYPE)
+                        .map(KernelApiResponse::getData)
+                        .flatMapMany(Flux::fromIterable)
+                        .flatMap(c -> withContactEmail(mapToClient(c, orgId), c.getPartyId()), ENRICHMENT_CONCURRENCY)
+                        .flatMap(this::withSaleConfig, ENRICHMENT_CONCURRENCY)
         );
     }
 
@@ -156,31 +226,30 @@ public class KernelClientAdapter implements ClientRepositoryPort {
         ).then();
     }
 
-    private Client mapToClient(SalesCoreClientResponse c) {
+    private Client mapToClient(KernelThirdPartyResponse c) {
         return mapToClient(c, null);
     }
 
-    private Client mapToClient(SalesCoreClientResponse c, UUID organizationId) {
+    /**
+     * Kernel's third-party record has no concept of contact details (address/
+     * phone/email/website) or commercial terms (credit limit, running balance,
+     * VAT registration, allowed sale sizes) — those fields simply aren't
+     * present here and are left at their defaults, not just unmapped. Only
+     * legalForm hints at company-vs-individual, so that's the best signal
+     * available for typeClient; ADMINISTRATION has no equivalent at all here.
+     */
+    private Client mapToClient(KernelThirdPartyResponse c, UUID organizationId) {
         Client client = new Client();
-        client.setIdClient(c.getIdClient());
+        client.setIdClient(c.getId());
         client.setOrganizationId(organizationId);
-        client.setUsername(c.getUsername());
-        client.setCategorie(c.getCategorie());
-        client.setSiteWeb(c.getSiteWeb());
-        client.setNTva(c.getNtva() != null ? c.getNtva() : false);
-        client.setAllowedSaleSizes(c.getAllowedSaleSizes());
-        client.setAdresse(c.getAdresse());
-        client.setTelephone(c.getTelephone());
-        client.setEmail(c.getEmail());
-        client.setTypeClient("ADMINISTRATION".equalsIgnoreCase(c.getTypeClient()) ? TypeClient.ADMINISTRATION
-                : "ENTREPRISE".equalsIgnoreCase(c.getTypeClient()) ? TypeClient.ENTREPRISE
-                : TypeClient.PARTICULIER);
-        client.setRaisonSociale(c.getRaisonSociale());
-        client.setNumeroTva(c.getNumeroTva());
-        client.setCodeClient(c.getCodeClient());
-        client.setLimiteCredit(c.getLimiteCredit() != null ? c.getLimiteCredit() : 0.0);
-        client.setSoldeCourant(c.getSoldeCourant() != null ? c.getSoldeCourant() : 0.0);
-        client.setActif(c.getActif() != null ? c.getActif() : true);
+        client.setUsername(c.getDisplayName() != null ? c.getDisplayName() : c.getName());
+        client.setRaisonSociale(c.getLongName() != null ? c.getLongName() : c.getName());
+        client.setCodeClient(c.getCode() != null ? c.getCode() : c.getReferenceCode());
+        client.setNumeroTva(c.getTaxNumber());
+        client.setNTva(c.getVatSubject() != null ? c.getVatSubject() : false);
+        client.setTypeClient(c.getLegalForm() != null ? TypeClient.ENTREPRISE : TypeClient.PARTICULIER);
+        client.setLimiteCredit(c.getAuthorizedCreditLimit());
+        client.setActif(c.getActive() != null ? c.getActive() : true);
         return client;
     }
 }

@@ -2,16 +2,21 @@ package com.example.account.modules.facturation.application.usecase.impl;
 
 import com.example.account.modules.facturation.domain.port.input.SessionUseCase;
 import com.example.account.modules.facturation.domain.port.output.SessionServicePort;
+import com.example.account.modules.facturation.domain.port.output.SellerServicePort;
 import com.example.account.modules.facturation.dto.request.CloseSessionRequest;
 import com.example.account.modules.facturation.dto.request.CreateSessionRequest;
 import com.example.account.modules.facturation.dto.request.UpdateSessionRequest;
+import com.example.account.modules.facturation.dto.response.ExternalResponses.SellerListItemResponse;
 import com.example.account.modules.facturation.dto.response.SessionResponse;
+import com.example.account.modules.notification.dto.SendSessionCreatedEmailRequest;
+import com.example.account.modules.notification.service.SessionEmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Service
@@ -19,16 +24,46 @@ import java.util.UUID;
 @Slf4j
 public class SessionUseCaseImpl implements SessionUseCase {
 
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
     private final SessionServicePort sessionServicePort;
+    private final SellerServicePort sellerServicePort;
+    private final SessionEmailService sessionEmailService;
 
     @Override
     public Mono<SessionResponse> open(CreateSessionRequest request) {
-        return sessionServicePort.open(request);
+        return sessionServicePort.open(request).flatMap(this::notifySessionCreated);
     }
 
     @Override
     public Mono<SessionResponse> schedule(CreateSessionRequest request) {
-        return sessionServicePort.schedule(request);
+        return sessionServicePort.schedule(request).flatMap(this::notifySessionCreated);
+    }
+
+    /** Best-effort: a failed notification email must never fail session creation. */
+    private Mono<SessionResponse> notifySessionCreated(SessionResponse session) {
+        return sellerServicePort.listSellers(session.getOrganizationId())
+                .filter(seller -> session.getSellerId().equals(seller.getId()))
+                .next()
+                .flatMap(seller -> sessionEmailService.sendSessionCreated(toEmailRequest(seller, session)))
+                .onErrorResume(e -> {
+                    log.error("Failed to send session-created email for session {}: {}", session.getId(), e.getMessage());
+                    return Mono.empty();
+                })
+                .thenReturn(session);
+    }
+
+    private SendSessionCreatedEmailRequest toEmailRequest(SellerListItemResponse seller, SessionResponse session) {
+        SendSessionCreatedEmailRequest request = new SendSessionCreatedEmailRequest();
+        request.setOrganizationId(seller.getOrganizationId());
+        request.setEmail(seller.getEmail());
+        request.setUsername(seller.getUsername());
+        request.setAgency(seller.getAgency());
+        request.setSessionType(session.getType() != null ? session.getType().name() : null);
+        request.setStatus(session.getStatus() != null ? session.getStatus().name() : null);
+        request.setStartTime(session.getStartTime() != null ? session.getStartTime().format(DATE_FORMAT) : null);
+        request.setOpeningAmount(session.getOpeningAmount());
+        return request;
     }
 
     @Override

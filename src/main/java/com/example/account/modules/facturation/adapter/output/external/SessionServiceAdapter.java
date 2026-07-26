@@ -33,7 +33,7 @@ public class SessionServiceAdapter implements SessionServicePort {
     public Mono<SessionResponse> open(CreateSessionRequest request) {
         return salesCoreWebClient
                 .post()
-                .uri("/api/sessions")
+                .uri("/api/pos-sessions")
                 .bodyValue(request)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), SALES_CORE_ERROR)
@@ -44,7 +44,7 @@ public class SessionServiceAdapter implements SessionServicePort {
     public Mono<SessionResponse> schedule(CreateSessionRequest request) {
         return salesCoreWebClient
                 .post()
-                .uri("/api/sessions/schedule")
+                .uri("/api/pos-sessions/schedule")
                 .bodyValue(request)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), SALES_CORE_ERROR)
@@ -55,7 +55,7 @@ public class SessionServiceAdapter implements SessionServicePort {
     public Mono<SessionResponse> start(UUID id) {
         return salesCoreWebClient
                 .post()
-                .uri("/api/sessions/{id}/start", id)
+                .uri("/api/pos-sessions/{id}/start", id)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), SALES_CORE_ERROR)
                 .bodyToMono(SessionResponse.class);
@@ -65,7 +65,7 @@ public class SessionServiceAdapter implements SessionServicePort {
     public Mono<SessionResponse> close(UUID id, CloseSessionRequest request) {
         return salesCoreWebClient
                 .post()
-                .uri("/api/sessions/{id}/close", id)
+                .uri("/api/pos-sessions/{id}/close", id)
                 .bodyValue(request)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), SALES_CORE_ERROR)
@@ -76,7 +76,7 @@ public class SessionServiceAdapter implements SessionServicePort {
     public Mono<SessionResponse> suspend(UUID id) {
         return salesCoreWebClient
                 .post()
-                .uri("/api/sessions/{id}/suspend", id)
+                .uri("/api/pos-sessions/{id}/suspend", id)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), SALES_CORE_ERROR)
                 .bodyToMono(SessionResponse.class);
@@ -86,7 +86,7 @@ public class SessionServiceAdapter implements SessionServicePort {
     public Mono<SessionResponse> resume(UUID id) {
         return salesCoreWebClient
                 .post()
-                .uri("/api/sessions/{id}/resume", id)
+                .uri("/api/pos-sessions/{id}/resume", id)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), SALES_CORE_ERROR)
                 .bodyToMono(SessionResponse.class);
@@ -96,7 +96,7 @@ public class SessionServiceAdapter implements SessionServicePort {
     public Mono<SessionResponse> cancel(UUID id) {
         return salesCoreWebClient
                 .post()
-                .uri("/api/sessions/{id}/cancel", id)
+                .uri("/api/pos-sessions/{id}/cancel", id)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), SALES_CORE_ERROR)
                 .bodyToMono(SessionResponse.class);
@@ -106,7 +106,7 @@ public class SessionServiceAdapter implements SessionServicePort {
     public Mono<SessionResponse> reopen(UUID id) {
         return salesCoreWebClient
                 .post()
-                .uri("/api/sessions/{id}/reopen", id)
+                .uri("/api/pos-sessions/{id}/reopen", id)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), SALES_CORE_ERROR)
                 .bodyToMono(SessionResponse.class);
@@ -116,7 +116,7 @@ public class SessionServiceAdapter implements SessionServicePort {
     public Mono<SessionResponse> findById(UUID id) {
         return salesCoreWebClient
                 .get()
-                .uri("/api/sessions/{id}", id)
+                .uri("/api/pos-sessions/{id}", id)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), SALES_CORE_ERROR)
                 .bodyToMono(SessionResponse.class);
@@ -126,7 +126,7 @@ public class SessionServiceAdapter implements SessionServicePort {
     public Flux<SessionResponse> findAll(UUID salesPointId, UUID sellerId, UUID organizationId, UUID agencyId) {
         return salesCoreWebClient
                 .get()
-                .uri(builder -> builder.path("/api/sessions")
+                .uri(builder -> builder.path("/api/pos-sessions")
                         .queryParamIfPresent("salesPointId", java.util.Optional.ofNullable(salesPointId))
                         .queryParamIfPresent("sellerId", java.util.Optional.ofNullable(sellerId))
                         .queryParamIfPresent("organizationId", java.util.Optional.ofNullable(organizationId))
@@ -141,7 +141,7 @@ public class SessionServiceAdapter implements SessionServicePort {
     public Mono<SessionResponse> update(UUID id, UpdateSessionRequest request) {
         return salesCoreWebClient
                 .put()
-                .uri("/api/sessions/{id}", id)
+                .uri("/api/pos-sessions/{id}", id)
                 .bodyValue(request)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), SALES_CORE_ERROR)
@@ -152,7 +152,7 @@ public class SessionServiceAdapter implements SessionServicePort {
     public Mono<Void> delete(UUID id) {
         return salesCoreWebClient
                 .delete()
-                .uri("/api/sessions/{id}", id)
+                .uri("/api/pos-sessions/{id}", id)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), SALES_CORE_ERROR)
                 .bodyToMono(Void.class);

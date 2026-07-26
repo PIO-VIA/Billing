@@ -65,7 +65,13 @@ public class AccountingKernelAuthService {
                 .bodyToMono(new ParameterizedTypeReference<ApiResponse<AuthData>>() {})
                 .map(ApiResponse::getData)
                 .doOnNext(auth -> log.info("Kernel accounting service-account login succeeded, token expires in {}s",
-                        auth.getExpiresInSeconds()));
+                        auth.getExpiresInSeconds()))
+                // Without this, a Kernel hang leaves this Mono permanently pending —
+                // .cache() below has nothing to retry on, so every caller (including
+                // unrelated seller Sign In/Try Out requests through kernelWebClient,
+                // which also authenticates via this token) hangs forever too.
+                .timeout(Duration.ofSeconds(15))
+                .doOnError(err -> log.warn("Kernel accounting service-account login failed: {}", err.getMessage()));
     }
 
     private Duration ttlFor(AuthData auth) {

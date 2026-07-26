@@ -133,6 +133,11 @@ public class BonAchatService {
     }
 
     @Transactional(readOnly = true)
+    public Flux<BonAchatResponse> getBySupplierId(UUID supplierId) {
+        return bonAchatRepository.findByIdFournisseur(supplierId).map(bonAchatMapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
     public Flux<BonAchatResponse> getBySellerId(UUID sellerId) {
         return docPermissionService.findBySellerAndDocType(sellerId, DocType.BON_ACHAT)
                 .flatMap(permission -> bonAchatRepository.findById(permission.getDocId())
@@ -170,7 +175,14 @@ public class BonAchatService {
     /**
      * Same pattern as DevisUseCaseImpl.sendToPortal — marks the purchase order
      * ENVOYE, bootstraps the supplier's (login-based) portal access only if
-     * they've never had it, then emails a "new document" notification.
+     * they've never had it, then emails a "new document" notification. Only
+     * fires from BROUILLON: calling this again on an already-sent purchase
+     * order is a no-op, so double-submits don't re-provision access or
+     * re-send the email. Status is only persisted once the email has
+     * actually gone out, so a failed send never leaves the order falsely
+     * marked as sent (this used to save ENVOYE *before* attempting the
+     * email/portal-access call — fixed here to match DevisUseCaseImpl's
+     * correct ordering).
      */
     @Transactional
     public Mono<Void> sendToPortal(UUID id) {
@@ -179,17 +191,31 @@ public class BonAchatService {
         return bonAchatRepository.findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon d'achat non trouvé: " + id)))
                 .flatMap(bonAchat -> {
+                    if (bonAchat.getStatut() != StatutBonAchat.BROUILLON) {
+                        log.info("Bon d'achat {} déjà envoyé (statut: {}), envoi ignoré", id, bonAchat.getStatut());
+                        return Mono.empty();
+                    }
                     if (bonAchat.getSupplierEmail() == null || bonAchat.getSupplierEmail().isBlank()) {
                         return Mono.error(new IllegalStateException("Le fournisseur n'a pas d'adresse email renseignée."));
                     }
-                    bonAchat.setStatut(StatutBonAchat.ENVOYE);
-                    return bonAchatRepository.save(bonAchat);
+                    return fournisseurUseCase.ensureFournisseurPortalAccess(
+                                    bonAchat.getIdFournisseur(), bonAchat.getSupplierEmail(), bonAchat.getNomFournisseur())
+                            // Kernel's ensure-portal-access endpoint isn't deployed yet (404) — this
+                            // is a bootstrap-only nicety anyway (grants login to brand-new fournisseurs),
+                            // so a failure here shouldn't block the actual notification email.
+                            .onErrorResume(e -> {
+                                log.warn("ensureFournisseurPortalAccess failed for bon d'achat {} (continuing anyway): {}", id, e.getMessage());
+                                return Mono.empty();
+                            })
+                            .then(emailService.sendPortalDocumentNotification(
+                                    bonAchat.getSupplierEmail(), bonAchat.getNomFournisseur(),
+                                    "Bon de commande", bonAchat.getNumeroBonAchat(),
+                                    portalFrontendUrl + "/portal/login"))
+                            .then(Mono.defer(() -> {
+                                bonAchat.setStatut(StatutBonAchat.ENVOYE);
+                                return bonAchatRepository.save(bonAchat);
+                            }));
                 })
-                .flatMap(bonAchat -> fournisseurUseCase.ensureFournisseurPortalAccess(
-                                bonAchat.getIdFournisseur(), bonAchat.getSupplierEmail(), bonAchat.getNomFournisseur())
-                        .then(emailService.sendPortalDocumentNotification(
-                                bonAchat.getSupplierEmail(), bonAchat.getNomFournisseur(),
-                                "Bon de commande", bonAchat.getNumeroBonAchat(),
-                                portalFrontendUrl + "/portal/login")));
+                .then();
     }
 }

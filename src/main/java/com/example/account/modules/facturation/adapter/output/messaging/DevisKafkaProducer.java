@@ -24,24 +24,24 @@ public class DevisKafkaProducer implements DevisEventPort {
     @Override
     public void publishDevisCreated(DevisResponse devisResponse) {
         log.info("Publication de l'événement devis créé: {}", devisResponse.getNumeroDevis());
-        kafkaProducerService.sendMessage(DEVIS_CREATED_TOPIC, devisResponse.getIdDevis().toString(), devisResponse);
+        kafkaProducerService.sendMessage(DEVIS_CREATED_TOPIC, devisResponse.getIdDevis().toString(), devisResponse).subscribe();
     }
 
     @Override
     public void publishDevisUpdated(DevisResponse devisResponse) {
         log.info("Publication de l'événement devis mis à jour: {}", devisResponse.getNumeroDevis());
-        kafkaProducerService.sendMessage(DEVIS_UPDATED_TOPIC, devisResponse.getIdDevis().toString(), devisResponse);
+        kafkaProducerService.sendMessage(DEVIS_UPDATED_TOPIC, devisResponse.getIdDevis().toString(), devisResponse).subscribe();
     }
 
     @Override
     public void publishDevisDeleted(UUID devisId) {
         log.info("Publication de l'événement devis supprimé: {}", devisId);
-        kafkaProducerService.sendMessage(DEVIS_DELETED_TOPIC, devisId.toString(), devisId);
+        kafkaProducerService.sendMessage(DEVIS_DELETED_TOPIC, devisId.toString(), devisId).subscribe();
     }
 
     @Override
     public void publishDevisAccepted(DevisResponse devisResponse) {
         log.info("Publication de l'événement devis accepté: {}", devisResponse.getNumeroDevis());
-        kafkaProducerService.sendMessage(DEVIS_ACCEPTED_TOPIC, devisResponse.getIdDevis().toString(), devisResponse);
+        kafkaProducerService.sendMessage(DEVIS_ACCEPTED_TOPIC, devisResponse.getIdDevis().toString(), devisResponse).subscribe();
     }
 }

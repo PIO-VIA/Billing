@@ -70,6 +70,16 @@ public class SellerServiceAdapter implements SellerServicePort {
             SalesCoreErrorMapper.forContext("sales-core sellers error");
 
     @Override
+    public Mono<SellerListItemResponse> getById(UUID sellerId) {
+        return salesCoreWebClient
+                .get()
+                .uri("/api/sellers/{sellerId}", sellerId)
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), SALES_CORE_ERROR)
+                .bodyToMono(SellerListItemResponse.class);
+    }
+
+    @Override
     public Mono<CreateSellerResponse> createSeller(CreateSellerRequest request) {
         return salesCoreWebClient
                 .post()

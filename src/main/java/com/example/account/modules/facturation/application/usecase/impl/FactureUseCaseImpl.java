@@ -15,8 +15,11 @@ import com.example.account.modules.facturation.service.DocPermissionService;
 import com.example.account.modules.facturation.service.ExternalServices.ProductExternalService;
 import com.example.account.modules.facturation.service.PdfGeneratorService;
 import com.example.account.modules.facturation.service.EmailService;
+import com.example.account.modules.notification.domain.port.input.LiveNotificationUseCase;
+import com.example.account.modules.tiers.domain.port.input.ClientUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +28,7 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
@@ -41,6 +45,11 @@ public class FactureUseCaseImpl implements FactureUseCase {
     private final SellerServicePort sellerService;
     private final ProductExternalService productExternalService;
     private final DocPermissionService docPermissionService;
+    private final ClientUseCase clientUseCase;
+    private final LiveNotificationUseCase liveNotificationUseCase;
+
+    @Value("${client-portal.frontend-url}")
+    private String portalFrontendUrl;
 
     private <T> Mono<T> grantOwnerPermission(UUID sellerId, UUID docId, T response) {
         if (sellerId == null || docId == null) return Mono.just(response);
@@ -70,7 +79,22 @@ public class FactureUseCaseImpl implements FactureUseCase {
                     try {
                         if (savedFacture.getIdFacture() != null) docId = UUID.fromString(savedFacture.getIdFacture());
                     } catch (IllegalArgumentException ignored) {}
-                    return grantOwnerPermission(savedFacture.getCreatedBy(), docId, savedFacture);
+                    final UUID factureId = docId;
+                    return enqueueLiveNotification(savedFacture.getOrganizationId(), factureId)
+                            .then(grantOwnerPermission(savedFacture.getCreatedBy(), factureId, savedFacture));
+                });
+    }
+
+    /**
+     * Best-effort: queues the facture for the org's Telegram live-notification rules.
+     * Never fails invoice creation — a notification miss shouldn't roll back the facture.
+     */
+    private Mono<Void> enqueueLiveNotification(UUID organizationId, UUID factureId) {
+        if (organizationId == null || factureId == null) return Mono.empty();
+        return liveNotificationUseCase.enqueueFacture(organizationId, factureId)
+                .onErrorResume(e -> {
+                    log.warn("Failed to enqueue live notification for facture {}: {}", factureId, e.getMessage());
+                    return Mono.empty();
                 });
     }
 
@@ -248,5 +272,118 @@ public class FactureUseCaseImpl implements FactureUseCase {
     public Mono<Map<String, Object>> getAccountingPurchaseFacture(UUID factureId) {
         log.info("Querying accounting gateway (purchase) from sales-core for: {}", factureId);
         return factureServicePort.getAccountingPurchaseFacture(factureId);
+    }
+
+    /**
+     * Marks the invoice ENVOYE, bootstraps the client's (login-based) portal
+     * access only if they've never had it, then emails a "new document"
+     * notification — same pattern as DevisUseCaseImpl.sendToPortal /
+     * BonAchatService.sendToPortal. Only fires from BROUILLON: calling this
+     * again on an already-sent (or paid/cancelled/etc) invoice is a no-op,
+     * so double-submits don't re-provision access or re-send the email.
+     * Status is only persisted once the email has actually gone out, so a
+     * failure here never leaves the invoice falsely marked as sent.
+     */
+    @Override
+    @Transactional
+    public Mono<Void> sendToPortal(UUID factureId) {
+        log.info("Envoi de la facture {} vers le portail client", factureId);
+        return factureServicePort.findById(factureId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Facture non trouvée: " + factureId)))
+                .flatMap(facture -> {
+                    if (facture.getEtat() != StatutFacture.BROUILLON) {
+                        log.info("Facture {} déjà envoyée (état: {}), envoi ignoré", factureId, facture.getEtat());
+                        return Mono.empty();
+                    }
+                    if (facture.getEmailClient() == null || facture.getEmailClient().isBlank()) {
+                        return Mono.error(new IllegalStateException("Le client n'a pas d'adresse email renseignée."));
+                    }
+                    return clientUseCase.ensureClientPortalAccess(parseUuid(facture.getIdClient()), facture.getEmailClient(), facture.getNomClient())
+                            // Kernel's ensure-portal-access endpoint isn't deployed yet (404) — this
+                            // is a bootstrap-only nicety anyway (grants login to brand-new clients),
+                            // so a failure here shouldn't block the actual notification email.
+                            .onErrorResume(e -> {
+                                log.warn("ensureClientPortalAccess failed for facture {} (continuing anyway): {}", factureId, e.getMessage());
+                                return Mono.empty();
+                            })
+                            .then(emailService.sendPortalDocumentNotification(
+                                    facture.getEmailClient(), facture.getNomClient(),
+                                    "Facture", facture.getNumeroFacture(),
+                                    portalFrontendUrl + "/portal/login"))
+                            .then(Mono.defer(() -> factureServicePort.updateFacture(factureId, toSentUpdateRequest(facture))));
+                })
+                .then();
+    }
+
+    private UUID parseUuid(String value) {
+        try {
+            return value != null ? UUID.fromString(value) : null;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /** sales-core has no dedicated "mark envoyé" endpoint (unlike /paye), so sending requires round-tripping the whole record through the generic update. */
+    private FactureCreateRequest toSentUpdateRequest(FactureResponse facture) {
+        return FactureCreateRequest.builder()
+                .numeroFacture(facture.getNumeroFacture())
+                .dateFacturation(facture.getDateFacturation())
+                .dateEcheance(facture.getDateEcheance())
+                .dateSysteme(facture.getDateSysteme())
+                .type(facture.getType())
+                .etat(StatutFacture.ENVOYE)
+                .idClient(parseUuid(facture.getIdClient()))
+                .nomClient(facture.getNomClient())
+                .adresseClient(facture.getAdresseClient())
+                .emailClient(facture.getEmailClient())
+                .telephoneClient(facture.getTelephoneClient())
+                .lignesFacture(toLigneCreateRequests(facture.getLignesFacture()))
+                .montantHT(facture.getMontantHT())
+                .montantTVA(facture.getMontantTVA())
+                .montantTTC(facture.getMontantTTC())
+                .montantTotal(facture.getMontantTotal())
+                .finalAmount(facture.getFinalAmount())
+                .montantRestant(facture.getMontantRestant())
+                .applyVat(facture.getApplyVat())
+                .devise(facture.getDevise())
+                .tauxChange(facture.getTauxChange())
+                .modeReglement(facture.getModeReglement())
+                .conditionsPaiement(facture.getConditionsPaiement())
+                .nbreEcheance(facture.getNbreEcheance())
+                .nosRef(facture.getNosRef())
+                .vosRef(facture.getVosRef())
+                .referenceCommande(facture.getReferenceCommande())
+                .idDevisOrigine(parseUuid(facture.getIdDevisOrigine()))
+                .notes(facture.getNotes())
+                .pdfPath(facture.getPdfPath())
+                .envoyeParEmail(true)
+                .dateEnvoiEmail(LocalDateTime.now())
+                .remiseGlobalePourcentage(facture.getRemiseGlobalePourcentage())
+                .remiseGlobaleMontant(facture.getRemiseGlobaleMontant())
+                .referalClientId(facture.getReferalClientId())
+                .organizationId(facture.getOrganizationId())
+                .agencyId(facture.getAgencyId())
+                .createdBy(facture.getCreatedBy())
+                .originType(facture.getOriginType())
+                .sessionId(facture.getSessionId())
+                .build();
+    }
+
+    private java.util.List<com.example.account.modules.facturation.dto.request.LigneFactureCreateRequest> toLigneCreateRequests(
+            java.util.List<com.example.account.modules.facturation.dto.response.LigneFactureResponse> lignes) {
+        if (lignes == null) return null;
+        return lignes.stream()
+                .map(l -> com.example.account.modules.facturation.dto.request.LigneFactureCreateRequest.builder()
+                        .quantite(l.getQuantite())
+                        .description(l.getDescription())
+                        .debit(l.getDebit())
+                        .credit(l.getCredit())
+                        .isTaxLine(l.getIsTaxLine())
+                        .idProduit(l.getIdProduit())
+                        .nomProduit(l.getNomProduit())
+                        .prixUnitaire(l.getPrixUnitaire())
+                        .montantTotal(l.getMontantTotal())
+                        .build())
+                .toList();
     }
 }

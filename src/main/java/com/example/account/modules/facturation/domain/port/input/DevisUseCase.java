@@ -29,4 +29,5 @@ public interface DevisUseCase {
     Flux<DevisResponse> getDevisByOrganizationId(UUID organizationId);
     Flux<DevisResponse> getDevisByAgencyId(UUID agencyId);
     Flux<DevisResponse> getDevisBySellerId(UUID sellerId);
+    Flux<DevisResponse> getDevisByClientId(UUID clientId);
 }

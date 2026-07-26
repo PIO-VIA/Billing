@@ -21,16 +21,16 @@ public class PaiementEventProducer {
 
     public void publishPaiementCreated(PaiementResponse paiementResponse) {
         log.info("Publication de l'événement paiement créé: {}", paiementResponse.getIdPaiement());
-        kafkaProducerService.sendMessage(PAIEMENT_CREATED_TOPIC, paiementResponse.getIdPaiement().toString(), paiementResponse);
+        kafkaProducerService.sendMessage(PAIEMENT_CREATED_TOPIC, paiementResponse.getIdPaiement().toString(), paiementResponse).subscribe();
     }
 
     public void publishPaiementUpdated(PaiementResponse paiementResponse) {
         log.info("Publication de l'événement paiement mis à jour: {}", paiementResponse.getIdPaiement());
-        kafkaProducerService.sendMessage(PAIEMENT_UPDATED_TOPIC, paiementResponse.getIdPaiement().toString(), paiementResponse);
+        kafkaProducerService.sendMessage(PAIEMENT_UPDATED_TOPIC, paiementResponse.getIdPaiement().toString(), paiementResponse).subscribe();
     }
 
     public void publishPaiementDeleted(UUID paiementId) {
         log.info("Publication de l'événement paiement supprimé: {}", paiementId);
-        kafkaProducerService.sendMessage(PAIEMENT_DELETED_TOPIC, paiementId.toString(), paiementId);
+        kafkaProducerService.sendMessage(PAIEMENT_DELETED_TOPIC, paiementId.toString(), paiementId).subscribe();
     }
 }

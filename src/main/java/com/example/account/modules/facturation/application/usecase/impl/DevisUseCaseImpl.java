@@ -268,6 +268,10 @@ public Mono<Void> refuserDevis(UUID devisId) {
  * access before, so repeated sends don't keep resetting their password —
  * then emails them a "new document" notification linking to /portal/login.
  * Deliberately separate from sendDevisAsEmail's older no-login token-link flow.
+ * Only fires from BROUILLON: calling this again on an already-sent quotation
+ * is a no-op, so double-submits don't re-provision access or re-send the
+ * email. Status is only persisted once the email has actually gone out, so
+ * a failed send never leaves the quotation falsely marked as sent.
  */
 @Transactional
 public Mono<Void> sendToPortal(UUID devisId) {
@@ -276,17 +280,31 @@ public Mono<Void> sendToPortal(UUID devisId) {
     return devisRepository.findById(devisId)
             .switchIfEmpty(Mono.error(new IllegalArgumentException("Devis non trouvé: " + devisId)))
             .flatMap(devis -> {
+                if (devis.getStatut() != StatutDevis.BROUILLON) {
+                    log.info("Devis {} déjà envoyé (statut: {}), envoi ignoré", devisId, devis.getStatut());
+                    return Mono.empty();
+                }
                 if (devis.getEmailClient() == null || devis.getEmailClient().isBlank()) {
                     return Mono.error(new IllegalStateException("Le client n'a pas d'adresse email renseignée."));
                 }
-                devis.setStatut(StatutDevis.ENVOYE);
-                return devisRepository.save(devis);
+                return clientUseCase.ensureClientPortalAccess(devis.getIdClient(), devis.getEmailClient(), devis.getNomClient())
+                        // Kernel's ensure-portal-access endpoint isn't deployed yet (404) — this
+                        // is a bootstrap-only nicety anyway (grants login to brand-new clients),
+                        // so a failure here shouldn't block the actual notification email.
+                        .onErrorResume(e -> {
+                            log.warn("ensureClientPortalAccess failed for devis {} (continuing anyway): {}", devisId, e.getMessage());
+                            return Mono.empty();
+                        })
+                        .then(emailService.sendPortalDocumentNotification(
+                                devis.getEmailClient(), devis.getNomClient(),
+                                "Devis", devis.getNumeroDevis(),
+                                portalFrontendUrl + "/portal/login"))
+                        .then(Mono.defer(() -> {
+                            devis.setStatut(StatutDevis.ENVOYE);
+                            return devisRepository.save(devis);
+                        }));
             })
-            .flatMap(devis -> clientUseCase.ensureClientPortalAccess(devis.getIdClient(), devis.getEmailClient(), devis.getNomClient())
-                    .then(emailService.sendPortalDocumentNotification(
-                            devis.getEmailClient(), devis.getNomClient(),
-                            "Devis", devis.getNumeroDevis(),
-                            portalFrontendUrl + "/portal/login")));
+            .then();
 }
 
     @Override
@@ -319,5 +337,12 @@ public Mono<Void> sendToPortal(UUID devisId) {
                             response.setDocPermission(docPermissionService.toResponse(permission));
                             return response;
                         }));
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public Flux<DevisResponse> getDevisByClientId(UUID clientId) {
+        log.info("Récupération des devis du client: {}", clientId);
+        return devisRepository.findByIdClient(clientId).map(devisMapper::toResponse);
     }
 }

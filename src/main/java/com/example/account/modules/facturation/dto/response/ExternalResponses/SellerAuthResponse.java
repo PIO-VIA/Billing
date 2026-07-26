@@ -31,6 +31,7 @@ public class SellerAuthResponse {
     private UUID id;
 
     private String username;
+    private String email;
     private SellerRole role;
     private String agency;
     private String salePoint;

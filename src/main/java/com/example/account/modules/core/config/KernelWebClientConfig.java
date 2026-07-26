@@ -49,11 +49,20 @@ public class KernelWebClientConfig {
      * token is never a valid Kernel token. Every kernelWebClient call instead
      * authenticates as the platform's Kernel service account (same cached-token
      * pattern as AccountingKernelAuthService) rather than forwarding the caller's
-     * own token.
+     * own token — except the unauthenticated auth-entry endpoints (login,
+     * discover-contexts, select-context), which must stay bare since they're the
+     * calls that hand out a token in the first place; sending a (possibly stale
+     * or slow-to-fetch) service-account token there gets the request rejected —
+     * or, worse, makes it block on an unrelated service-account login — before
+     * Kernel even looks at the credentials/selection token in the body.
      */
+    private static final java.util.Set<String> UNAUTHENTICATED_AUTH_PATHS = java.util.Set.of(
+            "/api/auth/login", "/api/auth/discover-contexts", "/api/auth/select-context");
+
     private ExchangeFilterFunction injectBearerToken(AccountingKernelAuthService authService) {
         return (request, next) -> {
-            if (request.headers().containsKey(HttpHeaders.AUTHORIZATION)) {
+            if (request.headers().containsKey(HttpHeaders.AUTHORIZATION)
+                    || UNAUTHENTICATED_AUTH_PATHS.contains(request.url().getPath())) {
                 return next.exchange(request);
             }
             return authService.getValidToken()

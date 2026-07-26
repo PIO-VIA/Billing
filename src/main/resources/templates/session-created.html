@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session KSM créée</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f8;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e5e5e5;
+        }
+        .header {
+            background: #1f2937;
+            color: #ffffff;
+            text-align: center;
+            padding: 32px 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .header p {
+            margin: 6px 0 0;
+            font-size: 14px;
+            opacity: 0.85;
+        }
+        .content {
+            padding: 28px;
+        }
+        .content p {
+            margin: 10px 0;
+        }
+        .info-box {
+            background-color: #f9fafc;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 22px 0;
+            border-left: 4px solid #1f2937;
+        }
+        .info-box h2 {
+            margin: 0 0 15px;
+            font-size: 16px;
+            color: #1f2937;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eaeaea;
+            font-size: 14px;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            font-weight: 600;
+            color: #444444;
+        }
+        .value {
+            color: #1f2937;
+            font-weight: 700;
+        }
+        .footer {
+            background-color: #f4f6f8;
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: #777777;
+            border-top: 1px solid #e5e5e5;
+        }
+        @media (max-width: 600px) {
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .label, .value {
+                display: block;
+                margin: 2px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- HEADER -->
+    <div class="header">
+        <h1>KSM</h1>
+        <p>Une session vient d'être créée pour vous</p>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+        <p>Bonjour <strong th:text="${username}">vendeur</strong>,</p>
+        <p>Une session vient d'être ouverte sur <strong>KSM</strong>
+            <span th:if="${agency}">au sein de l'agence <strong th:text="${agency}">Agence</strong></span>.
+            Voici le détail :</p>
+
+        <div class="info-box">
+            <h2>Détails de la session</h2>
+            <div class="info-row">
+                <span class="label">Type :</span>
+                <span class="value" th:text="${sessionType}">POS</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Statut :</span>
+                <span class="value" th:text="${status}">OPEN</span>
+            </div>
+            <div class="info-row" th:if="${startTime}">
+                <span class="label">Début :</span>
+                <span class="value" th:text="${startTime}">01/01/2026 09:00</span>
+            </div>
+            <div class="info-row" th:if="${openingAmount}">
+                <span class="label">Montant d'ouverture :</span>
+                <span class="value" th:text="${openingAmount}">0</span>
+            </div>
+        </div>
+
+        <p>Si vous n'êtes pas à l'origine de cette session, contactez votre administrateur.</p>
+
+        <p>Cordialement,<br>
+            <strong>L'équipe KSM</strong></p>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <p>Cet email a été généré automatiquement, merci de ne pas y répondre.</p>
+        <p>KSM &mdash; Plateforme de gestion des ventes</p>
+    </div>
+</div>
+</body>
+</html>

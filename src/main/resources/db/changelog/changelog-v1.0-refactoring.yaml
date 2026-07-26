@@ -532,3 +532,45 @@ databaseChangeLog:
             columns:
               - column:
                   name: id_client
+
+  - changeSet:
+      id: 20-create-seller-auth-contexts
+      author: dev
+      changes:
+        - createTable:
+            tableName: seller_auth_contexts
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: seller_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pin
+                  type: varchar(5)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_at
+                  type: timestamp
+        - createIndex:
+            tableName: seller_auth_contexts
+            indexName: idx_seller_auth_contexts_org
+            columns:
+              - column:
+                  name: organization_id

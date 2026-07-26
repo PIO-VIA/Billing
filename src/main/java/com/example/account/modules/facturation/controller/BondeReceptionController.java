@@ -62,4 +62,10 @@ public class BondeReceptionController {
     public Flux<BondeReceptionResponse> getBySellerId(@PathVariable UUID sellerId) {
         return bonReceptionService.getBySellerId(sellerId);
     }
+
+    @PostMapping("/{id}/send-to-portal")
+    public Mono<ResponseEntity<Void>> sendToPortal(@PathVariable UUID id) {
+        return bonReceptionService.sendToPortal(id)
+                .thenReturn(ResponseEntity.ok().<Void>build());
+    }
 }

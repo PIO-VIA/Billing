@@ -4,10 +4,12 @@ import com.example.account.modules.core.context.ReactiveOrganizationContext;
 import com.example.account.modules.core.exception.SalesCoreErrorMapper;
 import com.example.account.modules.facturation.domain.port.output.ProductServicePort;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.ProductResponse;
+import com.example.account.modules.shared.dto.kernel.KernelApiResponse;
 import com.example.account.modules.shared.dto.kernel.KernelProductResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -24,25 +26,42 @@ import java.util.UUID;
 public class ProductServiceAdapter implements ProductServicePort {
 
     private final WebClient salesCoreWebClient;
+    private final AccountingKernelAuthService accountingKernelAuthService;
 
-    public ProductServiceAdapter(@Qualifier("salesCoreWebClient") WebClient salesCoreWebClient) {
+    private static final ParameterizedTypeReference<KernelApiResponse<List<KernelProductResponse>>> PRODUCT_LIST_TYPE =
+            new ParameterizedTypeReference<>() {};
+    private static final ParameterizedTypeReference<KernelApiResponse<KernelProductResponse>> PRODUCT_TYPE =
+            new ParameterizedTypeReference<>() {};
+
+    public ProductServiceAdapter(@Qualifier("salesCoreWebClient") WebClient salesCoreWebClient,
+                                  AccountingKernelAuthService accountingKernelAuthService) {
         this.salesCoreWebClient = salesCoreWebClient;
+        this.accountingKernelAuthService = accountingKernelAuthService;
     }
 
     @Override
     public Flux<ProductResponse> fetchProductsByOrganization(UUID organizationId) {
         log.info("Fetching products from sales-core for organization: {}", organizationId);
-        // sales-core's /api/products derives the org from X-Organization-Id, not a query param,
-        // so it's set explicitly here to honor the org this method was actually called with.
-        return salesCoreWebClient
-                .get()
-                .uri("/api/products")
-                .header("X-Organization-Id", organizationId.toString())
-                .retrieve()
-                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
-                        resp -> resp.bodyToMono(String.class)
-                                .flatMap(err -> Mono.error(new RuntimeException("sales-core products error: " + SalesCoreErrorMapper.extractMessage(err)))))
-                .bodyToFlux(KernelProductResponse.class)
+        // Kernel's product-core requires organizationId as a query param (unlike sales-core's
+        // old X-Organization-Id-only convention); sent as both to honor the org this method
+        // was actually called with regardless of which one the backend reads. This endpoint
+        // needs an authenticated, sufficiently-privileged Kernel token regardless of caller
+        // (it 403s with no token at all, and a plain customer's own token also lacks the
+        // needed permission) — read-only public catalog data, so our own service account
+        // is used explicitly rather than whatever caller identity happens to be in context.
+        return accountingKernelAuthService.getValidToken()
+                .flatMap(token -> salesCoreWebClient
+                        .get()
+                        .uri(uriBuilder -> uriBuilder.path("/api/products").queryParam("organizationId", organizationId).build())
+                        .header("X-Organization-Id", organizationId.toString())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .retrieve()
+                        .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                                resp -> resp.bodyToMono(String.class)
+                                        .flatMap(err -> Mono.error(new RuntimeException("sales-core products error: " + SalesCoreErrorMapper.extractMessage(err)))))
+                        .bodyToMono(PRODUCT_LIST_TYPE))
+                .map(KernelApiResponse::getData)
+                .flatMapMany(Flux::fromIterable)
                 .map(this::mapToProductResponse);
     }
 
@@ -68,7 +87,8 @@ public class ProductServiceAdapter implements ProductServicePort {
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
                         resp -> resp.bodyToMono(String.class)
                                 .flatMap(err -> Mono.error(new RuntimeException("sales-core product error: " + SalesCoreErrorMapper.extractMessage(err)))))
-                .bodyToMono(KernelProductResponse.class)
+                .bodyToMono(PRODUCT_TYPE)
+                .map(KernelApiResponse::getData)
                 .map(this::mapToProductResponse);
     }
 

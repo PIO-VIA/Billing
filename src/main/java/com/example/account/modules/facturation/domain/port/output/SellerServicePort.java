@@ -18,6 +18,7 @@ import java.util.UUID;
 public interface SellerServicePort {
     Flux<SellerAuthResponse> getSellersByOrganization(UUID organizationId);
     Flux<SellerListItemResponse> listSellers(UUID organizationId);
+    Mono<SellerListItemResponse> getById(UUID sellerId);
     Mono<CreateSellerResponse> createSeller(CreateSellerRequest request);
     Mono<AssignAgencyResponse> assignAgency(UUID sellerId, AssignAgencyRequest request);
     Mono<SellerUIPermissionsResponse> getUIPermissions(UUID sellerId);

@@ -6,13 +6,22 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-/** Only the fields Billing's "Try Out" flow actually needs from Kernel's login response. */
+/** Only the fields Billing's "Try Out"/portal-auth flows actually need from Kernel's login response. */
 @Data
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class KernelLoginResponse {
     private UUID id;
+    // Third-party records' partyId is the actor id, not the user id above —
+    // needed to resolve which third-party (customer/supplier) a portal login
+    // belongs to.
+    private UUID actorId;
     private String username;
     private String email;
+    // Local seller records (Billing's own sales-core) are sometimes created with
+    // whatever contact email the inviter typed in, which can differ from the
+    // Kernel account's primary login email — recoveryEmail is the other address
+    // Kernel knows for this account, checked as a fallback match.
+    private String recoveryEmail;
     private String accessToken;
 }

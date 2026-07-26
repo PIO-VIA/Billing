@@ -24,24 +24,24 @@ public class FactureKafkaProducer implements FactureEventPort {
     @Override
     public void publishFactureCreated(FactureResponse factureResponse) {
         log.info("Publication de l'événement facture créée: {}", factureResponse.getNumeroFacture());
-        kafkaProducerService.sendMessage(FACTURE_CREATED_TOPIC, factureResponse.getIdFacture().toString(), factureResponse);
+        kafkaProducerService.sendMessage(FACTURE_CREATED_TOPIC, factureResponse.getIdFacture().toString(), factureResponse).subscribe();
     }
 
     @Override
     public void publishFactureUpdated(FactureResponse factureResponse) {
         log.info("Publication de l'événement facture mise à jour: {}", factureResponse.getNumeroFacture());
-        kafkaProducerService.sendMessage(FACTURE_UPDATED_TOPIC, factureResponse.getIdFacture().toString(), factureResponse);
+        kafkaProducerService.sendMessage(FACTURE_UPDATED_TOPIC, factureResponse.getIdFacture().toString(), factureResponse).subscribe();
     }
 
     @Override
     public void publishFactureDeleted(UUID factureId) {
         log.info("Publication de l'événement facture supprimée: {}", factureId);
-        kafkaProducerService.sendMessage(FACTURE_DELETED_TOPIC, factureId.toString(), factureId);
+        kafkaProducerService.sendMessage(FACTURE_DELETED_TOPIC, factureId.toString(), factureId).subscribe();
     }
 
     @Override
     public void publishFacturePaid(FactureResponse factureResponse) {
         log.info("Publication de l'événement facture payée: {}", factureResponse.getNumeroFacture());
-        kafkaProducerService.sendMessage(FACTURE_PAID_TOPIC, factureResponse.getIdFacture().toString(), factureResponse);
+        kafkaProducerService.sendMessage(FACTURE_PAID_TOPIC, factureResponse.getIdFacture().toString(), factureResponse).subscribe();
     }
 }
