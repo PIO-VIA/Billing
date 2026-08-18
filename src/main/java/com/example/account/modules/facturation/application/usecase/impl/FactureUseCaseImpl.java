@@ -11,11 +11,16 @@ import com.example.account.modules.facturation.dto.response.FactureResponse;
 import com.example.account.modules.facturation.model.enums.DocPermissionLevel;
 import com.example.account.modules.facturation.model.enums.DocType;
 import com.example.account.modules.facturation.model.enums.StatutFacture;
+import com.example.account.modules.facturation.model.enums.TypePaiementFacture;
 import com.example.account.modules.facturation.service.DocPermissionService;
 import com.example.account.modules.facturation.service.ExternalServices.ProductExternalService;
 import com.example.account.modules.facturation.service.PdfGeneratorService;
 import com.example.account.modules.facturation.service.EmailService;
 import com.example.account.modules.notification.domain.port.input.LiveNotificationUseCase;
+import com.example.account.modules.paymentgateway.domain.port.output.PaymentGatewayPort;
+import com.example.account.modules.paymentgateway.dto.enums.PaymentMethodType;
+import com.example.account.modules.paymentgateway.dto.enums.PaymentProvider;
+import com.example.account.modules.paymentgateway.dto.request.PaymentOrderInitiateRequest;
 import com.example.account.modules.tiers.domain.port.input.ClientUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +52,7 @@ public class FactureUseCaseImpl implements FactureUseCase {
     private final DocPermissionService docPermissionService;
     private final ClientUseCase clientUseCase;
     private final LiveNotificationUseCase liveNotificationUseCase;
+    private final PaymentGatewayPort paymentGatewayPort;
 
     @Value("${client-portal.frontend-url}")
     private String portalFrontendUrl;
@@ -298,19 +304,52 @@ public class FactureUseCaseImpl implements FactureUseCase {
                     if (facture.getEmailClient() == null || facture.getEmailClient().isBlank()) {
                         return Mono.error(new IllegalStateException("Le client n'a pas d'adresse email renseignée."));
                     }
-                    return clientUseCase.ensureClientPortalAccess(parseUuid(facture.getIdClient()), facture.getEmailClient(), facture.getNomClient())
-                            // Kernel's ensure-portal-access endpoint isn't deployed yet (404) — this
-                            // is a bootstrap-only nicety anyway (grants login to brand-new clients),
-                            // so a failure here shouldn't block the actual notification email.
-                            .onErrorResume(e -> {
-                                log.warn("ensureClientPortalAccess failed for facture {} (continuing anyway): {}", factureId, e.getMessage());
-                                return Mono.empty();
-                            })
+                    return maybeInitiatePaymentRequest(facture)
+                            .then(clientUseCase.ensureClientPortalAccess(parseUuid(facture.getIdClient()), facture.getEmailClient(), facture.getNomClient())
+                                    // Kernel's ensure-portal-access endpoint isn't deployed yet (404) — this
+                                    // is a bootstrap-only nicety anyway (grants login to brand-new clients),
+                                    // so a failure here shouldn't block the actual notification email.
+                                    .onErrorResume(e -> {
+                                        log.warn("ensureClientPortalAccess failed for facture {} (continuing anyway): {}", factureId, e.getMessage());
+                                        return Mono.empty();
+                                    }))
                             .then(emailService.sendPortalDocumentNotification(
                                     facture.getEmailClient(), facture.getNomClient(),
                                     "Facture", facture.getNumeroFacture(),
                                     portalFrontendUrl + "/portal/login"))
                             .then(Mono.defer(() -> factureServicePort.updateFacture(factureId, toSentUpdateRequest(facture))));
+                })
+                .then();
+    }
+
+    /**
+     * When the invoice's chosen payment method is mobile money, initiate a real
+     * Kernel payment order for the remaining balance and stash its id on the
+     * (in-memory) facture — toSentUpdateRequest below persists whatever's on
+     * it as referenceCommande — so the customer portal can offer a "Pay"
+     * button that jumps straight to the hosted checkout. Non-blocking: a
+     * failure here must never stop the invoice from actually being sent, same
+     * tolerance already applied to ensureClientPortalAccess above.
+     */
+    private Mono<Void> maybeInitiatePaymentRequest(FactureResponse facture) {
+        boolean isMobileMoney = facture.getModeReglement() == TypePaiementFacture.MOBILE_MONEY
+                || facture.getModeReglement() == TypePaiementFacture.ORANGE_MONEY;
+        if (!isMobileMoney || facture.getMontantRestant() == null || facture.getMontantRestant().signum() <= 0) {
+            return Mono.empty();
+        }
+        PaymentOrderInitiateRequest request = PaymentOrderInitiateRequest.builder()
+                .amount(facture.getMontantRestant())
+                .currency(facture.getDevise())
+                .provider(PaymentProvider.MYCOOLPAY)
+                .method(PaymentMethodType.MOBILE_MONEY)
+                .payerReference(facture.getTelephoneClient())
+                .description("Facture " + facture.getNumeroFacture())
+                .build();
+        return paymentGatewayPort.initiateOrder(request)
+                .doOnNext(order -> facture.setReferenceCommande(order.getId()))
+                .onErrorResume(e -> {
+                    log.warn("Payment order initiation failed for facture {} (continuing anyway): {}", facture.getIdFacture(), e.getMessage());
+                    return Mono.empty();
                 })
                 .then();
     }
