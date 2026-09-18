@@ -78,4 +78,12 @@ public class SellerAuthResponse {
     // an org picker and resubmit with the chosen organizationId.
     private Boolean requiresOrganizationSelection;
     private List<KernelOrganizationResponse> availableOrganizations;
+
+    // Set when Kernel requires MFA to complete this login (now the case for
+    // every account). Every other field is left null — the frontend must
+    // prompt for the emailed OTP code and resubmit via /api/auth/login/mfa
+    // with this mfaToken + the code (and organizationId/tryOut if known).
+    private Boolean mfaRequired;
+    private String mfaToken;
+    private String mfaChannel;
 }

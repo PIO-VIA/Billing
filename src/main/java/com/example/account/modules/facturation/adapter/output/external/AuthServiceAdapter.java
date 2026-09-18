@@ -74,12 +74,36 @@ public class AuthServiceAdapter implements AuthServicePort {
         return kernelLoginAndResolveOrganization(principal, password, organizationId);
     }
 
+    @Override
+    public Mono<SellerAuthResponse> confirmMfa(String mfaToken, String code, java.util.UUID organizationId) {
+        log.info("Confirming Kernel MFA challenge");
+        return kernelWebClient
+                .post()
+                .uri("/api/auth/mfa/confirm")
+                .bodyValue(Map.of("mfaToken", mfaToken, "code", code))
+                .retrieve()
+                .onStatus(status -> status.value() == 401 || status.value() == 403,
+                        resp -> Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired MFA code")))
+                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                        resp -> resp.bodyToMono(String.class).defaultIfEmpty("")
+                                .flatMap(err -> Mono.error(new ResponseStatusException(
+                                        HttpStatus.BAD_GATEWAY, "Kernel MFA confirmation error: " + SalesCoreErrorMapper.extractMessage(err)))))
+                .bodyToMono(KERNEL_LOGIN_TYPE)
+                .map(KernelApiResponse::getData)
+                .timeout(Duration.ofSeconds(15))
+                .flatMap(kernelUser -> resolveOrganizationForUser(kernelUser, organizationId));
+    }
+
     /**
      * Logs in directly against Kernel, then resolves which of the account's
      * Kernel organizations the session is for:
      * - organizationId given: must be one of the account's orgs (disambiguation from a prior "requires selection" response).
      * - none given, exactly one org: proceed with it directly.
      * - none given, several orgs: don't finish the login yet — hand back the list so the frontend can show a picker.
+     * Kernel now requires MFA on every login, so the login call itself never
+     * carries an accessToken directly — kernelUser.getNextStep() comes back
+     * "CONFIRM_MFA" with a mfaToken instead, which short-circuits straight to
+     * the frontend rather than going on to call /api/users/me with no token.
      */
     private Mono<SellerAuthResponse> kernelLoginAndResolveOrganization(String principal, String password, java.util.UUID organizationId) {
         return kernelWebClient
@@ -90,38 +114,51 @@ public class AuthServiceAdapter implements AuthServicePort {
                 .onStatus(status -> status.value() == 401 || status.value() == 403,
                         resp -> Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials")))
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
-                        resp -> resp.bodyToMono(String.class)
+                        resp -> resp.bodyToMono(String.class).defaultIfEmpty("")
                                 .flatMap(err -> Mono.error(new ResponseStatusException(
                                         HttpStatus.BAD_GATEWAY, "Kernel auth error: " + SalesCoreErrorMapper.extractMessage(err)))))
                 .bodyToMono(KERNEL_LOGIN_TYPE)
                 .map(KernelApiResponse::getData)
                 .timeout(Duration.ofSeconds(15))
-                .flatMap(kernelUser -> kernelWebClient
-                        .get()
-                        // /api/organizations/my needs the elevated organizations:read/write
-                        // permission, which most invited employees (sellers, POS sellers,
-                        // agency managers) never get assigned — it 403s for anyone but an
-                        // org admin. /api/users/me only requires being logged in and carries
-                        // the same org-membership list, sourced from the account's actual
-                        // employee memberships.
-                        .uri("/api/users/me")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + kernelUser.getAccessToken())
-                        .retrieve()
-                        .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
-                                resp -> resp.bodyToMono(String.class)
-                                        .flatMap(err -> Mono.error(new ResponseStatusException(
-                                                HttpStatus.BAD_GATEWAY, "Kernel organizations lookup error: " + SalesCoreErrorMapper.extractMessage(err)))))
-                        .bodyToMono(KERNEL_USER_ME_TYPE)
-                        .map(KernelApiResponse::getData)
-                        .timeout(Duration.ofSeconds(15))
-                        .map(KernelUserProfileResponse::getOrganizations)
-                        .map(accesses -> accesses == null ? List.<KernelOrganizationResponse>of()
-                                : accesses.stream().map(this::toOrganizationResponse).toList())
-                        .flatMap(orgs -> orgs.isEmpty() ? scanEmployeeMemberships(kernelUser.getActorId()) : Mono.just(orgs))
-                        .flatMap(orgs -> orgs.isEmpty()
-                                ? scanLocalSellersByEmail(List.of(kernelUser.getEmail(), kernelUser.getRecoveryEmail()))
-                                : Mono.just(orgs))
-                        .flatMap(orgs -> resolveOrganization(kernelUser, orgs, organizationId)));
+                .flatMap(kernelUser -> {
+                    if (kernelUser.getAccessToken() == null && "CONFIRM_MFA".equals(kernelUser.getNextStep())) {
+                        SellerAuthResponse mfa = new SellerAuthResponse();
+                        mfa.setMfaRequired(true);
+                        mfa.setMfaToken(kernelUser.getMfaToken());
+                        mfa.setMfaChannel(kernelUser.getChannel());
+                        return Mono.just(mfa);
+                    }
+                    return resolveOrganizationForUser(kernelUser, organizationId);
+                });
+    }
+
+    private Mono<SellerAuthResponse> resolveOrganizationForUser(KernelLoginResponse kernelUser, java.util.UUID organizationId) {
+        return kernelWebClient
+                .get()
+                // /api/organizations/my needs the elevated organizations:read/write
+                // permission, which most invited employees (sellers, POS sellers,
+                // agency managers) never get assigned — it 403s for anyone but an
+                // org admin. /api/users/me only requires being logged in and carries
+                // the same org-membership list, sourced from the account's actual
+                // employee memberships.
+                .uri("/api/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + kernelUser.getAccessToken())
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                        resp -> resp.bodyToMono(String.class).defaultIfEmpty("")
+                                .flatMap(err -> Mono.error(new ResponseStatusException(
+                                        HttpStatus.BAD_GATEWAY, "Kernel organizations lookup error: " + SalesCoreErrorMapper.extractMessage(err)))))
+                .bodyToMono(KERNEL_USER_ME_TYPE)
+                .map(KernelApiResponse::getData)
+                .timeout(Duration.ofSeconds(15))
+                .map(KernelUserProfileResponse::getOrganizations)
+                .map(accesses -> accesses == null ? List.<KernelOrganizationResponse>of()
+                        : accesses.stream().map(this::toOrganizationResponse).toList())
+                .flatMap(orgs -> orgs.isEmpty() ? scanEmployeeMemberships(kernelUser.getActorId()) : Mono.just(orgs))
+                .flatMap(orgs -> orgs.isEmpty()
+                        ? scanLocalSellersByEmail(List.of(kernelUser.getEmail(), kernelUser.getRecoveryEmail()))
+                        : Mono.just(orgs))
+                .flatMap(orgs -> resolveOrganization(kernelUser, orgs, organizationId));
     }
 
     // Same reasoning as PortalIdentityResolver: /api/users/me only reports org

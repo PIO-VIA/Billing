@@ -24,4 +24,11 @@ public class KernelLoginResponse {
     // Kernel knows for this account, checked as a fallback match.
     private String recoveryEmail;
     private String accessToken;
+
+    // Kernel now requires MFA on every login: instead of accessToken, the
+    // response carries these fields and nextStep="CONFIRM_MFA". mfaToken must
+    // be echoed back to /api/auth/mfa/confirm along with the OTP code.
+    private String nextStep;
+    private String mfaToken;
+    private String channel;
 }

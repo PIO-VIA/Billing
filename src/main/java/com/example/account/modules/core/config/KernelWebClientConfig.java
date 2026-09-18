@@ -57,7 +57,7 @@ public class KernelWebClientConfig {
      * Kernel even looks at the credentials/selection token in the body.
      */
     private static final java.util.Set<String> UNAUTHENTICATED_AUTH_PATHS = java.util.Set.of(
-            "/api/auth/login", "/api/auth/discover-contexts", "/api/auth/select-context");
+            "/api/auth/login", "/api/auth/discover-contexts", "/api/auth/select-context", "/api/auth/mfa/confirm");
 
     private ExchangeFilterFunction injectBearerToken(AccountingKernelAuthService authService) {
         return (request, next) -> {

@@ -8,4 +8,5 @@ import java.util.UUID;
 public interface AuthServicePort {
     Mono<SellerAuthResponse> login(String username, String password, UUID organizationId);
     Mono<SellerAuthResponse> tryOut(String principal, String password, UUID organizationId);
+    Mono<SellerAuthResponse> confirmMfa(String mfaToken, String code, UUID organizationId);
 }

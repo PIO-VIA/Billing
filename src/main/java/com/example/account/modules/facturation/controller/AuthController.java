@@ -2,6 +2,7 @@ package com.example.account.modules.facturation.controller;
 
 import com.example.account.modules.facturation.domain.port.input.AuthUseCase;
 import com.example.account.modules.facturation.dto.request.LoginRequest;
+import com.example.account.modules.facturation.dto.request.MfaConfirmRequest;
 import com.example.account.modules.facturation.dto.request.PinLoginRequest;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.SellerAuthResponse;
 import jakarta.validation.Valid;
@@ -35,6 +36,14 @@ public class AuthController {
     public Mono<ResponseEntity<SellerAuthResponse>> tryOut(@RequestBody LoginRequest request) {
         log.info("Try Out login request for principal: {}", request.getUsername());
         return authUseCase.tryOut(request)
+                .map(ResponseEntity::ok);
+    }
+
+    @PostMapping("/login/mfa")
+    @Operation(summary = "Confirm MFA", description = "Second step of login/try-out: confirms the emailed OTP code with the mfaToken returned by /login or /try-out, and returns the same seller profile those would have returned directly.")
+    public Mono<ResponseEntity<SellerAuthResponse>> confirmMfa(@Valid @RequestBody MfaConfirmRequest request) {
+        log.info("MFA confirmation request");
+        return authUseCase.confirmMfa(request)
                 .map(ResponseEntity::ok);
     }
 

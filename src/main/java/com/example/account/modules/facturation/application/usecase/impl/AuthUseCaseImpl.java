@@ -5,6 +5,7 @@ import com.example.account.modules.facturation.domain.port.output.AuthServicePor
 import com.example.account.modules.facturation.domain.port.output.SellerServicePort;
 import com.example.account.modules.facturation.dto.request.CreateSellerRequest;
 import com.example.account.modules.facturation.dto.request.LoginRequest;
+import com.example.account.modules.facturation.dto.request.MfaConfirmRequest;
 import com.example.account.modules.facturation.dto.request.PinLoginRequest;
 import com.example.account.modules.facturation.dto.request.SellerUIPermissionsRequest;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.SellerAuthResponse;
@@ -44,6 +45,23 @@ public class AuthUseCaseImpl implements AuthUseCase {
     public Mono<SellerAuthResponse> tryOut(LoginRequest request) {
         return authServicePort.tryOut(request.getUsername(), request.getPassword(), request.getOrganizationId())
                 .flatMap(this::ensureSellerProvisioned)
+                .flatMap(this::withOrganizationSettings);
+    }
+
+    /**
+     * Second step once login()/tryOut() came back with mfaRequired=true.
+     * request.tryOut() picks up the same branching login()/tryOut() use —
+     * attach an existing seller for Sign In, auto-provision an OWNER seller
+     * for Try Out — since Kernel's mfaToken itself carries no memory of which
+     * entry point the account originally used.
+     */
+    @Override
+    public Mono<SellerAuthResponse> confirmMfa(MfaConfirmRequest request) {
+        Mono<SellerAuthResponse> resolved = authServicePort.confirmMfa(
+                request.getMfaToken(), request.getCode(), request.getOrganizationId());
+        return (request.isTryOut()
+                ? resolved.flatMap(this::ensureSellerProvisioned)
+                : resolved.flatMap(this::attachExistingSeller))
                 .flatMap(this::withOrganizationSettings);
     }
 

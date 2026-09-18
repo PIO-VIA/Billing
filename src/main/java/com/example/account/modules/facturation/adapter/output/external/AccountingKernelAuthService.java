@@ -9,6 +9,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.SynchronousSink;
 
 import java.time.Duration;
 import java.util.Map;
@@ -64,6 +65,21 @@ public class AccountingKernelAuthService {
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<ApiResponse<AuthData>>() {})
                 .map(ApiResponse::getData)
+                // Kernel now requires MFA on every login. A service account has
+                // no one to read the emailed OTP to, so it can never complete
+                // this — surface that plainly instead of letting the null
+                // accessToken crash the next .map() with an opaque reactive
+                // error. This account needs to be exempted from MFA on
+                // Kernel's side; nothing on Billing's end can resolve it.
+                .handle((AuthData auth, SynchronousSink<AuthData> sink) -> {
+                    if (auth.getAccessToken() == null) {
+                        sink.error(new IllegalStateException(
+                                "Kernel service account '" + username + "' now requires MFA and cannot log in "
+                                        + "automatically — ask Kernel-core to exempt this account from MFA."));
+                    } else {
+                        sink.next(auth);
+                    }
+                })
                 .doOnNext(auth -> log.info("Kernel accounting service-account login succeeded, token expires in {}s",
                         auth.getExpiresInSeconds()))
                 // Without this, a Kernel hang leaves this Mono permanently pending —
