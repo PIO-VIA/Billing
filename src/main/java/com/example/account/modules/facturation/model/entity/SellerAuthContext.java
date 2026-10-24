@@ -32,6 +32,16 @@ public class SellerAuthContext {
     @Column("pin")
     private String pin;
 
+    // Cached from the seller's last real Kernel login so PIN login — which
+    // never talks to Kernel on its own — can mint a fresh accessToken via
+    // /api/auth/refresh instead of leaving the frontend with no Kernel
+    // session at all. Null until that seller logs in normally at least once.
+    @Column("refresh_token")
+    private String refreshToken;
+
+    @Column("refresh_expires_at")
+    private LocalDateTime refreshExpiresAt;
+
     @Column("created_at")
     private LocalDateTime createdAt;
 

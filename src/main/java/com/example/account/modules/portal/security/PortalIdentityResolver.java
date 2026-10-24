@@ -68,11 +68,19 @@ public class PortalIdentityResolver {
                 .map(KernelApiResponse::getData);
     }
 
-    public Mono<List<PortalOrgAssociation>> resolveAssociations(UUID actorId) {
+    /**
+     * Takes the bearer token explicitly rather than relying on Reactor
+     * context: PortalAuthController calls this immediately after a fresh
+     * Kernel login, before any incoming request has put a token into
+     * context (the caller sent credentials, not a bearer token, on that
+     * request) — so there'd be nothing for kernelWebClient's own
+     * context-forwarding filter to forward otherwise.
+     */
+    public Mono<List<PortalOrgAssociation>> resolveAssociations(UUID actorId, String bearerToken) {
         if (actorId == null) {
             return Mono.just(List.of());
         }
-        return associationsCache.computeIfAbsent(actorId, id -> scanAllOrganizations(id).cache(CACHE_TTL));
+        return associationsCache.computeIfAbsent(actorId, id -> scanAllOrganizations(id, bearerToken).cache(CACHE_TTL));
     }
 
     // Same reasoning as KernelClientAdapter.ENRICHMENT_CONCURRENCY: unbounded
@@ -81,9 +89,9 @@ public class PortalIdentityResolver {
     // into resetting some of them.
     private static final int SCAN_CONCURRENCY = 3;
 
-    private Mono<List<PortalOrgAssociation>> scanAllOrganizations(UUID actorId) {
-        return listAllOrganizations()
-                .flatMap(org -> findThirdParty(actorId, org)
+    private Mono<List<PortalOrgAssociation>> scanAllOrganizations(UUID actorId, String bearerToken) {
+        return listAllOrganizations(bearerToken)
+                .flatMap(org -> findThirdParty(actorId, org, bearerToken)
                         .map(tp -> new PortalOrgAssociation(
                                 org.getId(),
                                 org.getDisplayName() != null ? org.getDisplayName() : org.getShortName(),
@@ -93,10 +101,11 @@ public class PortalIdentityResolver {
                 .collectList();
     }
 
-    private Flux<KernelOrganizationResponse> listAllOrganizations() {
+    private Flux<KernelOrganizationResponse> listAllOrganizations(String bearerToken) {
         return kernelWebClient
                 .get()
                 .uri("/api/organizations")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken)
                 .retrieve()
                 .bodyToMono(ORG_LIST_TYPE)
                 .map(KernelApiResponse::getData)
@@ -104,10 +113,11 @@ public class PortalIdentityResolver {
     }
 
     /** Empty (not an error) when the org isn't subscribed to the service, or the actor just has no record there — both mean "skip this org". */
-    private Mono<KernelThirdPartyResponse> findThirdParty(UUID actorId, KernelOrganizationResponse org) {
+    private Mono<KernelThirdPartyResponse> findThirdParty(UUID actorId, KernelOrganizationResponse org, String bearerToken) {
         return kernelWebClient
                 .get()
                 .uri(uriBuilder -> uriBuilder.path("/api/third-parties").queryParam("organizationId", org.getId()).build())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken)
                 .retrieve()
                 .bodyToMono(THIRD_PARTY_LIST_TYPE)
                 .map(KernelApiResponse::getData)

@@ -10,6 +10,7 @@ import com.example.account.modules.facturation.dto.request.PinLoginRequest;
 import com.example.account.modules.facturation.dto.request.SellerUIPermissionsRequest;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.SellerAuthResponse;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.SellerListItemResponse;
+import com.example.account.modules.facturation.model.entity.SellerAuthContext;
 import com.example.account.modules.facturation.model.enums.SaleSize;
 import com.example.account.modules.facturation.model.enums.SellerPermission;
 import com.example.account.modules.facturation.model.enums.SellerRole;
@@ -36,15 +37,17 @@ public class AuthUseCaseImpl implements AuthUseCase {
 
     @Override
     public Mono<SellerAuthResponse> login(LoginRequest request) {
-        return authServicePort.login(request.getUsername(), request.getPassword(), request.getOrganizationId())
+        return authServicePort.login(request.getUsername(), request.getPassword(), request.getTenantId(), request.getOrganizationId())
                 .flatMap(this::attachExistingSeller)
+                .flatMap(this::cacheKernelSession)
                 .flatMap(this::withOrganizationSettings);
     }
 
     @Override
     public Mono<SellerAuthResponse> tryOut(LoginRequest request) {
-        return authServicePort.tryOut(request.getUsername(), request.getPassword(), request.getOrganizationId())
+        return authServicePort.tryOut(request.getUsername(), request.getPassword(), request.getTenantId(), request.getOrganizationId())
                 .flatMap(this::ensureSellerProvisioned)
+                .flatMap(this::cacheKernelSession)
                 .flatMap(this::withOrganizationSettings);
     }
 
@@ -62,7 +65,43 @@ public class AuthUseCaseImpl implements AuthUseCase {
         return (request.isTryOut()
                 ? resolved.flatMap(this::ensureSellerProvisioned)
                 : resolved.flatMap(this::attachExistingSeller))
+                .flatMap(this::cacheKernelSession)
                 .flatMap(this::withOrganizationSettings);
+    }
+
+    /**
+     * Caches the Kernel refreshToken this login/tryOut/confirmMfa call just
+     * received, keyed by the seller resolved above, so a later PIN login (see
+     * loginByLocalPin) can mint a fresh accessToken instead of having no
+     * Kernel session at all. Only sellers with an existing local PIN context
+     * get one cached — a response with no resolved seller id (e.g. the
+     * requiresOrganizationSelection branch) or no refreshToken (Kernel didn't
+     * issue one) is left as-is; best-effort, never fails the login itself.
+     */
+    private Mono<SellerAuthResponse> cacheKernelSession(SellerAuthResponse response) {
+        if (response.getId() == null || response.getRefreshToken() == null) {
+            return Mono.just(response);
+        }
+        return sellerAuthContextRepository.findBySellerId(response.getId())
+                .flatMap(context -> {
+                    context.setRefreshToken(response.getRefreshToken());
+                    context.setRefreshExpiresAt(parseIsoDateTime(response.getRefreshExpiresAt()));
+                    context.setUpdatedAt(java.time.LocalDateTime.now());
+                    return sellerAuthContextRepository.save(context);
+                })
+                .thenReturn(response)
+                .onErrorReturn(response);
+    }
+
+    private java.time.LocalDateTime parseIsoDateTime(String isoDateTime) {
+        if (isoDateTime == null) {
+            return null;
+        }
+        try {
+            return java.time.OffsetDateTime.parse(isoDateTime).toLocalDateTime();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
@@ -102,8 +141,18 @@ public class AuthUseCaseImpl implements AuthUseCase {
         if (Boolean.TRUE.equals(response.getRequiresOrganizationSelection()) || response.getOrganizationId() == null) {
             return Mono.empty();
         }
+        // Matches by email, not username — Kernel's own account username
+        // (e.g. "furehmitoto") and the local seller record's username
+        // (freely chosen at seller-creation time, e.g. "fureh-pos") have no
+        // reason to agree. AuthServiceAdapter.enrichWithLocalSeller already
+        // matches local sellers by email for the same reason; matching here
+        // on username instead of email meant this lookup silently failed to
+        // find a seller that enrichWithLocalSeller had already found,
+        // leaving response.getId() as Kernel's own user id instead of the
+        // local seller's — which then broke anything keyed off that id,
+        // e.g. caching the Kernel refresh token for PIN login.
         return sellerServicePort.listSellers(response.getOrganizationId())
-                .filter(seller -> response.getUsername() != null && response.getUsername().equalsIgnoreCase(seller.getUsername()))
+                .filter(seller -> response.getEmail() != null && response.getEmail().equalsIgnoreCase(seller.getEmail()))
                 .next();
     }
 
@@ -195,18 +244,49 @@ public class AuthUseCaseImpl implements AuthUseCase {
      * the org's sellers and filtering client-side — a stand-in for a direct
      * get-by-id call until sales-core's GET /api/sellers/{sellerId} (added
      * locally, not yet deployed) is reachable from here.
+     *
+     * PIN login never talks to Kernel with credentials of its own, so without
+     * this it would hand the frontend a SellerAuthResponse with no
+     * accessToken — every subsequent Kernel-bound request would then go out
+     * with no caller identity at all. Mints a fresh accessToken from the
+     * refreshToken cached the last time this seller logged in normally (see
+     * cacheKernelSession); a seller who never has, or whose cached refresh
+     * token has since expired, gets a clear 401 instead.
      */
     @Override
     public Mono<SellerAuthResponse> loginByLocalPin(PinLoginRequest request) {
         return sellerAuthContextRepository.findByOrganizationIdAndPin(request.getOrganizationId(), request.getPin())
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid PIN")))
-                .flatMap(context -> sellerServicePort.listSellers(context.getOrganizationId())
-                        .filter(seller -> context.getSellerId().equals(seller.getId()))
-                        .next()
-                        .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                                "Seller not found: " + context.getSellerId()))))
-                .map(this::mapToSellerAuthResponse)
+                .flatMap(context -> {
+                    if (context.getRefreshToken() == null) {
+                        return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                                "PIN login requires signing in normally at least once first."));
+                    }
+                    return sellerServicePort.listSellers(context.getOrganizationId())
+                            .filter(seller -> context.getSellerId().equals(seller.getId()))
+                            .next()
+                            .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                    "Seller not found: " + context.getSellerId())))
+                            .map(this::mapToSellerAuthResponse)
+                            .flatMap(response -> attachRefreshedKernelSession(response, context));
+                })
                 .flatMap(this::withOrganizationSettings);
+    }
+
+    /**
+     * Refresh tokens are typically single-use (Kernel rotates them on every
+     * refresh), so the rotated one Kernel hands back here is persisted
+     * immediately — reusing the old one on the next PIN login would fail.
+     */
+    private Mono<SellerAuthResponse> attachRefreshedKernelSession(SellerAuthResponse response, SellerAuthContext context) {
+        return authServicePort.refreshAccessToken(context.getRefreshToken())
+                .flatMap(refreshed -> {
+                    response.setAccessToken(refreshed.getAccessToken());
+                    context.setRefreshToken(refreshed.getRefreshToken());
+                    context.setRefreshExpiresAt(parseIsoDateTime(refreshed.getRefreshExpiresAt()));
+                    context.setUpdatedAt(java.time.LocalDateTime.now());
+                    return sellerAuthContextRepository.save(context).thenReturn(response);
+                });
     }
 
     private SellerAuthResponse mapToSellerAuthResponse(SellerListItemResponse seller) {

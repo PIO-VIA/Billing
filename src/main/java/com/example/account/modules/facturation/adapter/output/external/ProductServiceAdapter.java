@@ -9,7 +9,6 @@ import com.example.account.modules.shared.dto.kernel.KernelProductResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -26,40 +25,35 @@ import java.util.UUID;
 public class ProductServiceAdapter implements ProductServicePort {
 
     private final WebClient salesCoreWebClient;
-    private final AccountingKernelAuthService accountingKernelAuthService;
 
     private static final ParameterizedTypeReference<KernelApiResponse<List<KernelProductResponse>>> PRODUCT_LIST_TYPE =
             new ParameterizedTypeReference<>() {};
     private static final ParameterizedTypeReference<KernelApiResponse<KernelProductResponse>> PRODUCT_TYPE =
             new ParameterizedTypeReference<>() {};
 
-    public ProductServiceAdapter(@Qualifier("salesCoreWebClient") WebClient salesCoreWebClient,
-                                  AccountingKernelAuthService accountingKernelAuthService) {
+    public ProductServiceAdapter(@Qualifier("salesCoreWebClient") WebClient salesCoreWebClient) {
         this.salesCoreWebClient = salesCoreWebClient;
-        this.accountingKernelAuthService = accountingKernelAuthService;
     }
 
     @Override
     public Flux<ProductResponse> fetchProductsByOrganization(UUID organizationId) {
         log.info("Fetching products from sales-core for organization: {}", organizationId);
-        // Kernel's product-core requires organizationId as a query param (unlike sales-core's
-        // old X-Organization-Id-only convention); sent as both to honor the org this method
-        // was actually called with regardless of which one the backend reads. This endpoint
-        // needs an authenticated, sufficiently-privileged Kernel token regardless of caller
-        // (it 403s with no token at all, and a plain customer's own token also lacks the
-        // needed permission) — read-only public catalog data, so our own service account
-        // is used explicitly rather than whatever caller identity happens to be in context.
-        return accountingKernelAuthService.getValidToken()
-                .flatMap(token -> salesCoreWebClient
-                        .get()
-                        .uri(uriBuilder -> uriBuilder.path("/api/products").queryParam("organizationId", organizationId).build())
-                        .header("X-Organization-Id", organizationId.toString())
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                        .retrieve()
-                        .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
-                                resp -> resp.bodyToMono(String.class)
-                                        .flatMap(err -> Mono.error(new RuntimeException("sales-core products error: " + SalesCoreErrorMapper.extractMessage(err)))))
-                        .bodyToMono(PRODUCT_LIST_TYPE))
+        // Kernel's product-core moved this route from the old flat /api/products to
+        // /api/product-core/products (org scoping is now implicit via the
+        // X-Organization-Id header — the endpoint's only query param is "kind"),
+        // as part of restructuring the monolith's product model into
+        // product-core/organization-products/variants. salesCoreWebClient's own
+        // filter forwards the caller's Kernel token (and org id) from the Reactor
+        // context — no explicit Authorization header needed here.
+        return salesCoreWebClient
+                .get()
+                .uri("/api/product-core/products")
+                .header("X-Organization-Id", organizationId.toString())
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                        resp -> resp.bodyToMono(String.class)
+                                .flatMap(err -> Mono.error(new RuntimeException("sales-core products error: " + SalesCoreErrorMapper.extractMessage(err)))))
+                .bodyToMono(PRODUCT_LIST_TYPE)
                 .map(KernelApiResponse::getData)
                 .flatMapMany(Flux::fromIterable)
                 .map(this::mapToProductResponse);
@@ -80,7 +74,7 @@ public class ProductServiceAdapter implements ProductServicePort {
         log.info("Fetching product {} from sales-core", productId);
         return salesCoreWebClient
                 .get()
-                .uri("/api/products/{id}", productId)
+                .uri("/api/product-core/products/{id}", productId)
                 .retrieve()
                 .onStatus(status -> status.value() == 404,
                         resp -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + productId)))

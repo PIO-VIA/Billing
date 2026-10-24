@@ -21,7 +21,6 @@ public class UIPermissionsRequest {
     private boolean salesInvoices;
     private boolean salesDeliveryNotes;
     private boolean salesCreditNotes;
-    private boolean salesStoreCredit;
     private boolean salesBackOrders;
 
     // Purchasing & Logistics

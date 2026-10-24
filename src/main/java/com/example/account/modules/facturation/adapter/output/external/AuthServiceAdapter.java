@@ -8,11 +8,14 @@ import com.example.account.modules.facturation.model.entity.SellerAgencyAssignme
 import com.example.account.modules.facturation.model.enums.SellerRole;
 import com.example.account.modules.facturation.repository.SellerAgencyAssignmentRepository;
 import com.example.account.modules.shared.dto.kernel.KernelApiResponse;
+import com.example.account.modules.shared.dto.kernel.KernelDiscoveredContext;
 import com.example.account.modules.shared.dto.kernel.KernelEmployeeMembershipResponse;
 import com.example.account.modules.shared.dto.kernel.KernelLoginResponse;
 import com.example.account.modules.shared.dto.kernel.KernelOrganizationAccessResponse;
 import com.example.account.modules.shared.dto.kernel.KernelOrganizationResponse;
+import com.example.account.modules.shared.dto.kernel.KernelRefreshTokenResponse;
 import com.example.account.modules.shared.dto.kernel.KernelUserProfileResponse;
+import com.example.account.modules.shared.service.KernelTenantDiscovery;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
@@ -44,6 +47,7 @@ public class AuthServiceAdapter implements AuthServicePort {
     private final WebClient kernelWebClient;
     private final WebClient salesCoreWebClient;
     private final SellerAgencyAssignmentRepository sellerAgencyAssignmentRepository;
+    private final KernelTenantDiscovery tenantDiscovery;
 
     private static final ParameterizedTypeReference<KernelApiResponse<KernelLoginResponse>> KERNEL_LOGIN_TYPE =
             new ParameterizedTypeReference<>() {};
@@ -53,25 +57,29 @@ public class AuthServiceAdapter implements AuthServicePort {
             new ParameterizedTypeReference<>() {};
     private static final ParameterizedTypeReference<KernelApiResponse<List<KernelEmployeeMembershipResponse>>> KERNEL_EMPLOYEE_LIST_TYPE =
             new ParameterizedTypeReference<>() {};
+    private static final ParameterizedTypeReference<KernelApiResponse<KernelRefreshTokenResponse>> KERNEL_REFRESH_TYPE =
+            new ParameterizedTypeReference<>() {};
 
     public AuthServiceAdapter(@Qualifier("kernelWebClient") WebClient kernelWebClient,
                                @Qualifier("salesCoreWebClient") WebClient salesCoreWebClient,
-                               SellerAgencyAssignmentRepository sellerAgencyAssignmentRepository) {
+                               SellerAgencyAssignmentRepository sellerAgencyAssignmentRepository,
+                               KernelTenantDiscovery tenantDiscovery) {
         this.kernelWebClient = kernelWebClient;
         this.salesCoreWebClient = salesCoreWebClient;
         this.sellerAgencyAssignmentRepository = sellerAgencyAssignmentRepository;
+        this.tenantDiscovery = tenantDiscovery;
     }
 
     @Override
-    public Mono<SellerAuthResponse> login(String username, String password, java.util.UUID organizationId) {
+    public Mono<SellerAuthResponse> login(String username, String password, UUID tenantId, UUID organizationId) {
         log.info("Authenticating seller '{}' against Kernel", username);
-        return kernelLoginAndResolveOrganization(username, password, organizationId);
+        return kernelLoginAndResolveOrganization(username, password, tenantId, organizationId);
     }
 
     @Override
-    public Mono<SellerAuthResponse> tryOut(String principal, String password, java.util.UUID organizationId) {
+    public Mono<SellerAuthResponse> tryOut(String principal, String password, UUID tenantId, UUID organizationId) {
         log.info("Try Out login for principal: {}", principal);
-        return kernelLoginAndResolveOrganization(principal, password, organizationId);
+        return kernelLoginAndResolveOrganization(principal, password, tenantId, organizationId);
     }
 
     @Override
@@ -79,7 +87,9 @@ public class AuthServiceAdapter implements AuthServicePort {
         log.info("Confirming Kernel MFA challenge");
         return kernelWebClient
                 .post()
-                .uri("/api/auth/mfa/confirm")
+                // /api/auth/mfa/confirm is a different endpoint (MFA enrollment
+                // confirmation) — this one completes a login's MFA challenge.
+                .uri("/api/auth/login/mfa/confirm")
                 .bodyValue(Map.of("mfaToken", mfaToken, "code", code))
                 .retrieve()
                 .onStatus(status -> status.value() == 401 || status.value() == 403,
@@ -94,9 +104,66 @@ public class AuthServiceAdapter implements AuthServicePort {
                 .flatMap(kernelUser -> resolveOrganizationForUser(kernelUser, organizationId));
     }
 
+    @Override
+    public Mono<KernelRefreshTokenResponse> refreshAccessToken(String refreshToken) {
+        return kernelWebClient
+                .post()
+                .uri("/api/auth/refresh")
+                .bodyValue(Map.of("refreshToken", refreshToken))
+                .retrieve()
+                .onStatus(status -> status.value() == 401 || status.value() == 403,
+                        resp -> Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                                "PIN login requires signing in normally at least once first.")))
+                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                        resp -> resp.bodyToMono(String.class).defaultIfEmpty("")
+                                .flatMap(err -> Mono.error(new ResponseStatusException(
+                                        HttpStatus.BAD_GATEWAY, "Kernel refresh error: " + SalesCoreErrorMapper.extractMessage(err)))))
+                .bodyToMono(KERNEL_REFRESH_TYPE)
+                .map(KernelApiResponse::getData)
+                .timeout(Duration.ofSeconds(15));
+    }
+
     /**
-     * Logs in directly against Kernel, then resolves which of the account's
-     * Kernel organizations the session is for:
+     * Kernel's /api/auth/login needs the right X-Tenant-Id up front — unlike
+     * discover-contexts, it has no account-wide fallback, so logging in
+     * against the wrong tenant (e.g. kernelWebClient's platform-default
+     * header) just looks like invalid credentials, even for a real account
+     * whose tenant simply isn't the platform one.
+     *
+     * With no tenantId given yet, calls discover-contexts first (no tenant
+     * header needed there — it searches across all of them): a bare
+     * PLATFORM/no-org context never counts as a real tenant to log into; if
+     * exactly one context has organizations, logs in with it directly; if
+     * more than one does, this is a real ambiguity — same as the existing
+     * organizationId picker one level below, it hands back the candidate
+     * list instead of guessing, and the frontend resubmits with the chosen
+     * tenantId.
+     */
+    private Mono<SellerAuthResponse> kernelLoginAndResolveOrganization(String principal, String password, UUID tenantId, UUID organizationId) {
+        if (tenantId != null) {
+            return loginWithTenant(principal, password, tenantId, organizationId);
+        }
+        return tenantDiscovery.discoverContexts(kernelWebClient, principal, password)
+                .flatMap(contexts -> {
+                    List<KernelDiscoveredContext> orgBearing = contexts.stream()
+                            .filter(c -> c.getOrganizations() != null && !c.getOrganizations().isEmpty())
+                            .toList();
+                    if (orgBearing.isEmpty()) {
+                        return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No Kernel tenant found for this account."));
+                    }
+                    if (orgBearing.size() > 1) {
+                        SellerAuthResponse selection = new SellerAuthResponse();
+                        selection.setRequiresTenantSelection(true);
+                        selection.setAvailableTenants(orgBearing);
+                        return Mono.just(selection);
+                    }
+                    return loginWithTenant(principal, password, orgBearing.get(0).getTenantId(), organizationId);
+                });
+    }
+
+    /**
+     * Logs in directly against Kernel for a known tenant, then resolves
+     * which of the account's Kernel organizations the session is for:
      * - organizationId given: must be one of the account's orgs (disambiguation from a prior "requires selection" response).
      * - none given, exactly one org: proceed with it directly.
      * - none given, several orgs: don't finish the login yet — hand back the list so the frontend can show a picker.
@@ -105,10 +172,11 @@ public class AuthServiceAdapter implements AuthServicePort {
      * "CONFIRM_MFA" with a mfaToken instead, which short-circuits straight to
      * the frontend rather than going on to call /api/users/me with no token.
      */
-    private Mono<SellerAuthResponse> kernelLoginAndResolveOrganization(String principal, String password, java.util.UUID organizationId) {
+    private Mono<SellerAuthResponse> loginWithTenant(String principal, String password, UUID tenantId, UUID organizationId) {
         return kernelWebClient
                 .post()
                 .uri("/api/auth/login")
+                .headers(h -> h.set("X-Tenant-Id", tenantId.toString()))
                 .bodyValue(Map.of("principal", principal, "password", password))
                 .retrieve()
                 .onStatus(status -> status.value() == 401 || status.value() == 403,
@@ -280,6 +348,8 @@ public class AuthServiceAdapter implements AuthServicePort {
     private Mono<SellerAuthResponse> mapKernelToSellerAuthResponse(KernelLoginResponse kernelUser, KernelOrganizationResponse org) {
         SellerAuthResponse r = new SellerAuthResponse();
         r.setAccessToken(kernelUser.getAccessToken());
+        r.setRefreshToken(kernelUser.getRefreshToken());
+        r.setRefreshExpiresAt(kernelUser.getRefreshExpiresAt());
         r.setId(kernelUser.getId());
         r.setUsername(kernelUser.getUsername());
         r.setEmail(kernelUser.getEmail());

@@ -52,6 +52,45 @@ public class GlobalExceptionHandler {
         return Mono.just(ResponseEntity.status(ex.getStatusCode()).body(body));
     }
 
+    /**
+     * IllegalArgumentException gets thrown across the app for three
+     * different real HTTP meanings — "not found" (404), "already exists"
+     * (409), and genuine bad input (400) — with no dedicated exception type
+     * per case, so without this handler every one of them fell into the
+     * catch-all below and came back as an opaque 500. Retrofitting the ~90
+     * call sites with real exception types is a bigger change than this
+     * fixes; this infers the right status from the message text instead,
+     * which those call sites already write in a consistent enough pattern
+     * (French "non trouvé(e)"/"introuvable", English "not found"/"does not
+     * exist" for 404; "existe déjà"/"already exists" for 409) for this to
+     * be reliable without being a real type-based dispatch.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public Mono<ResponseEntity<Object>> handleIllegalArgumentException(IllegalArgumentException ex, ServerWebExchange exchange) {
+        HttpStatus status = classifyIllegalArgument(ex.getMessage());
+        Map<String, Object> body = new HashMap<>();
+        body.put("message", ex.getMessage());
+        body.put("path", exchange.getRequest().getPath().value());
+        body.put("error", status.toString());
+
+        return Mono.just(ResponseEntity.status(status).body(body));
+    }
+
+    private HttpStatus classifyIllegalArgument(String message) {
+        if (message == null) {
+            return HttpStatus.BAD_REQUEST;
+        }
+        String m = message.toLowerCase();
+        if (m.contains("non trouv") || m.contains("introuvable") || m.contains("not found")
+                || m.contains("does not exist") || m.contains("n'existe pas")) {
+            return HttpStatus.NOT_FOUND;
+        }
+        if (m.contains("existe déjà") || m.contains("already exists") || m.contains("already in use")) {
+            return HttpStatus.CONFLICT;
+        }
+        return HttpStatus.BAD_REQUEST;
+    }
+
     @ExceptionHandler(Exception.class)
     public Mono<ResponseEntity<Object>> handleGlobalException(Exception ex, ServerWebExchange exchange) {
         Map<String, Object> body = new HashMap<>();

@@ -8,6 +8,7 @@ import com.example.account.modules.portal.security.PortalIdentityResolver;
 import com.example.account.modules.portal.security.PortalOrgAssociation;
 import com.example.account.modules.shared.dto.kernel.KernelApiResponse;
 import com.example.account.modules.shared.dto.kernel.KernelLoginResponse;
+import com.example.account.modules.shared.service.KernelTenantDiscovery;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
@@ -42,19 +43,22 @@ public class PortalAuthController {
 
     private final WebClient kernelWebClient;
     private final PortalIdentityResolver identityResolver;
+    private final KernelTenantDiscovery tenantDiscovery;
 
     private static final ParameterizedTypeReference<KernelApiResponse<KernelLoginResponse>> LOGIN_TYPE =
             new ParameterizedTypeReference<>() {};
 
-    public PortalAuthController(@Qualifier("kernelWebClient") WebClient kernelWebClient, PortalIdentityResolver identityResolver) {
+    public PortalAuthController(@Qualifier("kernelWebClient") WebClient kernelWebClient, PortalIdentityResolver identityResolver,
+                                 KernelTenantDiscovery tenantDiscovery) {
         this.kernelWebClient = kernelWebClient;
         this.identityResolver = identityResolver;
+        this.tenantDiscovery = tenantDiscovery;
     }
 
     @PostMapping("/login")
     public Mono<PortalLoginResponse> login(@Valid @RequestBody PortalLoginRequest request) {
         return kernelLogin(request.getPrincipal(), request.getPassword())
-                .flatMap(session -> identityResolver.resolveAssociations(session.getActorId())
+                .flatMap(session -> identityResolver.resolveAssociations(session.getActorId(), session.getAccessToken())
                         .flatMap(associations -> {
                             if (associations.isEmpty()) {
                                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
@@ -64,20 +68,30 @@ public class PortalAuthController {
                         }));
     }
 
+    /**
+     * Kernel's /api/auth/login needs the right X-Tenant-Id up front —
+     * without this, every portal account outside kernelWebClient's
+     * platform-default tenant looked like "invalid credentials" even with
+     * the right password. No picker for an account spanning more than one
+     * org-bearing tenant (rare, and this login already has no org picker
+     * either — see the class javadoc on why that's intentional here).
+     */
     private Mono<KernelLoginResponse> kernelLogin(String principal, String password) {
-        return kernelWebClient
-                .post()
-                .uri("/api/auth/login")
-                .bodyValue(Map.of("principal", principal, "password", password))
-                .retrieve()
-                .onStatus(status -> status.value() == 401 || status.value() == 403,
-                        resp -> Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials")))
-                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
-                        resp -> resp.bodyToMono(String.class)
-                                .flatMap(err -> Mono.error(new ResponseStatusException(
-                                        HttpStatus.BAD_GATEWAY, "Kernel auth error: " + SalesCoreErrorMapper.extractMessage(err)))))
-                .bodyToMono(LOGIN_TYPE)
-                .map(KernelApiResponse::getData);
+        return tenantDiscovery.resolveSingleTenantId(kernelWebClient, principal, password)
+                .flatMap(tenantId -> kernelWebClient
+                        .post()
+                        .uri("/api/auth/login")
+                        .headers(h -> h.set("X-Tenant-Id", tenantId.toString()))
+                        .bodyValue(Map.of("principal", principal, "password", password))
+                        .retrieve()
+                        .onStatus(status -> status.value() == 401 || status.value() == 403,
+                                resp -> Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials")))
+                        .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                                resp -> resp.bodyToMono(String.class)
+                                        .flatMap(err -> Mono.error(new ResponseStatusException(
+                                                HttpStatus.BAD_GATEWAY, "Kernel auth error: " + SalesCoreErrorMapper.extractMessage(err)))))
+                        .bodyToMono(LOGIN_TYPE)
+                        .map(KernelApiResponse::getData));
     }
 
     private PortalLoginResponse buildResponse(KernelLoginResponse session, List<PortalOrgAssociation> associations) {

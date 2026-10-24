@@ -6,12 +6,12 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/** POST /api/auth/discover-contexts response. */
+/** Kernel's POST /api/auth/discover-contexts response. */
 @Data
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class KernelDiscoverContextsResponse {
     private String selectionToken;
-    private long expiresInSeconds;
-    private List<KernelLoginContext> contexts;
+    private Long expiresInSeconds;
+    private List<KernelDiscoveredContext> contexts;
 }

@@ -1,6 +1,7 @@
 package com.example.account.modules.core.config;
 
 import com.example.account.modules.core.context.ReactiveOrganizationContext;
+import com.example.account.modules.core.util.JwtClaims;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,6 +54,8 @@ public class SalesCoreWebClientConfig {
                 .defaultHeader("X-Tenant-Id", tenantId)
                 .filter(injectBearerToken())
                 .filter(injectOrganizationId())
+                .filter(injectTenantId())
+                .filter(injectAgencyId())
                 .build();
     }
 
@@ -67,6 +70,57 @@ public class SalesCoreWebClientConfig {
             }
             return next.exchange(request);
         });
+    }
+
+    /**
+     * X-Tenant-Id defaults to the platform tenant, but Kernel tokens are
+     * minted for a specific tenant (the "tid" claim) and Kernel silently
+     * returns empty results — not an error — when the header doesn't match
+     * the tenant the token/org actually belongs to. Overrides the default
+     * with whatever tenant the request's own bearer token (explicit or
+     * context-injected, whichever ends up on the request) was issued for.
+     */
+    private ExchangeFilterFunction injectTenantId() {
+        return (request, next) -> {
+            String authHeader = request.headers().getFirst(HttpHeaders.AUTHORIZATION);
+            String token = authHeader != null && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
+            String tenantId = JwtClaims.readClaim(token, "tid");
+            if (tenantId == null || tenantId.isBlank()) {
+                return next.exchange(request);
+            }
+            ClientRequest modified = ClientRequest.from(request)
+                    .headers(h -> h.set("X-Tenant-Id", tenantId))
+                    .build();
+            return next.exchange(modified);
+        };
+    }
+
+    /**
+     * Kernel has no X-Organization-Id equivalent that works for staff whose
+     * permissions are granted at a specific agency rather than org/tenant-wide
+     * (e.g. "inventory:read#AGENCY:<uuid>") — those calls 403 with "droits
+     * insuffisants" unless X-Agency-Id names the agency the grant is for.
+     * JwtClaims.readSingleAgencyId only returns a value when the token's
+     * permissions agree on exactly one agency, so this never overrides an
+     * already-correct org/tenant-wide request and never guesses among
+     * multiple agencies on a multi-agency token.
+     */
+    private ExchangeFilterFunction injectAgencyId() {
+        return (request, next) -> {
+            if (request.headers().containsKey("X-Agency-Id")) {
+                return next.exchange(request);
+            }
+            String authHeader = request.headers().getFirst(HttpHeaders.AUTHORIZATION);
+            String token = authHeader != null && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
+            String agencyId = JwtClaims.readSingleAgencyId(token);
+            if (agencyId == null || agencyId.isBlank()) {
+                return next.exchange(request);
+            }
+            ClientRequest modified = ClientRequest.from(request)
+                    .header("X-Agency-Id", agencyId)
+                    .build();
+            return next.exchange(modified);
+        };
     }
 
     private ExchangeFilterFunction injectOrganizationId() {

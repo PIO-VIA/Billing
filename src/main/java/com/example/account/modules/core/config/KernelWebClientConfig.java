@@ -1,7 +1,7 @@
 package com.example.account.modules.core.config;
 
 import com.example.account.modules.core.context.ReactiveOrganizationContext;
-import com.example.account.modules.facturation.adapter.output.external.AccountingKernelAuthService;
+import com.example.account.modules.core.util.JwtClaims;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,42 +33,69 @@ public class KernelWebClientConfig {
 
     @Bean
     @Qualifier("kernelWebClient")
-    public WebClient kernelWebClient(WebClient.Builder builder, AccountingKernelAuthService authService) {
+    public WebClient kernelWebClient(WebClient.Builder builder) {
         return builder
                 .baseUrl(baseUrl)
                 .defaultHeader("X-Client-Id", clientId)
                 .defaultHeader("X-Api-Key", apiKey)
                 .defaultHeader("X-Tenant-Id", tenantId)
-                .filter(injectBearerToken(authService))
+                .filter(injectBearerToken())
                 .filter(injectOrganizationId())
+                .filter(injectTenantId())
                 .build();
     }
 
     /**
-     * Sellers authenticate locally against sales-core, not Kernel, so their access
-     * token is never a valid Kernel token. Every kernelWebClient call instead
-     * authenticates as the platform's Kernel service account (same cached-token
-     * pattern as AccountingKernelAuthService) rather than forwarding the caller's
-     * own token — except the unauthenticated auth-entry endpoints (login,
-     * discover-contexts, select-context), which must stay bare since they're the
-     * calls that hand out a token in the first place; sending a (possibly stale
-     * or slow-to-fetch) service-account token there gets the request rejected —
-     * or, worse, makes it block on an unrelated service-account login — before
-     * Kernel even looks at the credentials/selection token in the body.
+     * No service-account fallback: every call either already has an explicit
+     * Authorization header set by its caller, or forwards whatever token the
+     * frontend's own request carried (via OrganizationFilter →
+     * ReactiveOrganizationContext.TOKEN_KEY) — same as salesCoreWebClient.
+     * A call with no caller token at all (and no explicit one set) simply
+     * goes out bare and Kernel rejects it on its own terms, rather than this
+     * silently substituting a different identity's permissions.
      */
     private static final java.util.Set<String> UNAUTHENTICATED_AUTH_PATHS = java.util.Set.of(
-            "/api/auth/login", "/api/auth/discover-contexts", "/api/auth/select-context", "/api/auth/mfa/confirm");
+            "/api/auth/login", "/api/auth/discover-contexts", "/api/auth/select-context", "/api/auth/login/mfa/confirm",
+            "/api/auth/refresh");
 
-    private ExchangeFilterFunction injectBearerToken(AccountingKernelAuthService authService) {
+    private ExchangeFilterFunction injectBearerToken() {
         return (request, next) -> {
             if (request.headers().containsKey(HttpHeaders.AUTHORIZATION)
                     || UNAUTHENTICATED_AUTH_PATHS.contains(request.url().getPath())) {
                 return next.exchange(request);
             }
-            return authService.getValidToken()
-                    .flatMap(token -> next.exchange(ClientRequest.from(request)
-                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                            .build()));
+            return Mono.deferContextual(ctx -> {
+                String token = ctx.getOrDefault(ReactiveOrganizationContext.TOKEN_KEY, null);
+                if (token == null) {
+                    return next.exchange(request);
+                }
+                return next.exchange(ClientRequest.from(request)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .build());
+            });
+        };
+    }
+
+    /**
+     * X-Tenant-Id defaults to the platform tenant, but Kernel tokens are
+     * minted for a specific tenant (the "tid" claim) and Kernel silently
+     * returns empty results — not an error — when the header doesn't match
+     * the tenant the token/org actually belongs to. Overrides the default
+     * with whatever tenant the request's own bearer token (explicit or
+     * context-injected, whichever ends up on the request) was issued for.
+     */
+    private ExchangeFilterFunction injectTenantId() {
+        return (request, next) -> {
+            String authHeader = request.headers().getFirst(HttpHeaders.AUTHORIZATION);
+            String token = authHeader != null && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
+            String tenantId = JwtClaims.readClaim(token, "tid");
+            if (tenantId == null || tenantId.isBlank()) {
+                return next.exchange(request);
+            }
+            ClientRequest modified = ClientRequest.from(request)
+                    .headers(h -> h.set("X-Tenant-Id", tenantId))
+                    .build();
+            return next.exchange(modified);
         };
     }
 

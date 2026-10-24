@@ -25,6 +25,12 @@ public class KernelLoginResponse {
     private String recoveryEmail;
     private String accessToken;
 
+    // Cached so PIN login (which never talks to Kernel on its own) can later
+    // mint a fresh accessToken via /api/auth/refresh instead of having no
+    // Kernel session at all. See AuthUseCaseImpl.cacheKernelSession.
+    private String refreshToken;
+    private String refreshExpiresAt;
+
     // Kernel now requires MFA on every login: instead of accessToken, the
     // response carries these fields and nextStep="CONFIRM_MFA". mfaToken must
     // be echoed back to /api/auth/mfa/confirm along with the OTP code.

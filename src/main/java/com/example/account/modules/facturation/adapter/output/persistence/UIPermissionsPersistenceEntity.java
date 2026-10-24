@@ -34,7 +34,10 @@ public class UIPermissionsPersistenceEntity {
     @Column("sales_quotations")
     private boolean salesQuotations;
 
-    @Column("sales_proforma_invoices")
+    // Real column is singular ("sales_proforma_invoice") — the Java field
+    // stays plural to avoid rippling a rename through the domain model and
+    // both DTOs, which all match it by field name alone via MapStruct.
+    @Column("sales_proforma_invoice")
     private boolean salesProformaInvoices;
 
     @Column("sales_sales_orders")
@@ -43,30 +46,27 @@ public class UIPermissionsPersistenceEntity {
     @Column("sales_invoices")
     private boolean salesInvoices;
 
-    @Column("sales_delivery_notes")
+    @Column("sales_delivery_note")
     private boolean salesDeliveryNotes;
 
     @Column("sales_credit_notes")
     private boolean salesCreditNotes;
 
-    @Column("sales_store_credit")
-    private boolean salesStoreCredit;
-
     @Column("sales_back_orders")
     private boolean salesBackOrders;
 
     // Purchasing & Logistics
-    @Column("purchasing_purchase_orders")
+    @Column("purchasing_purchase_order")
     private boolean purchasingPurchaseOrders;
 
-    @Column("purchasing_goods_rns")
+    @Column("purchasing_goods_receipt_note")
     private boolean purchasingGoodsRns;
 
     @Column("purchasing_supplier_invoice")
     private boolean purchasingSupplierInvoice;
 
     // Journals
-    @Column("journals_quotations")
+    @Column("journals_quotation")
     private boolean journalsQuotations;
 
     @CreatedDate

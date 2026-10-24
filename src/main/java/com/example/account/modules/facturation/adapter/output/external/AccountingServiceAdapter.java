@@ -34,20 +34,16 @@ public class AccountingServiceAdapter implements AccountingServicePort {
     private final WebClient.Builder webClientBuilder;
     private final FactureRepositoryPort factureRepositoryPort;
     private final FactureFournisseurServicePort factureFournisseurServicePort;
-    private final AccountingKernelAuthService accountingKernelAuthService;
-
     @Value("${comops.kernel.base-url}")
     private String kernelBaseUrl;
 
     public AccountingServiceAdapter(
             WebClient.Builder webClientBuilder,
             FactureRepositoryPort factureRepositoryPort,
-            FactureFournisseurServicePort factureFournisseurServicePort,
-            AccountingKernelAuthService accountingKernelAuthService) {
+            FactureFournisseurServicePort factureFournisseurServicePort) {
         this.webClientBuilder = webClientBuilder;
         this.factureRepositoryPort = factureRepositoryPort;
         this.factureFournisseurServicePort = factureFournisseurServicePort;
-        this.accountingKernelAuthService = accountingKernelAuthService;
     }
 
     private static FactureFournisseurCreateRequest toUpdateRequest(FactureFournisseurResponse r) {
@@ -95,7 +91,9 @@ public class AccountingServiceAdapter implements AccountingServicePort {
                                     : Mono.error(e));
 
                     return orgIdMono.flatMap(orgId ->
-                            accountingKernelAuthService.getValidToken()
+                            ReactiveOrganizationContext.getBearerToken()
+                                    .switchIfEmpty(Mono.error(new ResponseStatusException(
+                                            HttpStatus.UNAUTHORIZED, "No caller token available to sync with accounting")))
                                     .flatMap(token -> {
                                         CreateInvoiceAccountingRequest body =
                                                 new CreateInvoiceAccountingRequest(facture.getIdFacture(), "PENDING");
@@ -136,7 +134,9 @@ public class AccountingServiceAdapter implements AccountingServicePort {
                                     : Mono.error(e));
 
                     return orgIdMono.flatMap(orgId ->
-                            accountingKernelAuthService.getValidToken()
+                            ReactiveOrganizationContext.getBearerToken()
+                                    .switchIfEmpty(Mono.error(new ResponseStatusException(
+                                            HttpStatus.UNAUTHORIZED, "No caller token available to sync with accounting")))
                                     .flatMap(token -> {
                                         CreateInvoiceAccountingRequest body =
                                                 new CreateInvoiceAccountingRequest(facture.getIdFactureFournisseur(), "PENDING");

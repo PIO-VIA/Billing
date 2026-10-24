@@ -16,4 +16,10 @@ public class LoginRequest {
     // first call; the frontend resubmits it after the user picks an org from
     // the list returned in SellerAuthResponse.availableOrganizations.
     private UUID organizationId;
+
+    // Which Kernel tenant this account's login belongs to, once Kernel's
+    // discover-contexts has found the account in more than one. Omitted on
+    // the first call; the frontend resubmits it after the user picks a
+    // tenant from SellerAuthResponse.availableTenants.
+    private UUID tenantId;
 }

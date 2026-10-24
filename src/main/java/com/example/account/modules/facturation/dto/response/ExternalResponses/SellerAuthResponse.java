@@ -4,7 +4,9 @@ import com.example.account.modules.facturation.model.enums.SaleSize;
 import com.example.account.modules.facturation.model.enums.SellerPermission;
 import com.example.account.modules.facturation.model.enums.SellerRole;
 import com.example.account.modules.settings.dto.SettingResponse;
+import com.example.account.modules.shared.dto.kernel.KernelDiscoveredContext;
 import com.example.account.modules.shared.dto.kernel.KernelOrganizationResponse;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -26,6 +28,15 @@ public class SellerAuthResponse {
     // JWT returned by sales-core's local seller auth — the frontend must send
     // this as Authorization: Bearer {accessToken}
     private String accessToken;
+
+    // Kernel's refresh token (and its expiry), carried only between
+    // AuthServiceAdapter and AuthUseCaseImpl so the latter can cache it for
+    // PIN login to later mint a fresh accessToken from — never meant to
+    // reach the frontend.
+    @JsonIgnore
+    private String refreshToken;
+    @JsonIgnore
+    private String refreshExpiresAt;
 
     @JsonProperty("Id")
     private UUID id;
@@ -78,6 +89,15 @@ public class SellerAuthResponse {
     // an org picker and resubmit with the chosen organizationId.
     private Boolean requiresOrganizationSelection;
     private List<KernelOrganizationResponse> availableOrganizations;
+
+    // Set when Kernel's discover-contexts finds this account in more than
+    // one tenant that actually has organizations (a bare PLATFORM/no-org
+    // context never counts). Every other field above is left null — the
+    // frontend must show a tenant picker and resubmit with the chosen
+    // tenantId, same shape as the organization-selection step one level
+    // below this one.
+    private Boolean requiresTenantSelection;
+    private List<KernelDiscoveredContext> availableTenants;
 
     // Set when Kernel requires MFA to complete this login (now the case for
     // every account). Every other field is left null — the frontend must

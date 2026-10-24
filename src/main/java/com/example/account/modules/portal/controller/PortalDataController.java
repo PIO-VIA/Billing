@@ -1,7 +1,6 @@
 package com.example.account.modules.portal.controller;
 
 import com.example.account.modules.core.context.ReactiveOrganizationContext;
-import com.example.account.modules.facturation.adapter.output.external.AccountingKernelAuthService;
 import com.example.account.modules.facturation.domain.port.input.DevisUseCase;
 import com.example.account.modules.facturation.domain.port.input.FactureUseCase;
 import com.example.account.modules.facturation.dto.request.QuotationProposalCreateRequest;
@@ -67,7 +66,6 @@ public class PortalDataController {
     private final ClientUseCase clientUseCase;
     private final SettingService settingService;
     private final PortalIdentityResolver identityResolver;
-    private final AccountingKernelAuthService accountingKernelAuthService;
 
     @Qualifier("kernelWebClient")
     private final WebClient kernelWebClient;
@@ -81,7 +79,7 @@ public class PortalDataController {
     private Mono<PortalPrincipal> resolvePrincipal(String token) {
         return identityResolver.resolveActor(token)
                 .onErrorResume(e -> Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired portal session")))
-                .flatMap(actor -> identityResolver.resolveAssociations(actor.getActorId())
+                .flatMap(actor -> identityResolver.resolveAssociations(actor.getActorId(), token)
                         .flatMap(associations -> {
                             if (associations.isEmpty()) {
                                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
@@ -269,23 +267,17 @@ public class PortalDataController {
     }
 
     /**
-     * GET /api/customers (the underlying call behind getAllClients) requires
-     * staff-level "third-parties:read" Kernel permission — a plain customer's
-     * own login token gets 403 ACCESS_DENIED even looking up their own record.
-     * So this deliberately does NOT forward the caller's token: it uses our
-     * own service account instead, same as kernelWebClient does automatically
-     * for calls with no Authorization header already set. Safe here because
-     * the result is always filtered down to the caller's own resolved
-     * clientId before anything is returned — never client-suppliable.
+     * Forwards the caller's own token (already in context from this
+     * request's OrganizationFilter) rather than any stand-in identity — if
+     * Kernel's permission model genuinely doesn't let a customer look up
+     * their own record this way, that's a real 403 to surface, not
+     * something to route around with a different identity's permissions.
      */
     private Mono<ClientResponse> findClient(PortalOrgAssociation target) {
-        return accountingKernelAuthService.getValidToken()
-                .flatMap(token -> clientUseCase.getAllClients()
-                        .filter(c -> target.clientId().equals(c.getIdClient()))
-                        .next()
-                        .contextWrite(ctx -> ctx
-                                .put(ReactiveOrganizationContext.ORGANIZATION_ID_KEY, target.organizationId())
-                                .put(ReactiveOrganizationContext.TOKEN_KEY, token)));
+        return clientUseCase.getAllClients()
+                .filter(c -> target.clientId().equals(c.getIdClient()))
+                .next()
+                .contextWrite(ctx -> ctx.put(ReactiveOrganizationContext.ORGANIZATION_ID_KEY, target.organizationId()));
     }
 
     @GetMapping("/api/portal/organization")
