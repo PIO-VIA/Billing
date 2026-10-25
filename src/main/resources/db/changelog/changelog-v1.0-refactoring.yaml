@@ -1,7 +1,32 @@
 databaseChangeLog:
   - changeSet:
+      id: 0-base-schema
+      author: yowyob-deploy
+      # Base deja creee (poste de dev, base existante) : schema.sql n'est pas rejouable
+      # (CREATE INDEX sans IF NOT EXISTS) -> marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: user_organizations
+      comments: >
+        Schema de base (schema.sql). Les changesets suivants supposent ces tables :
+        sans lui, une base vide (la production) echoue des le changeset 1.
+        Idempotent : CREATE TABLE IF NOT EXISTS.
+      changes:
+        - sqlFile:
+            path: schema.sql
+            splitStatements: true
+            stripComments: true
+  - changeSet:
       id: 1-create-user-organization-permissions
       author: refactoring-agent
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: user_organization_permissions
       comments: Create user_organization_permissions table
       changes:
         - createTable:
@@ -71,6 +96,13 @@ databaseChangeLog:
   - changeSet:
       id: 3-add-agency-id-to-factures
       author: dev
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: factures
+                columnName: agency_id
       changes:
         - addColumn:
             tableName: factures
@@ -84,6 +116,13 @@ databaseChangeLog:
   - changeSet:
       id: 4-add-agency-id-to-devis
       author: dev
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: devis
+                columnName: agency_id
       changes:
         - addColumn:
             tableName: devis
@@ -97,6 +136,13 @@ databaseChangeLog:
   - changeSet:
       id: 5-add-agency-id-to-paiements
       author: dev
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: paiements
+                columnName: agency_id
       changes:
         - addColumn:
             tableName: paiements
@@ -110,6 +156,13 @@ databaseChangeLog:
   - changeSet:
       id: 6-add-agency-id-to-notes-credit
       author: dev
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: notes_credit
+                columnName: agency_id
       changes:
         - addColumn:
             tableName: notes_credit
@@ -123,6 +176,13 @@ databaseChangeLog:
   - changeSet:
       id: 7-add-agency-id-to-taxes
       author: dev
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: taxes
+                columnName: agency_id
       changes:
         - addColumn:
             tableName: taxes
@@ -136,6 +196,13 @@ databaseChangeLog:
   - changeSet:
       id: 8-add-agency-id-to-journals
       author: dev
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: journals
+                columnName: agency_id
       changes:
         - addColumn:
             tableName: journals
@@ -149,6 +216,13 @@ databaseChangeLog:
   - changeSet:
       id: 9-add-agency-id-to-factures-proforma
       author: dev
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: factures_proforma
+                columnName: agency_id
       changes:
         - addColumn:
             tableName: factures_proforma
@@ -162,6 +236,12 @@ databaseChangeLog:
   - changeSet:
       id: 10-create-back-orders-table
       author: dev
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: back_orders
       changes:
         - createTable:
             tableName: back_orders
@@ -246,6 +326,13 @@ databaseChangeLog:
   - changeSet:
       id: 12-add-partial-delivery-fields-to-bons-livraison
       author: dev
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: bons_livraison
+                columnName: is_partial
       changes:
         - addColumn:
             tableName: bons_livraison
@@ -266,6 +353,12 @@ databaseChangeLog:
   - changeSet:
       id: 11-create-ui-permissions-table
       author: dev
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: ui_permissions
       changes:
         - createTable:
             tableName: ui_permissions
@@ -391,6 +484,13 @@ databaseChangeLog:
   - changeSet:
       id: 13-back-orders-link-client-and-delivery-note-not-supplier
       author: dev
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: back_orders
+                columnName: id_client
       comments: >
         A back order tracks a shortfall on a delivery to a CLIENT (via the
         delivery note/sales order that couldn't be fully fulfilled), not a
@@ -451,6 +551,12 @@ databaseChangeLog:
   - changeSet:
       id: 14-create-quotation-proposals-table
       author: dev
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: quotation_proposals
       comments: Quotations drafted by clients themselves via the portal, reviewed by sellers
       changes:
         - createTable:
@@ -536,6 +642,12 @@ databaseChangeLog:
   - changeSet:
       id: 20-create-seller-auth-contexts
       author: dev
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: seller_auth_contexts
       changes:
         - createTable:
             tableName: seller_auth_contexts
@@ -578,6 +690,13 @@ databaseChangeLog:
   - changeSet:
       id: 21-add-refresh-token-to-seller-auth-contexts
       author: dev
+      # Deja cree par 0-base-schema (schema.sql) sur une base neuve : marquer comme joue.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: seller_auth_contexts
+                columnName: refresh_token
       comments: >
         PIN login never talks to Kernel on its own, so it had no access token
         to hand the frontend. Caches the seller's refresh token from their last
