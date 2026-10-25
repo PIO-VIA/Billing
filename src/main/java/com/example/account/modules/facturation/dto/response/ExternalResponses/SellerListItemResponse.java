@@ -28,5 +28,7 @@ public class SellerListItemResponse {
     private UUID salesPointId;
     private Boolean mustChangePassword;
     private String pin;
+    /** ACTIVE (added from an existing Kernel employee) or PENDING (invited, hasn't accepted yet). Billing's own local tracking — sales-core has no such concept. */
+    private String status;
     private Instant createdAt;
 }

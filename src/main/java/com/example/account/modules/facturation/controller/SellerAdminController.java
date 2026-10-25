@@ -8,6 +8,7 @@ import com.example.account.modules.facturation.dto.request.UpdateSellerPermissio
 import com.example.account.modules.facturation.dto.request.UpdateSellerPhotoRequest;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.AssignAgencyResponse;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.CreateSellerResponse;
+import com.example.account.modules.facturation.dto.response.ExternalResponses.OrganizationEmployeeResponse;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.SellerListItemResponse;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.SellerUIPermissionsResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,9 +40,22 @@ public class SellerAdminController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Create a seller")
+    @Operation(summary = "Invite a new seller", description = "For someone who isn't a Kernel employee yet: invites them into the org via Kernel and creates the seller as PENDING.")
     public Mono<CreateSellerResponse> create(@Valid @RequestBody CreateSellerRequest request) {
         return sellerAdminUseCase.createSeller(request);
+    }
+
+    @GetMapping("/employees")
+    @Operation(summary = "List this organization's Kernel employees", description = "Source for the \"add from employee\" picker — each entry flags whether it's already a seller.")
+    public Flux<OrganizationEmployeeResponse> listOrganizationEmployees(@RequestParam UUID organizationId) {
+        return sellerAdminUseCase.listOrganizationEmployees(organizationId);
+    }
+
+    @PostMapping("/from-employee")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Add an existing Kernel employee as a seller", description = "No Kernel invite — the person already has credentials. Seller is created ACTIVE immediately.")
+    public Mono<CreateSellerResponse> createFromEmployee(@Valid @RequestBody CreateSellerRequest request) {
+        return sellerAdminUseCase.createSellerFromEmployee(request);
     }
 
     @PostMapping("/{sellerId}/agency")

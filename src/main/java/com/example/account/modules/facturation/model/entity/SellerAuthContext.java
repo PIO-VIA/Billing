@@ -32,6 +32,11 @@ public class SellerAuthContext {
     @Column("pin")
     private String pin;
 
+    /** ACTIVE (added from an existing Kernel employee) or PENDING (invited, hasn't accepted yet). */
+    @Column("status")
+    @Builder.Default
+    private String status = "ACTIVE";
+
     // Cached from the seller's last real Kernel login so PIN login — which
     // never talks to Kernel on its own — can mint a fresh accessToken via
     // /api/auth/refresh instead of leaving the frontend with no Kernel

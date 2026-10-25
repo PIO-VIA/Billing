@@ -1742,3 +1742,17 @@ databaseChangeLog:
               - column:
                   name: organization_id
 
+  - changeSet:
+      id: 35-seller-auth-contexts-status
+      author: billing
+      changes:
+        - addColumn:
+            tableName: seller_auth_contexts
+            columns:
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
+

@@ -11,17 +11,16 @@ import java.util.UUID;
 @Data
 public class CreateSellerRequest {
 
-    @NotBlank
+    /** Optional for the invite flow — auto-derived from the email if left blank. */
     private String username;
 
     @NotBlank
     @Email
     private String email;
 
-    @NotBlank
+    /** Optional for the invite flow (just email + role) — auto-derived from the email if left blank. */
     private String firstName;
 
-    @NotBlank
     private String lastName;
 
     /** POS_SELLER, SELLER, AGENCY_MANAGER, or OWNER — defaults to SELLER if not specified. */
