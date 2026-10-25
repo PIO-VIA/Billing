@@ -86,7 +86,7 @@ public class BonAchatService {
         log.info("Mise à jour du bon d'achat ID: {}", id);
 
         return bonAchatRepository.findById(id)
-                .switchIfEmpty(Mono.error(new RuntimeException("Bon d'achat non trouvé avec l'ID: " + id)))
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Bon d'achat non trouvé avec l'ID: " + id)))
                 .flatMap(existingBonAchat -> {
                     bonAchatMapper.updateEntityFromRequest(request, existingBonAchat);
                     return bonAchatRepository.save(existingBonAchat);

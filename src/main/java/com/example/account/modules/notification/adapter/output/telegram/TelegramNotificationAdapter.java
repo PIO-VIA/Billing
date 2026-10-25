@@ -4,6 +4,7 @@ import com.example.account.modules.notification.domain.port.output.NotificationP
 import com.example.account.modules.notification.model.entity.Contact;
 import com.example.account.modules.notification.service.ContactService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -13,6 +14,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @Service
+@Qualifier("telegramNotificationPort")
 @Slf4j
 public class TelegramNotificationAdapter implements NotificationPort {
 

@@ -42,15 +42,26 @@ public class ContactService {
                 .updatedAt(now)
                 .build();
 
+        return contactRepository.save(contact)
+                .flatMap(saved -> sendTelegramInvite(saved).thenReturn(saved));
+    }
+
+    /** No-op if already linked (has a chatId) — safe to call every time a TELEGRAM-channel live-notification activates. */
+    public Mono<Void> inviteToTelegramIfUnlinked(Contact contact) {
+        if (contact.getChatId() != null && !contact.getChatId().isBlank()) {
+            return Mono.empty();
+        }
+        return sendTelegramInvite(contact);
+    }
+
+    private Mono<Void> sendTelegramInvite(Contact contact) {
         String deepLink = "https://t.me/" + botUsername + "?start=" + contact.getLinkToken();
         com.example.account.modules.notification.dto.SendContactInvitationEmailRequest request = new com.example.account.modules.notification.dto.SendContactInvitationEmailRequest();
         request.setOrganizationId(contact.getOrganizationId());
         request.setEmail(contact.getEmail());
         request.setName(contact.getName());
         request.setTelegramDeepLink(deepLink);
-
-        return contactRepository.save(contact)
-                .flatMap(saved -> contactEmailService.sendInvitation(request).thenReturn(saved));
+        return contactEmailService.sendInvitation(request);
     }
 
     public Mono<Contact> linkChat(String linkToken, String chatId) {

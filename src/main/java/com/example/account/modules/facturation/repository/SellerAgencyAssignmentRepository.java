@@ -11,4 +11,7 @@ import java.util.UUID;
 public interface SellerAgencyAssignmentRepository extends ReactiveCrudRepository<SellerAgencyAssignment, UUID> {
     Mono<SellerAgencyAssignment> findBySellerId(UUID sellerId);
     Flux<SellerAgencyAssignment> findBySellerIdIn(Collection<UUID> sellerIds);
+    Flux<SellerAgencyAssignment> findByOrganizationId(UUID organizationId);
+    Flux<SellerAgencyAssignment> findByAgencyId(UUID agencyId);
+    Mono<Void> deleteBySellerId(UUID sellerId);
 }

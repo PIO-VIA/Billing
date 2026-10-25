@@ -9,6 +9,7 @@ import com.example.account.modules.facturation.dto.request.UpdateSessionRequest;
 import com.example.account.modules.facturation.dto.response.ExternalResponses.SellerListItemResponse;
 import com.example.account.modules.facturation.dto.response.SessionResponse;
 import com.example.account.modules.notification.dto.SendSessionCreatedEmailRequest;
+import com.example.account.modules.notification.dto.SendSessionUpdatedEmailRequest;
 import com.example.account.modules.notification.service.SessionEmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,33 @@ public class SessionUseCaseImpl implements SessionUseCase {
                 .thenReturn(session);
     }
 
+    /** Best-effort: a failed notification email must never fail the status change itself. */
+    private Mono<SessionResponse> notifySessionUpdated(SessionResponse session, String action) {
+        return sellerServicePort.listSellers(session.getOrganizationId())
+                .filter(seller -> session.getSellerId().equals(seller.getId()))
+                .next()
+                .flatMap(seller -> sessionEmailService.sendSessionUpdated(toUpdateEmailRequest(seller, session, action)))
+                .onErrorResume(e -> {
+                    log.error("Failed to send session-updated email for session {}: {}", session.getId(), e.getMessage());
+                    return Mono.empty();
+                })
+                .thenReturn(session);
+    }
+
+    private SendSessionUpdatedEmailRequest toUpdateEmailRequest(SellerListItemResponse seller, SessionResponse session, String action) {
+        SendSessionUpdatedEmailRequest request = new SendSessionUpdatedEmailRequest();
+        request.setOrganizationId(seller.getOrganizationId());
+        request.setEmail(seller.getEmail());
+        request.setUsername(seller.getUsername());
+        request.setAgency(seller.getAgency());
+        request.setSessionType(session.getType() != null ? session.getType().name() : null);
+        request.setAction(action);
+        request.setStatus(session.getStatus() != null ? session.getStatus().name() : null);
+        request.setOpeningAmount(session.getOpeningAmount());
+        request.setClosingAmount(session.getClosingAmount());
+        return request;
+    }
+
     private SendSessionCreatedEmailRequest toEmailRequest(SellerListItemResponse seller, SessionResponse session) {
         SendSessionCreatedEmailRequest request = new SendSessionCreatedEmailRequest();
         request.setOrganizationId(seller.getOrganizationId());
@@ -68,32 +96,32 @@ public class SessionUseCaseImpl implements SessionUseCase {
 
     @Override
     public Mono<SessionResponse> start(UUID id) {
-        return sessionServicePort.start(id);
+        return sessionServicePort.start(id).flatMap(session -> notifySessionUpdated(session, "démarrée"));
     }
 
     @Override
     public Mono<SessionResponse> close(UUID id, CloseSessionRequest request) {
-        return sessionServicePort.close(id, request);
+        return sessionServicePort.close(id, request).flatMap(session -> notifySessionUpdated(session, "clôturée"));
     }
 
     @Override
     public Mono<SessionResponse> suspend(UUID id) {
-        return sessionServicePort.suspend(id);
+        return sessionServicePort.suspend(id).flatMap(session -> notifySessionUpdated(session, "suspendue"));
     }
 
     @Override
     public Mono<SessionResponse> resume(UUID id) {
-        return sessionServicePort.resume(id);
+        return sessionServicePort.resume(id).flatMap(session -> notifySessionUpdated(session, "reprise"));
     }
 
     @Override
     public Mono<SessionResponse> cancel(UUID id) {
-        return sessionServicePort.cancel(id);
+        return sessionServicePort.cancel(id).flatMap(session -> notifySessionUpdated(session, "annulée"));
     }
 
     @Override
     public Mono<SessionResponse> reopen(UUID id) {
-        return sessionServicePort.reopen(id);
+        return sessionServicePort.reopen(id).flatMap(session -> notifySessionUpdated(session, "réouverte"));
     }
 
     @Override
@@ -108,7 +136,7 @@ public class SessionUseCaseImpl implements SessionUseCase {
 
     @Override
     public Mono<SessionResponse> update(UUID id, UpdateSessionRequest request) {
-        return sessionServicePort.update(id, request);
+        return sessionServicePort.update(id, request).flatMap(session -> notifySessionUpdated(session, "mise à jour"));
     }
 
     @Override

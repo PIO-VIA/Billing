@@ -170,7 +170,7 @@ public Mono<Void> sendDevisAsEmail(EmailRequest emailRequest) {
     log.info("Processing email request for ID: {}", emailRequest.getId());
 
     return devisRepository.findById(emailRequest.getId())
-        .switchIfEmpty(Mono.error(new RuntimeException("Quotation not found with ID: " + emailRequest.getId())))
+        .switchIfEmpty(Mono.error(new IllegalArgumentException("Quotation not found with ID: " + emailRequest.getId())))
         .flatMap(devis -> {
             log.info("Found quotation, generating token and sending email");
             //first build permssion object
@@ -193,10 +193,7 @@ public Mono<Void> sendDevisAsEmail(EmailRequest emailRequest) {
                 }))
                 .then(); // Convert Mono<Devis> to Mono<Void>
         })
-        .onErrorResume(e -> {
-            log.error("Failed to process email request for quotation: {}", emailRequest.getId(), e);
-            return Mono.error(new RuntimeException("Email service failed: " + e.getMessage()));
-        });
+        .doOnError(e -> log.error("Failed to process email request for quotation: {}", emailRequest.getId(), e));
 }
 
     @Override

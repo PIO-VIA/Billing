@@ -70,7 +70,7 @@ public class PortalTokenService {
     }
    public Mono<PortalAccessToken> markAsUsed(String tokenValue) {
     return repository.findByToken(tokenValue)
-        .switchIfEmpty(Mono.error(new RuntimeException("Token not found")))
+        .switchIfEmpty(Mono.error(new IllegalArgumentException("Token not found")))
         .flatMap(token -> {
             token.setUsed(true);
             // Return the result of the save operation

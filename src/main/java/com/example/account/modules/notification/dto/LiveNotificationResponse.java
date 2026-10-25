@@ -1,5 +1,6 @@
 package com.example.account.modules.notification.dto;
 
+import com.example.account.modules.notification.model.enums.NotificationChannel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -17,4 +18,5 @@ public class LiveNotificationResponse {
     private long delayMinutes;
     private Instant lastSentAt;
     private boolean active;
+    private NotificationChannel channel;
 }

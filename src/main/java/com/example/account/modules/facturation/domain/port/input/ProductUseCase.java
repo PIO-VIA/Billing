@@ -11,6 +11,6 @@ public interface ProductUseCase {
     Flux<ProductResponse> getAllProducts();
     Flux<ProductResponse> getProductsByOrganization(UUID organizationId);
     Mono<ProductResponse> getProductById(UUID productId);
-    Mono<List<ProductResponse.SaleSize>> updateSaleSizes(UUID productId, List<ProductResponse.SaleSize> allowedSaleSizes);
+    Mono<ProductResponse> updateSaleSizes(UUID productId, List<ProductResponse.SaleSize> allowedSaleSizes, String photo, Boolean vatApplicable);
     Mono<String> updatePhoto(UUID productId, String photo);
 }

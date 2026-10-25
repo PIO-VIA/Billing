@@ -1,7 +1,7 @@
 package com.example.account.modules.core.config;
 
 import com.example.account.modules.core.context.ReactiveOrganizationContext;
-import com.example.account.modules.notification.adapter.output.external.NotificationKernelAuthService;
+import com.example.account.modules.core.util.JwtClaims;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -37,26 +37,65 @@ public class NotificationKernelWebClientConfig {
 
     @Bean
     @Qualifier("notificationKernelWebClient")
-    public WebClient notificationKernelWebClient(WebClient.Builder builder, NotificationKernelAuthService authService) {
+    public WebClient notificationKernelWebClient(WebClient.Builder builder) {
         return builder
                 .baseUrl(baseUrl)
                 .defaultHeader("X-Client-Id", clientId)
                 .defaultHeader("X-Api-Key", apiKey)
                 .defaultHeader("X-Tenant-Id", tenantId)
-                .filter(injectBearerToken(authService))
+                .filter(injectBearerToken())
+                .filter(injectTenantId())
                 .filter(injectOrganizationId())
                 .build();
     }
 
-    private ExchangeFilterFunction injectBearerToken(NotificationKernelAuthService authService) {
+    /**
+     * Same override as kernelWebClient: the default X-Tenant-Id above is the
+     * platform tenant, but a forwarded caller token is minted for that caller's
+     * real tenant — sending the platform tenant alongside it is a mismatch
+     * Kernel rejects outright with 401, even though the token itself is valid.
+     */
+    private ExchangeFilterFunction injectTenantId() {
+        return (request, next) -> {
+            String authHeader = request.headers().getFirst(HttpHeaders.AUTHORIZATION);
+            String token = authHeader != null && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
+            String tid = JwtClaims.readClaim(token, "tid");
+            if (tid == null || tid.isBlank()) {
+                return next.exchange(request);
+            }
+            ClientRequest modified = ClientRequest.from(request)
+                    .headers(h -> h.set("X-Tenant-Id", tid))
+                    .build();
+            return next.exchange(modified);
+        };
+    }
+
+    /**
+     * Forwards the caller's own token (same as kernelWebClient/salesCoreWebClient)
+     * whenever one is available in Reactor context — every notification send is
+     * triggered by a real HTTP request with a real caller token already in
+     * context. No service-account fallback: a send with no caller token in
+     * context (e.g. a future background/scheduled trigger with nobody's request
+     * to borrow from) errors out here rather than silently using a different
+     * identity's permissions — every call site already wraps sends in
+     * onErrorResume, so this degrades to a logged, swallowed failure same as
+     * any other notification-send error.
+     */
+    private ExchangeFilterFunction injectBearerToken() {
         return (request, next) -> {
             if (request.headers().containsKey(HttpHeaders.AUTHORIZATION)) {
                 return next.exchange(request);
             }
-            return authService.getValidToken()
-                    .flatMap(token -> next.exchange(ClientRequest.from(request)
-                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                            .build()));
+            return Mono.deferContextual(ctx -> {
+                String token = ctx.getOrDefault(ReactiveOrganizationContext.TOKEN_KEY, null);
+                if (token == null) {
+                    return Mono.error(new IllegalStateException(
+                            "No caller token available to send this notification"));
+                }
+                return next.exchange(ClientRequest.from(request)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .build());
+            });
         };
     }
 

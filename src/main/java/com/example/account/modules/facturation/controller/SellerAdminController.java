@@ -45,9 +45,34 @@ public class SellerAdminController {
     }
 
     @PostMapping("/{sellerId}/agency")
-    @Operation(summary = "Assign a seller to an agency")
+    @Operation(summary = "Assign (or reassign) a seller to an agency")
     public Mono<AssignAgencyResponse> assignAgency(@PathVariable UUID sellerId, @Valid @RequestBody AssignAgencyRequest request) {
         return sellerAdminUseCase.assignAgency(sellerId, request);
+    }
+
+    @GetMapping("/{sellerId}/agency")
+    @Operation(summary = "Get a seller's current agency assignment")
+    public Mono<AssignAgencyResponse> getAgencyForSeller(@PathVariable UUID sellerId) {
+        return sellerAdminUseCase.getAgencyForSeller(sellerId);
+    }
+
+    @GetMapping("/agency-assignments/organisation/{organizationId}")
+    @Operation(summary = "List all seller-agency assignments for an organization")
+    public Flux<AssignAgencyResponse> listAgencyAssignments(@PathVariable UUID organizationId) {
+        return sellerAdminUseCase.listAgencyAssignments(organizationId);
+    }
+
+    @GetMapping("/agency/{agencyId}")
+    @Operation(summary = "Get the sellers assigned to an agency")
+    public Flux<SellerListItemResponse> getSellersForAgency(@PathVariable UUID agencyId, @RequestParam UUID organizationId) {
+        return sellerAdminUseCase.getSellersForAgency(agencyId, organizationId);
+    }
+
+    @DeleteMapping("/{sellerId}/agency")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Remove a seller's agency assignment")
+    public Mono<Void> unassignAgency(@PathVariable UUID sellerId) {
+        return sellerAdminUseCase.unassignAgency(sellerId);
     }
 
     @GetMapping("/{sellerId}/ui-permissions")

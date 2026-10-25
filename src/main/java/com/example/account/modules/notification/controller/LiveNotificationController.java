@@ -3,6 +3,7 @@ package com.example.account.modules.notification.controller;
 import com.example.account.modules.notification.domain.port.input.LiveNotificationUseCase;
 import com.example.account.modules.notification.dto.CreateLiveNotificationRequest;
 import com.example.account.modules.notification.dto.LiveNotificationResponse;
+import com.example.account.modules.notification.dto.UpdateActiveRequest;
 import com.example.account.modules.notification.dto.UpdateDelayRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,5 +42,11 @@ public class LiveNotificationController {
     @Operation(summary = "Change how long the notification batches invoices before flushing")
     public Mono<LiveNotificationResponse> updateDelay(@PathVariable UUID id, @Valid @RequestBody UpdateDelayRequest request) {
         return liveNotificationUseCase.updateDelay(id, request.getDelayMinutes());
+    }
+
+    @PutMapping("/{id}/active")
+    @Operation(summary = "Turn a notification rule on or off. Turning a TELEGRAM rule on (re)sends the bot invite to any unlinked contact.")
+    public Mono<LiveNotificationResponse> setActive(@PathVariable UUID id, @Valid @RequestBody UpdateActiveRequest request) {
+        return liveNotificationUseCase.setActive(id, request.getActive());
     }
 }

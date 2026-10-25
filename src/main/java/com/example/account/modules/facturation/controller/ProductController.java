@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -49,12 +48,12 @@ public class ProductController {
     }
 
     @PutMapping("/{productId}/sale-sizes")
-    @Operation(summary = "Configure a product's allowed sale sizes and per-size pricing")
-    public Mono<List<ProductResponse.SaleSize>> updateSaleSizes(
+    @Operation(summary = "Configure a product's image, allowed sale sizes/pricing/negotiability, and VAT applicability")
+    public Mono<ProductResponse> updateSaleSizes(
             @PathVariable UUID productId,
             @Valid @RequestBody UpdateSaleSizesRequest request) {
         log.info("Request to update sale sizes for product: {}", productId);
-        return productUseCase.updateSaleSizes(productId, request.getAllowedSaleSizes());
+        return productUseCase.updateSaleSizes(productId, request.getAllowedSaleSizes(), request.getPhoto(), request.getVatApplicable());
     }
 
     @PutMapping("/{productId}/photo")

@@ -42,6 +42,9 @@ public class ProductResponse {
     private Double reservedQuantity;
     private UUID organizationId;
 
+    /** Whether VAT applies to this product — Billing's own local config, not a Kernel product-core field. */
+    private Boolean vatApplicable;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

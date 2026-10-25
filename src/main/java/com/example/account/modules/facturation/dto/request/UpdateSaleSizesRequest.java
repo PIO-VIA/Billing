@@ -11,4 +11,10 @@ public class UpdateSaleSizesRequest {
 
     @NotNull
     private List<ProductResponse.SaleSize> allowedSaleSizes;
+
+    /** Omit to leave the current photo unchanged. */
+    private String photo;
+
+    /** Defaults to true if omitted. */
+    private Boolean vatApplicable;
 }

@@ -26,7 +26,7 @@ public class PortalAccessService {
   public Mono<PortalAcessResponse<DevisResponse>> getDevisInformation(String tokenValue) {
     return portalTokenService.getByTokenValue(tokenValue)
         .doOnNext(t -> log.info("Token found in DB for email: {}", t.getClientEmail()))
-        .switchIfEmpty(Mono.error(new RuntimeException("Token string not found in database")))
+        .switchIfEmpty(Mono.error(new IllegalArgumentException("Token string not found in database")))
         .flatMap(token -> {
             log.info("Fetching Devis ID: {}", token.getResourceId());
             
@@ -54,14 +54,14 @@ public class PortalAccessService {
     }
 public Mono<Void> handleAction(String tokenValue, String action) {
     return portalTokenService.getByTokenValue(tokenValue)
-        .switchIfEmpty(Mono.error(new RuntimeException("Token string not found in database")))
+        .switchIfEmpty(Mono.error(new IllegalArgumentException("Token string not found in database")))
         .<Void>flatMap(tokenEntity -> {
             // 1. Validation Logic
             if (tokenEntity.isUsed()) {
-                return Mono.error(new RuntimeException("This link has already been used."));
+                return Mono.error(new IllegalArgumentException("This link has already been used."));
             }
             if (LocalDateTime.now().isAfter(tokenEntity.getExpiresAt())) {
-                return Mono.error(new RuntimeException("This link has expired."));
+                return Mono.error(new IllegalArgumentException("This link has expired."));
             }
 
             if (tokenEntity.getResourceType().equals(ResourceType.QUOTATION)) {

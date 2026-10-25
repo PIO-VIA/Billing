@@ -83,15 +83,10 @@ public class DevisController {
     }
 
 @PostMapping("/email")
-public Mono<ResponseEntity<Void>> sendQuotationEmail(@RequestBody EmailRequest request) {
+public Mono<Void> sendQuotationEmail(@RequestBody EmailRequest request) {
     log.info("Received request to send quotation email for ID: {}", request.getId());
-    
-    return devisService.sendDevisAsEmail(request)
-        .then(Mono.just(ResponseEntity.ok().<Void>build()))
-        .onErrorResume(e -> {
-            log.error("Failed to send email for quotation: " + request.getId(), e);
-            return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
-        });
+
+    return devisService.sendDevisAsEmail(request);
 }
 
    

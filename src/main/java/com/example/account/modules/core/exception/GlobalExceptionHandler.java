@@ -1,5 +1,6 @@
 package com.example.account.modules.core.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -89,6 +90,23 @@ public class GlobalExceptionHandler {
             return HttpStatus.CONFLICT;
         }
         return HttpStatus.BAD_REQUEST;
+    }
+
+    /**
+     * A duplicate unique-key insert/update (e.g. resubmitting a numero that
+     * already exists) otherwise falls into the catch-all below as an opaque
+     * 500 that leaks the full generated SQL and column list to the client.
+     * Spring's R2DBC exception translator already recognizes Postgres'
+     * unique_violation SQLState and wraps it as this type.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public Mono<ResponseEntity<Object>> handleDataIntegrityViolationException(DataIntegrityViolationException ex, ServerWebExchange exchange) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("message", "A record with this value already exists.");
+        body.put("path", exchange.getRequest().getPath().value());
+        body.put("error", HttpStatus.CONFLICT.toString());
+
+        return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(body));
     }
 
     @ExceptionHandler(Exception.class)

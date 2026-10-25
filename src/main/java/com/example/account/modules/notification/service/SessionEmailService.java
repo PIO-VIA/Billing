@@ -1,6 +1,7 @@
 package com.example.account.modules.notification.service;
 
 import com.example.account.modules.notification.dto.SendSessionCreatedEmailRequest;
+import com.example.account.modules.notification.dto.SendSessionUpdatedEmailRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,5 +32,22 @@ public class SessionEmailService {
           .flatMap(html -> emailSenderService.sendEmail(request.getOrganizationId(), request.getEmail(),
                   "Votre session KSM a été créée", html))
           .doOnSuccess(v -> log.info("Sent session-created email to {}", request.getEmail()));
+    }
+
+    public Mono<Void> sendSessionUpdated(SendSessionUpdatedEmailRequest request) {
+        return Mono.fromCallable(() -> {
+            Context context = new Context();
+            context.setVariable("username", request.getUsername());
+            context.setVariable("agency", request.getAgency());
+            context.setVariable("sessionType", request.getSessionType());
+            context.setVariable("action", request.getAction());
+            context.setVariable("status", request.getStatus());
+            context.setVariable("openingAmount", request.getOpeningAmount());
+            context.setVariable("closingAmount", request.getClosingAmount());
+            return templateEngine.process("session-updated", context);
+        }).subscribeOn(Schedulers.boundedElastic())
+          .flatMap(html -> emailSenderService.sendEmail(request.getOrganizationId(), request.getEmail(),
+                  "Votre session KSM a été " + request.getAction(), html))
+          .doOnSuccess(v -> log.info("Sent session-updated email to {}", request.getEmail()));
     }
 }

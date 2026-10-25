@@ -35,8 +35,8 @@ public class ProductUseCaseImpl implements ProductUseCase {
     }
 
     @Override
-    public Mono<List<ProductResponse.SaleSize>> updateSaleSizes(UUID productId, List<ProductResponse.SaleSize> allowedSaleSizes) {
-        return productServicePort.updateSaleSizes(productId, allowedSaleSizes);
+    public Mono<ProductResponse> updateSaleSizes(UUID productId, List<ProductResponse.SaleSize> allowedSaleSizes, String photo, Boolean vatApplicable) {
+        return productServicePort.updateSaleSizes(productId, allowedSaleSizes, photo, vatApplicable);
     }
 
     @Override

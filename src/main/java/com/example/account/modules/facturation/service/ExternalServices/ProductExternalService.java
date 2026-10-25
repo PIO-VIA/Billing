@@ -155,7 +155,7 @@ public class ProductExternalService {
 
             //first find the product
             return productRepository.findByUuid(request.getProductId())
-                    .switchIfEmpty(Mono.error(new RuntimeException("Product not found with id: " + request.getProductId())))
+                    .switchIfEmpty(Mono.error(new IllegalArgumentException("Product not found with id: " + request.getProductId())))
                     .flatMap(product -> {
 
                         //construct redis key ie sellerid:productid:qty->qty
@@ -168,7 +168,7 @@ public class ProductExternalService {
 
                 if (product.getAvailableQuantity() < requestedAmount) {
                     // Explicitly casting to Throwable or using a more direct approach
-                    return Mono.error(new RuntimeException("OUT_OF_STOCK"));
+                    return Mono.error(new IllegalArgumentException("OUT_OF_STOCK"));
                 }
                                         //store the reservation in redis with a TTL (e.g., 15 minutes)
                         redisService.save(key,request.getQuantity().toString(),Integer.valueOf(2));
@@ -194,7 +194,7 @@ public class ProductExternalService {
    @Transactional
 public Mono<Void> releaseProduct(UUID productId, Integer quantity) {
     return productRepository.findByUuid(productId)
-            .switchIfEmpty(Mono.error(new RuntimeException("Product not found with id: " + productId)))
+            .switchIfEmpty(Mono.error(new IllegalArgumentException("Product not found with id: " + productId)))
             .flatMap(product -> {
                 log.info("Restoring {} units to product: {}", quantity, product.getName());
 

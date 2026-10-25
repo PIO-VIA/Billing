@@ -6,6 +6,16 @@ databaseChangeLog:
         Distinguishes invoices created at a POS terminal register (tied to a
         cash-register session in sales-core's sessions table) from invoices
         created through the regular back-office/web sales flow.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - and:
+                - columnExists:
+                    tableName: factures
+                    columnName: origin_type
+                - columnExists:
+                    tableName: factures
+                    columnName: session_id
       changes:
         - addColumn:
             tableName: factures

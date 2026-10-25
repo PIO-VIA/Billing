@@ -244,6 +244,916 @@ databaseChangeLog:
                   name: id_bon_achat
 
   - changeSet:
+      id: 22-create-bons-livraison-table
+      author: dev
+      comments: >
+        bons_livraison was never createTable'd by Liquibase at all — it only
+        ever existed via the raw SQL dump. Columns here match the live local
+        schema exactly, minus id_sale_order/sale_order_number/is_partial which
+        the next changeset below already owns.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: bons_livraison
+      changes:
+        - createTable:
+            tableName: bons_livraison
+            columns:
+              - column:
+                  name: id_bon_livraison
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: numero_livraison
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: date_livraison
+                  type: timestamp
+              - column:
+                  name: statut
+                  type: varchar(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: id_client
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: nom_client
+                  type: varchar(255)
+              - column:
+                  name: adresse_client
+                  type: text
+              - column:
+                  name: email_client
+                  type: varchar(255)
+              - column:
+                  name: telephone_client
+                  type: varchar(50)
+              - column:
+                  name: montant_ht
+                  type: numeric(19,4)
+                  defaultValueNumeric: 0.0000
+              - column:
+                  name: montant_tva
+                  type: numeric(19,4)
+                  defaultValueNumeric: 0.0000
+              - column:
+                  name: montant_ttc
+                  type: numeric(19,4)
+                  defaultValueNumeric: 0.0000
+              - column:
+                  name: lignes_bon_livraison
+                  type: jsonb
+              - column:
+                  name: notes
+                  type: text
+              - column:
+                  name: organization_id
+                  type: uuid
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: date_systeme
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: agency_id
+                  type: uuid
+        - createIndex:
+            tableName: bons_livraison
+            indexName: idx_bl_organization
+            columns:
+              - column:
+                  name: organization_id
+
+  - changeSet:
+      id: 23-create-bons-reception-table
+      author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: bons_reception
+      changes:
+        - createTable:
+            tableName: bons_reception
+            columns:
+              - column:
+                  name: id_bon_reception
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: uuid
+              - column:
+                  name: numero_reception
+                  type: varchar(100)
+              - column:
+                  name: id_fournisseur
+                  type: uuid
+              - column:
+                  name: nom_fournisseur
+                  type: varchar(255)
+              - column:
+                  name: lines
+                  type: jsonb
+              - column:
+                  name: montant_ht
+                  type: numeric(15,2)
+              - column:
+                  name: montant_tva
+                  type: numeric(15,2)
+              - column:
+                  name: montant_ttc
+                  type: numeric(15,2)
+              - column:
+                  name: date_reception
+                  type: timestamp
+              - column:
+                  name: statut
+                  type: varchar(50)
+              - column:
+                  name: notes
+                  type: text
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_at
+                  type: timestamp
+              - column:
+                  name: date_systeme
+                  type: timestamp
+              - column:
+                  name: numero_bon_achat
+                  type: varchar(100)
+              - column:
+                  name: idbonachat
+                  type: uuid
+              - column:
+                  name: agence_de_transport
+                  type: varchar(255)
+              - column:
+                  name: agency_id
+                  type: uuid
+              - column:
+                  name: envoye_par_email
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: date_envoi_email
+                  type: timestamp
+        - createIndex:
+            tableName: bons_reception
+            indexName: idx_bons_reception_org
+            columns:
+              - column:
+                  name: organization_id
+
+  - changeSet:
+      id: 24-create-bons-achat-table
+      author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: bons_achat
+      changes:
+        - createTable:
+            tableName: bons_achat
+            columns:
+              - column:
+                  name: id_bon_achat
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: numero_bon_achat
+                  type: varchar(100)
+              - column:
+                  name: id_fournisseur
+                  type: uuid
+              - column:
+                  name: nom_fournisseur
+                  type: varchar(255)
+              - column:
+                  name: supplier_code
+                  type: varchar(100)
+              - column:
+                  name: supplier_email
+                  type: varchar(255)
+              - column:
+                  name: supplier_contact
+                  type: varchar(100)
+              - column:
+                  name: supplier_address
+                  type: text
+              - column:
+                  name: delivery_name
+                  type: varchar(255)
+              - column:
+                  name: delivery_address
+                  type: text
+              - column:
+                  name: delivery_email
+                  type: varchar(255)
+              - column:
+                  name: delivery_contact
+                  type: varchar(100)
+              - column:
+                  name: date_achat
+                  type: timestamp
+              - column:
+                  name: date_systeme
+                  type: timestamp
+              - column:
+                  name: date_livraison_prevue
+                  type: timestamp
+              - column:
+                  name: transport_method
+                  type: varchar(100)
+              - column:
+                  name: instructions_livraison
+                  type: text
+              - column:
+                  name: lignes_bon_achat
+                  type: jsonb
+              - column:
+                  name: montant_ht
+                  type: numeric(15,2)
+              - column:
+                  name: montant_tva
+                  type: numeric(15,2)
+              - column:
+                  name: montant_ttc
+                  type: numeric(15,2)
+              - column:
+                  name: statut
+                  type: varchar(50)
+              - column:
+                  name: notes
+                  type: text
+              - column:
+                  name: prepared_by
+                  type: uuid
+              - column:
+                  name: approved_by
+                  type: uuid
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: agency_id
+                  type: uuid
+        - createIndex:
+            tableName: bons_achat
+            indexName: idx_bons_achat_org
+            columns:
+              - column:
+                  name: organization_id
+
+  - changeSet:
+      id: 25-create-portal-access-tokens-table
+      author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: portal_access_tokens
+      changes:
+        - createTable:
+            tableName: portal_access_tokens
+            columns:
+              - column:
+                  name: token_id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: token
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: resource_type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resource_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: client_email
+                  type: varchar(255)
+              - column:
+                  name: can_view
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: can_modify
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: can_accept
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: can_reject
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: used
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: expires_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: used_at
+                  type: timestamp
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+        - createIndex:
+            tableName: portal_access_tokens
+            indexName: idx_portal_resource_id
+            columns:
+              - column:
+                  name: resource_id
+        - createIndex:
+            tableName: portal_access_tokens
+            indexName: idx_portal_token_value
+            columns:
+              - column:
+                  name: token
+
+  - changeSet:
+      id: 26-create-settings-table
+      author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: settings
+      changes:
+        - createTable:
+            tableName: settings
+            columns:
+              - column:
+                  name: row_id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type_numerotation
+                  type: varchar(50)
+              - column:
+                  name: uri
+                  type: varchar(500)
+              - column:
+                  name: include_org_code
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: org_code
+                  type: varchar(10)
+              - column:
+                  name: include_branch_code
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: branch_code
+                  type: varchar(10)
+              - column:
+                  name: include_tva
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: include_date
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: random_seq_4
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: settings
+            indexName: idx_settings_id
+            unique: true
+            columns:
+              - column:
+                  name: id
+        - sql:
+            sql: >
+              CREATE UNIQUE INDEX idx_settings_org_logo ON settings (organization_id) WHERE type_numerotation IS NULL;
+              CREATE UNIQUE INDEX idx_settings_org_type ON settings (organization_id, type_numerotation) WHERE type_numerotation IS NOT NULL;
+
+  - changeSet:
+      id: 27-create-live-notifications-table
+      author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: live_notifications
+      changes:
+        - createTable:
+            tableName: live_notifications
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: contact_ids
+                  type: uuid[]
+                  defaultValue: "{}"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pending_facture_ids
+                  type: uuid[]
+                  defaultValue: "{}"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: delay_minutes
+                  type: bigint
+                  defaultValueNumeric: 60
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_sent_at
+                  type: timestamp with time zone
+              - column:
+                  name: active
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: live_notifications
+            indexName: idx_live_notifications_active
+            columns:
+              - column:
+                  name: active
+        - createIndex:
+            tableName: live_notifications
+            indexName: idx_live_notifications_org
+            columns:
+              - column:
+                  name: organization_id
+
+  - changeSet:
+      id: 28-create-contacts-table
+      author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: contacts
+      changes:
+        - createTable:
+            tableName: contacts
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: chat_id
+                  type: varchar(64)
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: link_token
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: PENDING
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: contacts
+            indexName: idx_contacts_chat_id
+            unique: true
+            columns:
+              - column:
+                  name: chat_id
+        - createIndex:
+            tableName: contacts
+            indexName: idx_contacts_org
+            columns:
+              - column:
+                  name: organization_id
+
+  - changeSet:
+      id: 29-create-seller-agency-assignments-table
+      author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: seller_agency_assignments
+      changes:
+        - createTable:
+            tableName: seller_agency_assignments
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: seller_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: agency_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: agency_name
+                  type: varchar(255)
+              - column:
+                  name: agency_email
+                  type: varchar(255)
+              - column:
+                  name: agency_phone
+                  type: varchar(50)
+              - column:
+                  name: agency_city
+                  type: varchar(255)
+              - column:
+                  name: agency_address
+                  type: varchar(500)
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_at
+                  type: timestamp
+        - createIndex:
+            tableName: seller_agency_assignments
+            indexName: idx_seller_agency_assignments_org
+            columns:
+              - column:
+                  name: organization_id
+
+  - changeSet:
+      id: 30a-rename-sales-proforma-invoices
+      author: dev
+      comments: >
+        The original ui_permissions createTable (changeset 11) used plural
+        column names — the real table (seeded by the raw dump) uses singular.
+        Guarded so it only fires where the old name still exists.
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: ui_permissions
+            columnName: sales_proforma_invoices
+      changes:
+        - renameColumn:
+            tableName: ui_permissions
+            oldColumnName: sales_proforma_invoices
+            newColumnName: sales_proforma_invoice
+            columnDataType: boolean
+
+  - changeSet:
+      id: 30b-rename-sales-delivery-notes
+      author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: ui_permissions
+            columnName: sales_delivery_notes
+      changes:
+        - renameColumn:
+            tableName: ui_permissions
+            oldColumnName: sales_delivery_notes
+            newColumnName: sales_delivery_note
+            columnDataType: boolean
+
+  - changeSet:
+      id: 30c-rename-purchasing-purchase-orders
+      author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: ui_permissions
+            columnName: purchasing_purchase_orders
+      changes:
+        - renameColumn:
+            tableName: ui_permissions
+            oldColumnName: purchasing_purchase_orders
+            newColumnName: purchasing_purchase_order
+            columnDataType: boolean
+
+  - changeSet:
+      id: 30d-rename-purchasing-goods-rns
+      author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: ui_permissions
+            columnName: purchasing_goods_rns
+      changes:
+        - renameColumn:
+            tableName: ui_permissions
+            oldColumnName: purchasing_goods_rns
+            newColumnName: purchasing_goods_receipt_note
+            columnDataType: boolean
+
+  - changeSet:
+      id: 30e-rename-journals-quotations
+      author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: ui_permissions
+            columnName: journals_quotations
+      changes:
+        - renameColumn:
+            tableName: ui_permissions
+            oldColumnName: journals_quotations
+            newColumnName: journals_quotation
+            columnDataType: boolean
+
+  - changeSet:
+      id: 30f-drop-sales-store-credit
+      author: dev
+      comments: >
+        sales_store_credit was dropped from the entity/DTOs earlier (no
+        backing column in the real table) — only drops it where changeset 11
+        actually ran and created it.
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: ui_permissions
+            columnName: sales_store_credit
+      changes:
+        - dropColumn:
+            tableName: ui_permissions
+            columnName: sales_store_credit
+
+  - changeSet:
+      id: 31-add-missing-ui-permissions-columns
+      author: dev
+      comments: >
+        17 columns that exist on the real (dump-seeded) table but were never
+        captured by any Liquibase changeset — section headers and the
+        organization/settings permission group.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ui_permissions
+                columnName: section_sales_management
+      changes:
+        - addColumn:
+            tableName: ui_permissions
+            columns:
+              - column:
+                  name: section_sales_management
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: section_purchasing_logistics
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: section_accounting_journals
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: journals_sale_order
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: journals_purchase_order
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: journals_client_invoice
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: journals_supplier_invoice
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: section_organization
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: organization_agencies
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: organization_sellers
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: organization_customers
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: organization_suppliers
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: organization_sale_points
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: organization_sessions
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: organization_products
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: section_settings
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: settings_preferences
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
+  - changeSet:
       id: 12-add-partial-delivery-fields-to-bons-livraison
       author: dev
       changes:
@@ -596,3 +1506,120 @@ databaseChangeLog:
                   type: timestamp
                   constraints:
                     nullable: true
+
+  # changelog-v1.1 and v1.2 were never wired into spring.liquibase.change-log,
+  # so their addColumn changesets (agency_id on factures/devis/paiements/
+  # notes_credit/taxes/journals/factures_proforma, origin_type+session_id on
+  # factures) have never run anywhere, including locally — those columns only
+  # exist locally because they were added out-of-band. Including them here
+  # makes this the one changelog Spring Boot actually loads.
+  - include:
+      file: changelog-v1.1-agency-id.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changelog-v1.2-facture-origin.yaml
+      relativeToChangelogFile: true
+
+  - changeSet:
+      id: 32-live-notifications-pending-invoices
+      author: dev
+      comments: >
+        pending_facture_ids (bare uuid[]) required re-fetching each invoice
+        from Kernel at flush time — a @Scheduled background tick with no
+        caller token available, so that fetch always failed silently and the
+        queue was cleared without ever sending anything. Replaced with a
+        jsonb snapshot of the display fields, captured at enqueue time when a
+        real caller token exists.
+      changes:
+        - addColumn:
+            tableName: live_notifications
+            columns:
+              - column:
+                  name: pending_invoices
+                  type: jsonb
+                  defaultValue: "[]"
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: >
+              UPDATE live_notifications SET pending_invoices = '[]'::jsonb WHERE pending_invoices IS NULL;
+        - dropColumn:
+            tableName: live_notifications
+            columnName: pending_facture_ids
+
+  - changeSet:
+      id: 33-live-notifications-channel
+      author: dev
+      comments: >
+        Lets a rule batch-and-send over TELEGRAM (needs the contact linked to
+        the bot first) or EMAIL (no linking needed, straight to their inbox).
+      changes:
+        - addColumn:
+            tableName: live_notifications
+            columns:
+              - column:
+                  name: channel
+                  type: varchar(20)
+                  defaultValue: TELEGRAM
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 34-create-product-sale-size-configs
+      author: dev
+      comments: >
+        Per-product sale config (image, per-size pricing/negotiability, VAT
+        applicability) for a Kernel product-core product. product-core's own
+        "variants" concept is a generic sku/name thing with no price, image,
+        or VAT field anywhere in the new product schemas, so this stays
+        Billing's own local config, joined onto the Kernel-fetched product by
+        productId at read time.
+      changes:
+        - createTable:
+            tableName: product_sale_size_configs
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: photo
+                  type: text
+              - column:
+                  name: vat_applicable
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sale_sizes
+                  type: jsonb
+                  defaultValue: "[]"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_at
+                  type: timestamp
+        - createIndex:
+            tableName: product_sale_size_configs
+            indexName: idx_product_sale_size_configs_org
+            columns:
+              - column:
+                  name: organization_id
+

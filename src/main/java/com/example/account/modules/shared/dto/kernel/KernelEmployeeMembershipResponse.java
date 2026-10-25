@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-/** One row of GET /api/employees?organizationId=X — only the fields needed to match a membership by actorId. */
+/** One row of GET /api/employees?organizationId=X — only the fields needed to match a membership by actorId or name. */
 @Data
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -16,5 +16,7 @@ public class KernelEmployeeMembershipResponse {
     private UUID userId;
     private UUID actorId;
     private String email;
+    private String firstName;
+    private String lastName;
     private String status;
 }

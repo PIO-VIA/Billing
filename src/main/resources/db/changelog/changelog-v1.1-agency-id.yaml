@@ -2,6 +2,12 @@ databaseChangeLog:
   - changeSet:
       id: 3-add-agency-id-to-factures
       author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: factures
+                columnName: agency_id
       changes:
         - addColumn:
             tableName: factures
@@ -15,6 +21,12 @@ databaseChangeLog:
   - changeSet:
       id: 4-add-agency-id-to-devis
       author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: devis
+                columnName: agency_id
       changes:
         - addColumn:
             tableName: devis
@@ -28,6 +40,12 @@ databaseChangeLog:
   - changeSet:
       id: 5-add-agency-id-to-paiements
       author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: paiements
+                columnName: agency_id
       changes:
         - addColumn:
             tableName: paiements
@@ -41,6 +59,12 @@ databaseChangeLog:
   - changeSet:
       id: 6-add-agency-id-to-notes-credit
       author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: notes_credit
+                columnName: agency_id
       changes:
         - addColumn:
             tableName: notes_credit
@@ -54,6 +78,12 @@ databaseChangeLog:
   - changeSet:
       id: 7-add-agency-id-to-taxes
       author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: taxes
+                columnName: agency_id
       changes:
         - addColumn:
             tableName: taxes
@@ -67,6 +97,12 @@ databaseChangeLog:
   - changeSet:
       id: 8-add-agency-id-to-journals
       author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: journals
+                columnName: agency_id
       changes:
         - addColumn:
             tableName: journals
@@ -80,6 +116,12 @@ databaseChangeLog:
   - changeSet:
       id: 9-add-agency-id-to-factures-proforma
       author: dev
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: factures_proforma
+                columnName: agency_id
       changes:
         - addColumn:
             tableName: factures_proforma

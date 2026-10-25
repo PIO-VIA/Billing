@@ -8,6 +8,7 @@ import com.example.account.modules.notification.dto.CreateLiveNotificationReques
 import com.example.account.modules.notification.dto.LiveNotificationResponse;
 import com.example.account.modules.notification.model.entity.Contact;
 import com.example.account.modules.notification.model.entity.LiveNotification;
+import com.example.account.modules.notification.model.entity.PendingInvoiceSummary;
 import com.example.account.modules.notification.service.ContactService;
 import com.example.account.modules.notification.service.LiveNotificationService;
 import lombok.RequiredArgsConstructor;
@@ -56,7 +57,9 @@ public class NotificationServiceAdapter implements ContactServicePort, LiveNotif
 
     @Override
     public Mono<LiveNotificationResponse> create(CreateLiveNotificationRequest request) {
-        return liveNotificationService.create(request.getOrganizationId(), request.getContactIds(), request.getDelayMinutes())
+        boolean active = request.getActive() == null || request.getActive();
+        return liveNotificationService.create(request.getOrganizationId(), request.getContactIds(), request.getDelayMinutes(),
+                        request.getChannel(), active)
                 .map(this::mapToResponse);
     }
 
@@ -67,8 +70,14 @@ public class NotificationServiceAdapter implements ContactServicePort, LiveNotif
     }
 
     @Override
-    public Mono<Void> enqueueFacture(UUID organizationId, UUID factureId) {
-        return liveNotificationService.enqueueFacture(organizationId, factureId);
+    public Mono<LiveNotificationResponse> setActive(UUID id, boolean active) {
+        return liveNotificationService.setActive(id, active)
+                .map(this::mapToResponse);
+    }
+
+    @Override
+    public Mono<Void> enqueueInvoice(UUID organizationId, PendingInvoiceSummary invoice) {
+        return liveNotificationService.enqueueInvoice(organizationId, invoice);
     }
 
     private ContactResponse mapToResponse(Contact contact) {
@@ -90,10 +99,12 @@ public class NotificationServiceAdapter implements ContactServicePort, LiveNotif
         res.setId(ln.getId());
         res.setOrganizationId(ln.getOrganizationId());
         res.setContactIds(ln.getContactIds() == null ? List.of() : Arrays.asList(ln.getContactIds()));
-        res.setPendingFactureIds(ln.getPendingFactureIds() == null ? List.of() : Arrays.asList(ln.getPendingFactureIds()));
+        res.setPendingFactureIds(ln.getPendingInvoices() == null ? List.of()
+                : ln.getPendingInvoices().stream().map(PendingInvoiceSummary::getId).toList());
         res.setDelayMinutes(ln.getDelayMinutes());
         res.setLastSentAt(ln.getLastSentAt());
         res.setActive(ln.isActive());
+        res.setChannel(ln.getChannel());
         return res;
     }
 }

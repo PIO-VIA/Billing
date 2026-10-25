@@ -5,6 +5,7 @@ import com.example.account.modules.notification.domain.port.input.LiveNotificati
 import com.example.account.modules.notification.domain.port.output.LiveNotificationServicePort;
 import com.example.account.modules.notification.dto.CreateLiveNotificationRequest;
 import com.example.account.modules.notification.dto.LiveNotificationResponse;
+import com.example.account.modules.notification.model.entity.PendingInvoiceSummary;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,12 @@ public class LiveNotificationUseCaseImpl implements LiveNotificationUseCase {
     }
 
     @Override
-    public Mono<Void> enqueueFacture(UUID organizationId, UUID factureId) {
-        return liveNotificationServicePort.enqueueFacture(organizationId, factureId);
+    public Mono<LiveNotificationResponse> setActive(UUID id, boolean active) {
+        return liveNotificationServicePort.setActive(id, active);
+    }
+
+    @Override
+    public Mono<Void> enqueueInvoice(UUID organizationId, PendingInvoiceSummary invoice) {
+        return liveNotificationServicePort.enqueueInvoice(organizationId, invoice);
     }
 }

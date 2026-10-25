@@ -4,18 +4,22 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.example.account.modules.notification.model.enums.NotificationChannel;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.domain.Persistable;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
- * A per-organization batching rule: queues facture ids (without ever touching
- * the factures table itself) and flushes them as one summarized Telegram
- * message to its contacts every delayMinutes.
+ * A per-organization batching rule: queues a snapshot of each invoice's
+ * display fields (captured at enqueue time, not the factures table itself)
+ * and flushes them as one summarized Telegram message to its contacts every
+ * delayMinutes.
  */
 @Data
 @Builder
@@ -41,12 +45,17 @@ public class LiveNotification implements Persistable<UUID> {
     // Who gets flushed messages.
     private UUID[] contactIds;
 
-    // Facture ids queued since the last flush.
-    private UUID[] pendingFactureIds;
+    // Invoice snapshots queued since the last flush.
+    @Column("pending_invoices")
+    private List<PendingInvoiceSummary> pendingInvoices;
 
     private long delayMinutes;
     private Instant lastSentAt;
     private boolean active;
+
+    @Column("channel")
+    @Builder.Default
+    private NotificationChannel channel = NotificationChannel.TELEGRAM;
 
     private Instant createdAt;
     private Instant updatedAt;

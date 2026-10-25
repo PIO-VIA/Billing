@@ -14,6 +14,7 @@ import com.example.account.modules.facturation.model.entity.Lines.LineBonRecepti
 import com.example.account.modules.facturation.service.ExternalServices.entity.JsonToSaleSizeConverter;
 import com.example.account.modules.facturation.service.ExternalServices.entity.JsonToPromotionConverter;
 import com.example.account.modules.facturation.service.ExternalServices.entity.ObjectListToJsonConverter;
+import com.example.account.modules.notification.model.entity.PendingInvoiceSummary;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
@@ -132,6 +133,7 @@ protected List<Object> getCustomConverters() {
     converters.add(new JsonToSaleSizeConverter());
     converters.add(new JsonToPromotionConverter());
        converters.add(new GenericListReadingConverter(AccessPortalPermissionsDTO.class));
+    converters.add(new GenericListReadingConverter(PendingInvoiceSummary.class));
 
 
 

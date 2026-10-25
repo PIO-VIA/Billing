@@ -1,14 +1,15 @@
 package com.example.account.modules.notification.service;
 
-import com.example.account.modules.facturation.domain.port.output.FactureServicePort;
-import com.example.account.modules.facturation.dto.response.FactureResponse;
 import com.example.account.modules.notification.domain.port.output.NotificationPort;
 import com.example.account.modules.notification.model.entity.Contact;
 import com.example.account.modules.notification.model.entity.LiveNotification;
+import com.example.account.modules.notification.model.entity.PendingInvoiceSummary;
 import com.example.account.modules.notification.model.enums.ContactStatus;
+import com.example.account.modules.notification.model.enums.NotificationChannel;
 import com.example.account.modules.notification.repository.ContactRepository;
 import com.example.account.modules.notification.repository.LiveNotificationRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -18,12 +19,11 @@ import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -31,34 +31,40 @@ public class LiveNotificationService {
 
     private final LiveNotificationRepository liveNotificationRepository;
     private final ContactRepository contactRepository;
-    private final FactureServicePort factureServicePort;
-    private final NotificationPort notificationPort;
+    private final ContactService contactService;
+    private final NotificationPort telegramNotificationPort;
+    private final NotificationPort emailNotificationPort;
 
     public LiveNotificationService(LiveNotificationRepository liveNotificationRepository,
                                     ContactRepository contactRepository,
-                                    FactureServicePort factureServicePort,
-                                    NotificationPort notificationPort) {
+                                    ContactService contactService,
+                                    @Qualifier("telegramNotificationPort") NotificationPort telegramNotificationPort,
+                                    @Qualifier("emailNotificationPort") NotificationPort emailNotificationPort) {
         this.liveNotificationRepository = liveNotificationRepository;
         this.contactRepository = contactRepository;
-        this.factureServicePort = factureServicePort;
-        this.notificationPort = notificationPort;
+        this.contactService = contactService;
+        this.telegramNotificationPort = telegramNotificationPort;
+        this.emailNotificationPort = emailNotificationPort;
     }
 
     // ─── Rule management ────────────────────────────────────────────────────
 
-    public Mono<LiveNotification> create(UUID organizationId, List<UUID> contactIds, long delayMinutes) {
+    public Mono<LiveNotification> create(UUID organizationId, List<UUID> contactIds, long delayMinutes,
+                                          NotificationChannel channel, boolean active) {
         Instant now = Instant.now();
         LiveNotification liveNotification = LiveNotification.builder()
                 .id(UUID.randomUUID())
                 .organizationId(organizationId)
                 .contactIds(contactIds == null ? new UUID[0] : contactIds.toArray(new UUID[0]))
-                .pendingFactureIds(new UUID[0])
+                .pendingInvoices(new ArrayList<>())
                 .delayMinutes(delayMinutes)
-                .active(true)
+                .channel(channel == null ? NotificationChannel.TELEGRAM : channel)
+                .active(active)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
-        return liveNotificationRepository.save(liveNotification);
+        return liveNotificationRepository.save(liveNotification)
+                .flatMap(saved -> inviteTelegramContactsIfNeeded(saved).thenReturn(saved));
     }
 
     public Mono<LiveNotification> addContact(UUID liveNotificationId, UUID contactId) {
@@ -85,17 +91,37 @@ public class LiveNotificationService {
         });
     }
 
+    /** Turning a TELEGRAM rule on (re)sends the bot deep-link to any contact that still isn't linked. */
+    public Mono<LiveNotification> setActive(UUID liveNotificationId, boolean active) {
+        return findOrThrow(liveNotificationId).flatMap(ln -> {
+            ln.setActive(active);
+            ln.setUpdatedAt(Instant.now());
+            return liveNotificationRepository.save(ln);
+        }).flatMap(saved -> inviteTelegramContactsIfNeeded(saved).thenReturn(saved));
+    }
+
+    private Mono<Void> inviteTelegramContactsIfNeeded(LiveNotification ln) {
+        if (!ln.isActive() || ln.getChannel() != NotificationChannel.TELEGRAM || ln.getContactIds() == null) {
+            return Mono.empty();
+        }
+        return contactRepository.findAllById(java.util.Arrays.asList(ln.getContactIds()))
+                .flatMap(contactService::inviteToTelegramIfUnlinked)
+                .then();
+    }
+
     // ─── Queueing ────────────────────────────────────────────────────────────
 
     /**
-     * Queues a facture id on every active LiveNotification rule for the organization,
-     * without ever writing to the factures table itself.
+     * Queues an invoice snapshot on every active LiveNotification rule for the
+     * organization, without ever touching the factures table itself. Called
+     * from a real HTTP request (invoice creation), so a caller token exists
+     * here — the whole point of snapshotting now rather than at flush time.
      */
-    public Mono<Void> enqueueFacture(UUID organizationId, UUID factureId) {
+    public Mono<Void> enqueueInvoice(UUID organizationId, PendingInvoiceSummary invoice) {
         return liveNotificationRepository.findByOrganizationId(organizationId)
                 .filter(LiveNotification::isActive)
                 .flatMap(ln -> {
-                    ln.setPendingFactureIds(withAdded(ln.getPendingFactureIds(), factureId));
+                    ln.setPendingInvoices(withAdded(ln.getPendingInvoices(), invoice));
                     ln.setUpdatedAt(Instant.now());
                     return liveNotificationRepository.save(ln);
                 })
@@ -120,7 +146,7 @@ public class LiveNotificationService {
     }
 
     private boolean isDue(LiveNotification ln) {
-        if (ln.getPendingFactureIds() == null || ln.getPendingFactureIds().length == 0) {
+        if (ln.getPendingInvoices() == null || ln.getPendingInvoices().isEmpty()) {
             return false;
         }
         if (ln.getLastSentAt() == null) {
@@ -130,56 +156,60 @@ public class LiveNotificationService {
         return !Instant.now().isBefore(dueAt);
     }
 
+    /** No Kernel/sales-core call here at all — everything needed is already in the snapshot. */
     private Mono<Void> flushOne(LiveNotification ln) {
-        List<UUID> factureIds = Arrays.asList(ln.getPendingFactureIds());
-        List<UUID> contactIds = Arrays.asList(ln.getContactIds());
+        List<UUID> contactIds = java.util.Arrays.asList(ln.getContactIds());
+        boolean isTelegram = ln.getChannel() == NotificationChannel.TELEGRAM;
 
-        Mono<List<FactureResponse>> factures = Flux.fromIterable(factureIds)
-                .flatMap(id -> factureServicePort.findById(id).onErrorResume(e -> Mono.empty()))
-                .collectList();
-        Mono<List<Contact>> activeContacts = contactRepository.findAllById(contactIds)
-                .filter(c -> ContactStatus.ACTIVE.name().equals(c.getStatus()))
-                .collectList();
-
-        return factures.zipWith(activeContacts)
-                .flatMap(tuple -> {
-                    List<FactureResponse> factureList = tuple.getT1();
-                    List<Contact> contactList = tuple.getT2();
-                    if (factureList.isEmpty() || contactList.isEmpty()) {
+        return contactRepository.findAllById(contactIds)
+                .filter(c -> isTelegram ? isTelegramReady(c) : hasEmail(c))
+                .collectList()
+                .flatMap(recipients -> {
+                    if (recipients.isEmpty()) {
                         return clearQueue(ln);
                     }
-                    return notificationPort.send(buildMessage(factureList), contactList)
+                    NotificationPort port = isTelegram ? telegramNotificationPort : emailNotificationPort;
+                    return port.send(buildMessage(ln.getPendingInvoices()), recipients)
                             .then(clearQueue(ln));
                 });
     }
 
+    private boolean isTelegramReady(Contact contact) {
+        return ContactStatus.ACTIVE.name().equals(contact.getStatus())
+                && contact.getChatId() != null && !contact.getChatId().isBlank();
+    }
+
+    private boolean hasEmail(Contact contact) {
+        return contact.getEmail() != null && !contact.getEmail().isBlank();
+    }
+
     private Mono<Void> clearQueue(LiveNotification ln) {
-        ln.setPendingFactureIds(new UUID[0]);
+        ln.setPendingInvoices(new ArrayList<>());
         ln.setLastSentAt(Instant.now());
         ln.setUpdatedAt(Instant.now());
         return liveNotificationRepository.save(ln).then();
     }
 
-    private String buildMessage(List<FactureResponse> factures) {
+    private String buildMessage(List<PendingInvoiceSummary> invoices) {
         StringBuilder sb = new StringBuilder();
-        sb.append("📋 ").append(factures.size())
-                .append(factures.size() == 1 ? " new invoice" : " new invoices").append("\n");
-        for (FactureResponse f : factures) {
+        sb.append("📋 ").append(invoices.size())
+                .append(invoices.size() == 1 ? " new invoice" : " new invoices").append("\n");
+        for (PendingInvoiceSummary invoice : invoices) {
             sb.append("• ")
-                    .append(f.getNumeroFacture() != null ? f.getNumeroFacture() : f.getIdFacture())
+                    .append(invoice.getNumeroFacture() != null ? invoice.getNumeroFacture() : invoice.getId())
                     .append(" — ")
-                    .append(f.getMontantTTC() != null ? f.getMontantTTC() : f.getMontantTotal())
-                    .append(f.getDevise() != null ? " " + f.getDevise() : "")
-                    .append(f.getNomClient() != null ? " — " + f.getNomClient() : "")
+                    .append(invoice.getMontant())
+                    .append(invoice.getDevise() != null ? " " + invoice.getDevise() : "")
+                    .append(invoice.getNomClient() != null ? " — " + invoice.getNomClient() : "")
                     .append("\n");
         }
         return sb.toString().trim();
     }
 
-    // ─── Array helpers (contact_ids / pending_facture_ids are plain Postgres UUID[]) ──
+    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private UUID[] withAdded(UUID[] current, UUID id) {
-        Set<UUID> set = current == null ? new LinkedHashSet<>() : new LinkedHashSet<>(Arrays.asList(current));
+        java.util.Set<UUID> set = current == null ? new java.util.LinkedHashSet<>() : new java.util.LinkedHashSet<>(java.util.Arrays.asList(current));
         set.add(id);
         return set.toArray(new UUID[0]);
     }
@@ -188,7 +218,19 @@ public class LiveNotificationService {
         if (current == null) {
             return new UUID[0];
         }
-        return Arrays.stream(current).filter(existing -> !existing.equals(id)).collect(Collectors.toList()).toArray(new UUID[0]);
+        return java.util.Arrays.stream(current).filter(existing -> !existing.equals(id)).toArray(UUID[]::new);
+    }
+
+    /** Dedup by invoice id, keeping the first occurrence's position. */
+    private List<PendingInvoiceSummary> withAdded(List<PendingInvoiceSummary> current, PendingInvoiceSummary invoice) {
+        Map<UUID, PendingInvoiceSummary> byId = new LinkedHashMap<>();
+        if (current != null) {
+            for (PendingInvoiceSummary existing : current) {
+                byId.put(existing.getId(), existing);
+            }
+        }
+        byId.put(invoice.getId(), invoice);
+        return new ArrayList<>(byId.values());
     }
 
     private Mono<LiveNotification> findOrThrow(UUID id) {

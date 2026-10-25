@@ -17,6 +17,7 @@ import com.example.account.modules.facturation.service.ExternalServices.ProductE
 import com.example.account.modules.facturation.service.PdfGeneratorService;
 import com.example.account.modules.facturation.service.EmailService;
 import com.example.account.modules.notification.domain.port.input.LiveNotificationUseCase;
+import com.example.account.modules.notification.model.entity.PendingInvoiceSummary;
 import com.example.account.modules.paymentgateway.domain.port.output.PaymentGatewayPort;
 import com.example.account.modules.paymentgateway.dto.enums.PaymentMethodType;
 import com.example.account.modules.paymentgateway.dto.enums.PaymentProvider;
@@ -86,18 +87,29 @@ public class FactureUseCaseImpl implements FactureUseCase {
                         if (savedFacture.getIdFacture() != null) docId = UUID.fromString(savedFacture.getIdFacture());
                     } catch (IllegalArgumentException ignored) {}
                     final UUID factureId = docId;
-                    return enqueueLiveNotification(savedFacture.getOrganizationId(), factureId)
+                    return enqueueLiveNotification(savedFacture, factureId)
                             .then(grantOwnerPermission(savedFacture.getCreatedBy(), factureId, savedFacture));
                 });
     }
 
     /**
-     * Best-effort: queues the facture for the org's Telegram live-notification rules.
+     * Best-effort: queues an invoice snapshot for the org's Telegram
+     * live-notification rules. Snapshotting now (rather than re-fetching from
+     * Kernel at flush time, when there's no caller token since it's a
+     * background scheduler tick) is deliberate — see PendingInvoiceSummary.
      * Never fails invoice creation — a notification miss shouldn't roll back the facture.
      */
-    private Mono<Void> enqueueLiveNotification(UUID organizationId, UUID factureId) {
+    private Mono<Void> enqueueLiveNotification(FactureResponse savedFacture, UUID factureId) {
+        UUID organizationId = savedFacture.getOrganizationId();
         if (organizationId == null || factureId == null) return Mono.empty();
-        return liveNotificationUseCase.enqueueFacture(organizationId, factureId)
+        PendingInvoiceSummary invoice = PendingInvoiceSummary.builder()
+                .id(factureId)
+                .numeroFacture(savedFacture.getNumeroFacture())
+                .montant(savedFacture.getMontantTTC() != null ? savedFacture.getMontantTTC() : savedFacture.getMontantTotal())
+                .devise(savedFacture.getDevise())
+                .nomClient(savedFacture.getNomClient())
+                .build();
+        return liveNotificationUseCase.enqueueInvoice(organizationId, invoice)
                 .onErrorResume(e -> {
                     log.warn("Failed to enqueue live notification for facture {}: {}", factureId, e.getMessage());
                     return Mono.empty();
