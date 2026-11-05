@@ -9,6 +9,7 @@ import com.example.account.modules.facturation.dto.request.CreateSessionRequest;
 import com.example.account.modules.facturation.dto.request.UpdateSessionRequest;
 import com.example.account.modules.facturation.dto.response.SessionResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.data.relational.core.query.Query;
@@ -34,6 +35,10 @@ import java.util.function.Consumer;
  * global roster — the exact problem the local-sellers migration got away from.
  */
 @Service
+// Les sessions sont désormais stockées localement (changelog v1.7) : sans @Primary, cet adaptateur
+// et SessionServiceAdapter (sales-core) satisfaisaient tous deux SessionServicePort, et Spring
+// refusait de démarrer (« required a single bean, but 2 were found »).
+@Primary
 @RequiredArgsConstructor
 public class SessionLocalServiceAdapter implements SessionServicePort {
 
