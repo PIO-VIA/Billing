@@ -1,0 +1,181 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1-create-sellers
+      author: billing
+      comments: >
+        La table sellers n'était créée par aucun changeset ni par schema.sql,
+        alors que SellerR2dbcRepository (SellerPersistenceEntity, @Table
+        "sellers") l'interroge : findByOrganizationId,
+        findByOrganizationIdAndEmailIgnoreCase, etc. En production elle est
+        absente, et chaque appel au profil vendeur échoue sur « relation
+        "sellers" does not exist ».
+
+        Les colonnes suivent l'entité, et la table est créée directement dans
+        son état d'après v1.6 : unicité de l'e-mail par organisation (et non
+        globale), ni username ni password_hash — l'identité de connexion reste
+        celle du noyau, cette table ne porte que le profil. Les deux changesets
+        de v1.6 restent donc MARK_RAN, comme aujourd'hui.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sellers
+      changes:
+        - createTable:
+            tableName: sellers
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: email
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: first_name
+                  type: varchar(255)
+              - column:
+                  name: last_name
+                  type: varchar(255)
+              - column:
+                  name: role
+                  type: varchar(50)
+              - column:
+                  name: permissions
+                  type: text[]
+              - column:
+                  name: permitted_sale_sizes
+                  type: text[]
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sale_point
+                  type: varchar(255)
+              - column:
+                  name: sales_point_id
+                  type: uuid
+              - column:
+                  name: sales_point_address
+                  type: varchar(255)
+              - column:
+                  name: profile_image_url
+                  type: varchar(500)
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_at
+                  type: timestamp
+        - addUniqueConstraint:
+            tableName: sellers
+            columnNames: organization_id, email
+            constraintName: sellers_org_email_key
+        - createIndex:
+            tableName: sellers
+            indexName: idx_sellers_organization_id
+            columns:
+              - column:
+                  name: organization_id
+
+  - changeSet:
+      id: 2-create-products
+      author: billing
+      comments: >
+        Même constat pour products, qu'interroge ProductRepository
+        (R2dbcRepository<Product, Long>, clé line_id) : findByUuid,
+        findByOrganizationId. allowed_sale_sizes et active_promotions sont
+        lues en jsonb par JsonToSaleSizeConverter et JsonToPromotionConverter
+        (R2dbcConfig) ; created_at et updated_at sont des LocalDate dans
+        l'entité, donc des colonnes date.
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: products
+      changes:
+        - createTable:
+            tableName: products
+            columns:
+              - column:
+                  name: line_id
+                  type: bigserial
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: id
+                  type: uuid
+              - column:
+                  name: name
+                  type: varchar(255)
+              - column:
+                  name: product_type
+                  type: varchar(50)
+              - column:
+                  name: sale_price
+                  type: numeric(15,2)
+              - column:
+                  name: cost
+                  type: numeric(15,2)
+              - column:
+                  name: category
+                  type: varchar(255)
+              - column:
+                  name: reference
+                  type: varchar(255)
+              - column:
+                  name: barcode
+                  type: varchar(255)
+              - column:
+                  name: photo
+                  type: varchar(500)
+              - column:
+                  name: active
+                  type: boolean
+                  defaultValueBoolean: true
+              - column:
+                  name: uom
+                  type: varchar(50)
+              - column:
+                  name: allowed_sale_sizes
+                  type: jsonb
+              - column:
+                  name: active_promotions
+                  type: jsonb
+              - column:
+                  name: stock_quantity
+                  type: double precision
+              - column:
+                  name: available_quantity
+                  type: double precision
+              - column:
+                  name: reserved_quantity
+                  type: double precision
+              - column:
+                  name: organization_id
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: date
+              - column:
+                  name: updated_at
+                  type: date
+        - createIndex:
+            tableName: products
+            indexName: idx_products_organization_id
+            columns:
+              - column:
+                  name: organization_id
+        - createIndex:
+            tableName: products
+            indexName: idx_products_id
+            columns:
+              - column:
+                  name: id
